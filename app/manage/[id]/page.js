@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import InvitePreview from "@/components/InvitePreview";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Reveal, Loading, StatusTag, Counter, Empty, Petals } from "@/components/ui";
@@ -268,7 +268,7 @@ export default function ManagePage() {
               {tab === "preview" && (
                 <div style={{ maxWidth: 430 }}>
                   <div style={{ borderRadius: 22, overflow: "hidden", border: `1px solid ${C.line}`, boxShadow: "var(--shadow-md)" }}>
-                    <InvitePreview cfg={inv.design_config} events={events} />
+                    <TemplateRenderer cfg={inv.design_config} events={events} />
                   </div>
                 </div>
               )}

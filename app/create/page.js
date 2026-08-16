@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import InvitePreview from "@/components/InvitePreview";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Reveal, Loading, Banner, Petals } from "@/components/ui";
@@ -59,6 +59,7 @@ export default function CreatePage() {
       palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
       font: t.base_config?.font || "serif",
       motif: t.base_config?.motif || "marigold",
+      variant: t.base_config?.variant || "classic",
       headline: names || "Aarav & Diya",
       subheadline: "request the honour of your presence at their wedding",
     });
@@ -230,6 +231,7 @@ function StepDesign({ tmpls, tmpl, setTmpl, setCfg, names, back, next }) {
       palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
       font: t.base_config?.font || "serif",
       motif: t.base_config?.motif || "marigold",
+      variant: t.base_config?.variant || "classic",
       headline: names || "Aarav & Diya",
       subheadline: "request the honour of your presence at their wedding",
     });
@@ -255,7 +257,7 @@ function StepDesign({ tmpls, tmpl, setTmpl, setCfg, names, back, next }) {
               >
                 <div style={{ height: 190, overflow: "hidden", borderBottom: `1px solid ${C.line}` }}>
                   <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
-                    <InvitePreview
+                    <TemplateRenderer
                       cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
                       events={[]}
                       compact
@@ -450,7 +452,7 @@ function StepAI({ cfg, setCfg, events, back, next }) {
           }}
         >
           <div className="scroll-y" style={{ height: "100%", overflowY: "auto" }}>
-            <InvitePreview cfg={cfg} events={events} />
+            <TemplateRenderer cfg={cfg} events={events} />
           </div>
         </div>
       </div>

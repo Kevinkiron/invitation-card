@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, X, Send, Loader2, Heart, CalendarPlus } from "lucide-react";
-import InvitePreview from "@/components/InvitePreview";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { supabase } from "@/lib/supabase";
 import { Loading, Empty, Reveal } from "@/components/ui";
 import { C } from "@/lib/theme";
@@ -87,7 +87,7 @@ export default function GuestPage() {
     <div style={{ background: "rgba(140,123,112,.08)", minHeight: "100vh" }}>
       <div style={{ maxWidth: 500, margin: "0 auto", background: "#fff", minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
         <div style={{ animation: "msgIn 1s var(--ease) both" }}>
-          <InvitePreview cfg={inv?.design_config} events={events} guestName={guest?.name} />
+          <TemplateRenderer cfg={inv?.design_config} events={events} guestName={guest?.name} />
         </div>
 
         {!done ? (

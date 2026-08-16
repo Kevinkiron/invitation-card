@@ -50,7 +50,7 @@ export default function Nav() {
         <nav className="nav-desk" style={{ display: "flex", alignItems: "center", gap: 24, fontSize: 14.5, fontWeight: 600 }}>
           {!session ? (
             <>
-              <a href="/#templates" style={{ color: C.muted }}>Templates</a>
+              <Link href="/templates" style={{ color: C.muted }}>Templates</Link>
               <a href="/#features" style={{ color: C.muted }}>Features</a>
               <a href="/#pricing" style={{ color: C.muted }}>Pricing</a>
               <Link href="/login" style={{ color: C.ink }}>Sign in</Link>
@@ -84,7 +84,7 @@ export default function Nav() {
         <div style={{ borderTop: `1px solid ${C.line}`, background: "rgba(253,246,234,.97)", padding: "18px 28px", display: "flex", flexDirection: "column", gap: 16, fontWeight: 600 }}>
           {!session ? (
             <>
-              <a href="/#templates" onClick={() => setOpen(false)}>Templates</a>
+              <Link href="/templates" onClick={() => setOpen(false)}>Templates</Link>
               <a href="/#features" onClick={() => setOpen(false)}>Features</a>
               <a href="/#pricing" onClick={() => setOpen(false)}>Pricing</a>
               <Link href="/login" onClick={() => setOpen(false)}>Sign in</Link>

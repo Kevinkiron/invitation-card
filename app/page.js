@@ -9,6 +9,7 @@ import {
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import InvitePreview from "@/components/InvitePreview";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { Reveal, Counter, Petals, SectionHead } from "@/components/ui";
 import { C, PLANS, money } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
@@ -240,7 +241,7 @@ function Templates() {
                   >
                     <div style={{ height: 220, overflow: "hidden", borderBottom: `1px solid ${C.line}`, background: p[2] || C.ivory }}>
                       <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
-                        <InvitePreview
+                        <TemplateRenderer
                           cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
                           events={[]}
                           compact
@@ -266,9 +267,12 @@ function Templates() {
             })}
           </div>
         )}
-        <div style={{ textAlign: "center", marginTop: 34 }}>
+        <div style={{ textAlign: "center", marginTop: 34, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/signup" className="btn btn-ghost">
             Build with any of these <ArrowRight size={16} />
+          </Link>
+          <Link href="/templates" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: C.maroon, alignSelf: "center" }}>
+            Browse the full gallery <ArrowRight size={14} />
           </Link>
         </div>
       </div>

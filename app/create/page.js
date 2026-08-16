@@ -32,13 +32,37 @@ export default function CreatePage() {
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    if (ready && !session) router.replace("/login");
+    if (ready && !session) {
+      // Preserve ?template=... (set when arriving from the landing page's
+      // template gallery) through the login/signup detour so it isn't lost.
+      const qs = typeof window !== "undefined" ? window.location.search : "";
+      const target = `/create${qs}`;
+      router.replace(`/login?redirect=${encodeURIComponent(target)}`);
+    }
   }, [ready, session, router]);
 
   useEffect(() => {
     supabase.from("event_types").select("*").eq("is_active", true).order("name").then(({ data }) => setTypes(data || []));
     supabase.from("templates").select("*").eq("is_active", true).order("name").then(({ data }) => setTmpls(data || []));
   }, []);
+
+  // Pre-select a template when arriving via /create?template=<id> (from the
+  // landing page's "Use this template" cards).
+  useEffect(() => {
+    if (!tmpls.length || tmpl || typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("template");
+    if (!id) return;
+    const t = tmpls.find((x) => x.id === id);
+    if (!t) return;
+    setTmpl(t);
+    setCfg({
+      palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
+      font: t.base_config?.font || "serif",
+      motif: t.base_config?.motif || "marigold",
+      headline: names || "Aarav & Diya",
+      subheadline: "request the honour of your presence at their wedding",
+    });
+  }, [tmpls, tmpl, names]);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
 

@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import InvitePreview from "@/components/InvitePreview";
 import { Reveal, Counter, Petals, SectionHead } from "@/components/ui";
 import { C, PLANS, money } from "@/lib/theme";
+import { supabase } from "@/lib/supabase";
 
 /* Rotating demo palettes so the hero phone feels alive */
 const DEMOS = [
@@ -41,6 +42,7 @@ export default function Home() {
         <main>
           <Hero demo={demo} />
           <Ceremonies />
+          <Templates />
           <Features />
           <HowItWorks />
           <Pricing />
@@ -190,6 +192,86 @@ function Ceremonies() {
           ))}
         </div>
       </Reveal>
+    </section>
+  );
+}
+
+/* ══════════════ TEMPLATES ══════════════ */
+function Templates() {
+  const [tmpls, setTmpls] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("templates")
+      .select("*")
+      .eq("is_active", true)
+      .order("name")
+      .then(({ data }) => {
+        setTmpls(data || []);
+        setLoading(false);
+      });
+  }, []);
+
+  return (
+    <section id="templates" style={{ padding: "92px 0" }}>
+      <div className="wrap">
+        <SectionHead
+          eyebrow="Templates"
+          title="Start from a design you love"
+          sub="Every template redraws itself as you describe changes — pick whichever feels closest, then make it yours in the AI chat step."
+        />
+        {loading ? (
+          <div style={{ textAlign: "center", color: C.muted, padding: "40px 0", fontSize: 14 }}>Loading templates…</div>
+        ) : tmpls.length === 0 ? (
+          <div style={{ textAlign: "center", color: C.muted, padding: "40px 0", fontSize: 14 }}>
+            Templates will appear here once they're published.
+          </div>
+        ) : (
+          <div className="grid g3">
+            {tmpls.map((t, i) => {
+              const p = t.base_config?.palette || [C.maroon, C.gold, C.ivory];
+              return (
+                <Reveal key={t.id} delay={i * 60}>
+                  <Link
+                    href={`/create?template=${t.id}`}
+                    className="card card-hover"
+                    style={{ display: "block", overflow: "hidden", padding: 0, textDecoration: "none", color: "inherit" }}
+                  >
+                    <div style={{ height: 220, overflow: "hidden", borderBottom: `1px solid ${C.line}`, background: p[2] || C.ivory }}>
+                      <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
+                        <InvitePreview
+                          cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
+                          events={[]}
+                          compact
+                        />
+                      </div>
+                    </div>
+                    <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>{t.name}</div>
+                        <div style={{ fontSize: 10.5, color: C.muted, textTransform: "uppercase", letterSpacing: ".1em", marginTop: 3 }}>
+                          {t.base_config?.motif || t.category}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {p.map((c) => (
+                          <span key={c} style={{ width: 14, height: 14, borderRadius: "50%", background: c, border: `1px solid ${C.line}` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
+        <div style={{ textAlign: "center", marginTop: 34 }}>
+          <Link href="/signup" className="btn btn-ghost">
+            Build with any of these <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }

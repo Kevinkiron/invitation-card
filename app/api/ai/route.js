@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-const MODEL = "gemini-2.0-flash";
+// Model fallback chain. gemini-2.0-flash was shut down on 1 June 2026 — never
+// hardcode a single model name here again. GEMINI_MODEL (optional) pins one
+// model and skips the chain.
+const MODEL_CHAIN = process.env.GEMINI_MODEL
+  ? [process.env.GEMINI_MODEL]
+  : ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+
+// Status codes worth retrying on the next model in the chain.
+// 400 is included because Google returns it for an unknown model name.
+const FALLTHROUGH = new Set([400, 403, 404, 429, 500, 503]);
 
 const SYSTEM = `You are an expert designer of Indian wedding invitations working inside a design tool.
 The user describes a change in plain language; you return an updated design configuration.
@@ -27,14 +36,38 @@ Rules:
 - Never invent event names, dates or venues — those come from the user's own data.
 - Keep subheadline under 120 characters.`;
 
+const PLACEHOLDERS = new Set([
+  "your_google_ai_studio_key_here",
+  "your_gemini_api_key",
+  "changeme",
+]);
+
+function readGoogleError(text) {
+  try {
+    const j = JSON.parse(text);
+    return j?.error?.message || j?.error?.status || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req) {
   try {
     const { messages = [], config = {} } = await req.json();
 
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY?.trim();
     if (!key) {
       return NextResponse.json(
         { error: "GEMINI_API_KEY is not configured on the server." },
+        { status: 500 }
+      );
+    }
+    if (PLACEHOLDERS.has(key.toLowerCase())) {
+      return NextResponse.json(
+        {
+          error:
+            "GEMINI_API_KEY is still set to the placeholder value from .env.example. Add a real key from https://aistudio.google.com/apikey in Vercel → Settings → Environment Variables, then redeploy.",
+        },
         { status: 500 }
       );
     }
@@ -46,30 +79,76 @@ export async function POST(req) {
         parts: [{ text: String(m.content ?? "") }],
       }));
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: `${SYSTEM}\n\nCurrent configuration: ${JSON.stringify(config)}` }],
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 900,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const detail = await res.text();
+    if (contents.length === 0) {
       return NextResponse.json(
-        { error: "Gemini request failed", detail: detail.slice(0, 400) },
-        { status: 502 }
+        { error: "No message to send. Describe the change you'd like." },
+        { status: 400 }
+      );
+    }
+
+    const body = JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: `${SYSTEM}\n\nCurrent configuration: ${JSON.stringify(config)}` }],
+      },
+      contents,
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 900,
+        responseMimeType: "application/json",
+      },
+    });
+
+    let res = null;
+    let lastDetail = "";
+    let lastStatus = 502;
+    let usedModel = null;
+
+    for (const model of MODEL_CHAIN) {
+      let attempt;
+      try {
+        attempt = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // Header auth keeps the key out of the URL (and out of any
+              // proxy/CDN access log that records query strings).
+              "x-goog-api-key": key,
+            },
+            body,
+          }
+        );
+      } catch (e) {
+        lastDetail = `${model}: network error — ${e.message}`;
+        continue;
+      }
+
+      if (attempt.ok) {
+        res = attempt;
+        usedModel = model;
+        break;
+      }
+
+      const text = await attempt.text();
+      lastStatus = attempt.status;
+      lastDetail = `${model}: ${readGoogleError(text) || text.slice(0, 300)}`;
+
+      // Not a fallthrough-worthy failure — stop and report it.
+      if (!FALLTHROUGH.has(attempt.status)) break;
+    }
+
+    if (!res) {
+      const rateLimited = lastStatus === 429;
+      return NextResponse.json(
+        {
+          error: rateLimited
+            ? "The AI design service is rate limited right now. Wait a moment and try again."
+            : "The AI design service could not be reached.",
+          detail: lastDetail.slice(0, 400),
+          triedModels: MODEL_CHAIN,
+        },
+        { status: rateLimited ? 429 : 502 }
       );
     }
 
@@ -85,7 +164,7 @@ export async function POST(req) {
       parsed = { reply: raw || "I couldn't parse that — could you rephrase?", config: null };
     }
 
-    return NextResponse.json(parsed);
+    return NextResponse.json({ ...parsed, model: usedModel });
   } catch (err) {
     return NextResponse.json({ error: err.message || "Unexpected error" }, { status: 500 });
   }

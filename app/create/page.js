@@ -195,17 +195,24 @@ function Head({ title, sub }) {
 
 /* ── Step 1 ── */
 function StepFunctions({ types, chosen, setChosen, next }) {
-  const toggle = (id) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  // Single-select: picking a ceremony replaces the current choice rather
+  // than adding to it. `chosen` stays an array so every downstream step
+  // (details, events insert, RSVP-per-function) keeps working unchanged.
+  const select = (id) => setChosen([id]);
   return (
     <div>
-      <Head title="Which functions are you hosting?" sub="Select every ceremony — each gets its own date, venue, guest list and RSVP count." />
-      <div className="grid g3" style={{ marginBottom: 36 }}>
+      <Head title="Which ceremony are you hosting?" sub="Choose the ceremony this invitation is for. It gets its own date, venue, guest list and RSVP count." />
+      <div className="grid g3" style={{ marginBottom: 36 }} role="radiogroup" aria-label="Ceremony">
         {types.map((t, i) => {
           const on = chosen.includes(t.id);
           return (
             <Reveal key={t.id} delay={i * 40}>
               <div
-                onClick={() => toggle(t.id)}
+                onClick={() => select(t.id)}
+                role="radio"
+                aria-checked={on}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(t.id); } }}
                 className="card"
                 style={{
                   cursor: "pointer", padding: 22, borderWidth: 2, position: "relative",

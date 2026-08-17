@@ -8,30 +8,19 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import InvitePreview from "@/components/InvitePreview";
-import TemplateRenderer from "@/components/TemplateRenderer";
+import PhoneFrame from "@/components/PhoneFrame";
+import InvitationRenderer from "@/components/InvitationRenderer";
 import { Reveal, Counter, Petals, SectionHead } from "@/components/ui";
 import { C, PLANS, money } from "@/lib/theme";
-import { supabase } from "@/lib/supabase";
-
-/* Rotating demo palettes so the hero phone feels alive */
-const DEMOS = [
-  { palette: ["#5B1226", "#E8912D", "#FDF6EA"], motif: "marigold", headline: "Aarav & Diya", subheadline: "request the honour of your presence at their wedding" },
-  { palette: ["#0E5C63", "#C8A24A", "#F6FAF8"], motif: "peacock", headline: "Rohan & Meera", subheadline: "invite you to celebrate a union of two families" },
-  { palette: ["#3B0A2A", "#C8A24A", "#FBF3E9"], motif: "paisley", headline: "Vikram & Ananya", subheadline: "joyfully invite you to share in their happiness" },
-];
-
-const DEMO_EVENTS = [
-  { name: "Haldi", event_date: "2027-01-14", event_time: "10:00", venue: "Residence, Jaipur" },
-  { name: "Sangeet", event_date: "2027-01-15", event_time: "19:00", venue: "Rambagh Palace" },
-  { name: "Vivaah", event_date: "2027-01-16", event_time: "20:30", venue: "Rambagh Palace Lawns" },
-];
+import { TEMPLATES } from "@/lib/templates/registry";
+import { DEMO_INVITATION } from "@/lib/demo-data";
 
 export default function Home() {
+  // Cycle the hero phone through the real templates.
   const [demo, setDemo] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setDemo((d) => (d + 1) % DEMOS.length), 5200);
+    const t = setInterval(() => setDemo((d) => (d + 1) % TEMPLATES.length), 6400);
     return () => clearInterval(t);
   }, []);
 
@@ -75,7 +64,8 @@ function Hero({ demo }) {
     return () => window.removeEventListener("mousemove", fn);
   }, []);
 
-  const cfg = DEMOS[demo];
+  const hero = TEMPLATES[demo] || TEMPLATES[0];
+  const heroDark = ["#0B0A0E", "#120A0D"].includes(hero.theme.bg);
 
   return (
     <section className="wrap" style={{ padding: "60px 28px 30px" }}>
@@ -134,33 +124,41 @@ function Hero({ demo }) {
           </div>
         </div>
 
-        {/* phone mockup */}
+        {/* Hero phone — a real premium template, cycling through the
+            live gallery. Same renderer the guest page uses. */}
         <div className="phone-stage" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
           <div className="orbit" style={{ width: 460, height: 460, top: "50%", left: "50%", marginTop: -230, marginLeft: -230 }} />
           <div className="orbit" style={{ width: 560, height: 560, top: "50%", left: "50%", marginTop: -280, marginLeft: -280, animationDuration: "40s", animationDirection: "reverse", borderStyle: "dashed", opacity: .5 }} />
 
-          <div ref={phoneRef} className="phone" style={{ transition: "transform .45s var(--ease)" }}>
-            <div className="phone-notch" />
-            <div className="phone-screen">
-              <div className="phone-status">
-                <span>9:41</span>
-                <span style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 10 }}>▮▮▮ ⌁ ▰</span>
+          <div ref={phoneRef} style={{ transition: "transform .45s var(--ease)" }}>
+            <PhoneFrame
+              width={286}
+              height={584}
+              statusColor={heroDark ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+              label={`${hero.name} live preview`}
+            >
+              <div key={hero.slug} style={{ animation: "msgIn .8s var(--ease) both" }}>
+                <InvitationRenderer
+                  templateId={hero.slug}
+                  mode="gallery"
+                  invitationData={DEMO_INVITATION}
+                />
               </div>
-              <div className="phone-scroll">
-                <div key={demo} style={{ animation: "msgIn .8s var(--ease) both" }}>
-                  <InvitePreview cfg={cfg} events={DEMO_EVENTS} guestName="Kabir Uncle" compact />
-                </div>
-              </div>
-              <div className="phone-glare" />
-            </div>
+            </PhoneFrame>
           </div>
 
-          <div className="float-tag" style={{ top: 74, left: -6, animationDelay: ".4s" }}>
+          <div className="float-tag" style={{ top: 74, left: -14, animationDelay: ".4s" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.green, boxShadow: `0 0 0 3px rgba(63,125,83,.18)` }} />
             142 accepted
           </div>
-          <div className="float-tag" style={{ bottom: 108, right: -14, animationDelay: "1.5s" }}>
+          <div className="float-tag" style={{ bottom: 108, right: -20, animationDelay: "1.5s" }}>
             <MessageCircle size={14} color={C.marigold} /> Sent on WhatsApp
+          </div>
+          <div
+            className="float-tag"
+            style={{ bottom: 34, left: "50%", transform: "translateX(-50%)", animationDelay: "2.2s", whiteSpace: "nowrap" }}
+          >
+            <Sparkles size={13} color={C.gold} /> {hero.name}
           </div>
         </div>
       </div>
@@ -198,84 +196,99 @@ function Ceremonies() {
 }
 
 /* ══════════════ TEMPLATES ══════════════ */
+/* Renders the code-defined templates through the real InvitationRenderer,
+   inside real phone frames — the same experience as /templates. No
+   database fetch, so this section can never render an empty shell. */
 function Templates() {
-  const [tmpls, setTmpls] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase
-      .from("templates")
-      .select("*")
-      .eq("is_active", true)
-      .order("name")
-      .then(({ data }) => {
-        setTmpls(data || []);
-        setLoading(false);
-      });
-  }, []);
-
   return (
-    <section id="templates" style={{ padding: "92px 0" }}>
+    <section id="templates" style={{ padding: "92px 0", background: C.paper, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
       <div className="wrap">
         <SectionHead
           eyebrow="Templates"
           title="Start from a design you love"
-          sub="Every template redraws itself as you describe changes — pick whichever feels closest, then make it yours in the AI chat step."
+          sub="Every phone below is running the real invitation — scroll inside it, open the gallery, try the RSVP. Pick one and your own details replace the sample content."
         />
-        {loading ? (
-          <div style={{ textAlign: "center", color: C.muted, padding: "40px 0", fontSize: 14 }}>Loading templates…</div>
-        ) : tmpls.length === 0 ? (
-          <div style={{ textAlign: "center", color: C.muted, padding: "40px 0", fontSize: 14 }}>
-            Templates will appear here once they're published.
-          </div>
-        ) : (
-          <div className="grid g3">
-            {tmpls.map((t, i) => {
-              const p = t.base_config?.palette || [C.maroon, C.gold, C.ivory];
-              return (
-                <Reveal key={t.id} delay={i * 60}>
-                  <Link
-                    href={`/create?template=${t.id}`}
-                    className="card card-hover"
-                    style={{ display: "block", overflow: "hidden", padding: 0, textDecoration: "none", color: "inherit" }}
-                  >
-                    <div style={{ height: 220, overflow: "hidden", borderBottom: `1px solid ${C.line}`, background: p[2] || C.ivory }}>
-                      <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
-                        <TemplateRenderer
-                          cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
-                          events={[]}
-                          compact
-                        />
-                      </div>
-                    </div>
-                    <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{t.name}</div>
-                        <div style={{ fontSize: 10.5, color: C.muted, textTransform: "uppercase", letterSpacing: ".1em", marginTop: 3 }}>
-                          {t.base_config?.motif || t.category}
+
+        <div className="home-tpl-grid">
+          {TEMPLATES.map((t, i) => {
+            const dark = ["#0B0A0E", "#120A0D"].includes(t.theme.bg);
+            return (
+              <Reveal key={t.slug} delay={i * 60}>
+                <article className="home-tpl-card">
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <PhoneFrame
+                      width={252}
+                      height={470}
+                      statusColor={dark ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+                      label={`${t.name} live preview`}
+                    >
+                      <InvitationRenderer templateId={t.slug} mode="gallery" invitationData={DEMO_INVITATION} />
+                    </PhoneFrame>
+                  </div>
+
+                  <div style={{ paddingTop: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <h3 className="display" style={{ fontSize: 19, lineHeight: 1.2, marginBottom: 3 }}>{t.name}</h3>
+                        <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: C.gold, fontWeight: 800 }}>
+                          {t.category}
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        {p.map((c) => (
-                          <span key={c} style={{ width: 14, height: 14, borderRadius: "50%", background: c, border: `1px solid ${C.line}` }} />
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0, paddingTop: 3 }}>
+                        {t.swatches.map((s) => (
+                          <span key={s} style={{ width: 12, height: 12, borderRadius: "50%", background: s, border: `1px solid ${C.line}` }} />
                         ))}
                       </div>
                     </div>
-                  </Link>
-                </Reveal>
-              );
-            })}
-          </div>
-        )}
-        <div style={{ textAlign: "center", marginTop: 34, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/signup" className="btn btn-ghost">
-            Build with any of these <ArrowRight size={16} />
-          </Link>
-          <Link href="/templates" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: C.maroon, alignSelf: "center" }}>
-            Browse the full gallery <ArrowRight size={14} />
+
+                    <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
+                      <Link href={`/templates/${t.slug}/preview`} className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: "center" }}>
+                        Preview
+                      </Link>
+                      <Link href={`/create?template=${t.slug}`} className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center" }}>
+                        Use <ArrowRight size={13} />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: 40 }}>
+          <Link href="/templates" className="btn btn-ghost btn-lg">
+            Browse all templates <ArrowRight size={16} />
           </Link>
         </div>
       </div>
+
+      <style jsx>{`
+        .home-tpl-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+          gap: 26px;
+          justify-items: center;
+        }
+        .home-tpl-card {
+          background: #fff;
+          border: 1px solid ${C.line};
+          border-radius: 20px;
+          padding: 16px 16px 18px;
+          width: 100%;
+          max-width: 300px;
+          box-shadow: var(--shadow-sm);
+          transition: transform .45s var(--ease), box-shadow .45s var(--ease), border-color .45s;
+        }
+        .home-tpl-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(200, 162, 74, 0.45);
+          box-shadow: 0 30px 60px -34px rgba(59, 10, 42, 0.5);
+        }
+        @media (max-width: 640px) {
+          .home-tpl-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </section>
   );
 }

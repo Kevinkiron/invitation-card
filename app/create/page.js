@@ -9,12 +9,29 @@ import {
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TemplateRenderer from "@/components/TemplateRenderer";
+import PhoneFrame from "@/components/PhoneFrame";
+import InvitationRenderer from "@/components/InvitationRenderer";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Reveal, Loading, Banner, Petals } from "@/components/ui";
 import { C, PLANS, money } from "@/lib/theme";
+import { TEMPLATES } from "@/lib/templates/registry";
+import { DEMO_INVITATION, invitationFromRecord } from "@/lib/demo-data";
 
 const STEPS = ["Functions", "Design", "Details", "Customise", "Publish"];
+
+/* One place that turns a registry template into the invitation's saved
+   design_config, so the Design step and the ?template= deep link can
+   never drift apart. `template` is the slug the renderer resolves. */
+function configForTemplate(t, names) {
+  return {
+    template: t.slug,
+    palette: t.swatches,
+    font: "serif",
+    headline: names || "Sophia & Daniel",
+    subheadline: "request the honour of your presence at their wedding",
+  };
+}
 
 export default function CreatePage() {
   const { session, ready } = useAuth();
@@ -43,27 +60,19 @@ export default function CreatePage() {
 
   useEffect(() => {
     supabase.from("event_types").select("*").eq("is_active", true).order("name").then(({ data }) => setTypes(data || []));
-    supabase.from("templates").select("*").eq("is_active", true).order("name").then(({ data }) => setTmpls(data || []));
   }, []);
 
-  // Pre-select a template when arriving via /create?template=<id> (from the
-  // landing page's "Use this template" cards).
+  // Pre-select a template when arriving via /create?template=<slug> (from
+  // the gallery or a preview page's "Use this template").
   useEffect(() => {
-    if (!tmpls.length || tmpl || typeof window === "undefined") return;
-    const id = new URLSearchParams(window.location.search).get("template");
-    if (!id) return;
-    const t = tmpls.find((x) => x.id === id);
+    if (tmpl || typeof window === "undefined") return;
+    const slug = new URLSearchParams(window.location.search).get("template");
+    if (!slug) return;
+    const t = TEMPLATES.find((x) => x.slug === slug);
     if (!t) return;
     setTmpl(t);
-    setCfg({
-      palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
-      font: t.base_config?.font || "serif",
-      motif: t.base_config?.motif || "marigold",
-      variant: t.base_config?.variant || "classic",
-      headline: names || "Aarav & Diya",
-      subheadline: "request the honour of your presence at their wedding",
-    });
-  }, [tmpls, tmpl, names]);
+    setCfg(configForTemplate(t, names));
+  }, [tmpl, names]);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
 
@@ -81,7 +90,9 @@ export default function CreatePage() {
         .from("invitations")
         .insert({
           owner_id: session.user.id,
-          template_id: tmpl.id,
+          // Templates are code-defined now, so the slug travels in
+          // design_config.template. template_id (a nullable FK to the old
+          // templates table) is intentionally left unset.
           title: names || "Untitled Invitation",
           design_config: cfg,
           status: "published",
@@ -227,55 +238,58 @@ function StepFunctions({ types, chosen, setChosen, next }) {
 function StepDesign({ tmpls, tmpl, setTmpl, setCfg, names, back, next }) {
   const pick = (t) => {
     setTmpl(t);
-    setCfg({
-      palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
-      font: t.base_config?.font || "serif",
-      motif: t.base_config?.motif || "marigold",
-      variant: t.base_config?.variant || "classic",
-      headline: names || "Aarav & Diya",
-      subheadline: "request the honour of your presence at their wedding",
-    });
+    setCfg(configForTemplate(t, names));
   };
   return (
     <div>
-      <Head title="Choose a starting design" sub="Just a starting point — you'll reshape the colours, motifs and wording by describing them in the next step." />
-      <div className="grid g3" style={{ marginBottom: 36 }}>
-        {tmpls.map((t, i) => {
-          const p = t.base_config?.palette || [C.maroon, C.gold, C.ivory];
-          const on = tmpl?.id === t.id;
+      <Head title="Choose a starting design" sub="Each phone below is running the real template. Pick the one closest to what you want — you'll reshape the wording and colours by describing them in the next step." />
+      <div
+        style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+          gap: 22, marginBottom: 36, justifyItems: "center",
+        }}
+      >
+        {TEMPLATES.map((t, i) => {
+          const on = tmpl?.slug === t.slug;
+          const dark = ["#0B0A0E", "#120A0D"].includes(t.theme.bg);
           return (
-            <Reveal key={t.id} delay={i * 55}>
+            <Reveal key={t.slug} delay={i * 55} style={{ width: "100%", maxWidth: 280 }}>
               <div
                 onClick={() => pick(t)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter") pick(t); }}
                 style={{
-                  cursor: "pointer", borderRadius: 18, overflow: "hidden", background: "#fff",
+                  cursor: "pointer", borderRadius: 20, background: "#fff", padding: 14,
                   border: `2px solid ${on ? C.maroon : C.line}`,
-                  transform: on ? "translateY(-6px)" : "none",
+                  transform: on ? "translateY(-5px)" : "none",
                   boxShadow: on ? `0 28px 50px -30px ${C.maroon}` : "var(--shadow-sm)",
                   transition: "all .38s var(--ease)",
                 }}
               >
-                <div style={{ height: 190, overflow: "hidden", borderBottom: `1px solid ${C.line}` }}>
-                  <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
-                    <TemplateRenderer
-                      cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
-                      events={[]}
-                      compact
-                    />
-                  </div>
+                <div style={{ display: "flex", justifyContent: "center", pointerEvents: "none" }}>
+                  <PhoneFrame
+                    width={228}
+                    height={400}
+                    interactive={false}
+                    statusColor={dark ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+                    label={`${t.name} preview`}
+                  >
+                    <InvitationRenderer templateId={t.slug} mode="gallery" invitationData={DEMO_INVITATION} />
+                  </PhoneFrame>
                 </div>
-                <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 14 }}>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14.5 }}>{t.name}</div>
-                    <div style={{ fontSize: 10.5, color: C.muted, textTransform: "uppercase", letterSpacing: ".1em", marginTop: 3 }}>
-                      {t.base_config?.motif || t.category}
+                    <div style={{ fontSize: 10, color: C.gold, textTransform: "uppercase", letterSpacing: ".12em", marginTop: 3, fontWeight: 800 }}>
+                      {t.category}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {p.map((c) => (
-                      <span key={c} style={{ width: 13, height: 13, borderRadius: "50%", background: c, border: `1px solid ${C.line}` }} />
-                    ))}
-                  </div>
+                  {on && (
+                    <span className="pop" style={{ width: 22, height: 22, borderRadius: "50%", background: C.maroon, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Check size={12} color={C.ivory} />
+                    </span>
+                  )}
                 </div>
               </div>
             </Reveal>
@@ -442,18 +456,21 @@ function StepAI({ cfg, setCfg, events, back, next }) {
           </div>
         </div>
 
-        {/* preview */}
+        {/* Live preview — the real template, in a phone, updating as the
+            customer edits. Same renderer the gallery and guest page use. */}
         <div
           style={{
-            borderRadius: 22, overflow: "hidden", height: 580, background: "#fff",
+            display: "flex", justifyContent: "center", alignItems: "flex-start",
+            padding: 14, borderRadius: 22, height: 580,
             border: `1px solid ${flash ? C.gold : C.line}`,
-            boxShadow: flash ? `0 0 0 6px rgba(200,162,74,.18)` : "var(--shadow-md)",
-            transition: "box-shadow .55s, border-color .55s",
+            background: flash ? "rgba(200,162,74,.06)" : "transparent",
+            boxShadow: flash ? `0 0 0 6px rgba(200,162,74,.18)` : "none",
+            transition: "box-shadow .55s, border-color .55s, background .55s",
           }}
         >
-          <div className="scroll-y" style={{ height: "100%", overflowY: "auto" }}>
-            <TemplateRenderer cfg={cfg} events={events} />
-          </div>
+          <PhoneFrame width={274} height={540} statusColor="rgba(20,16,14,.85)" label="Live invitation preview">
+            <TemplateRenderer cfg={cfg} events={events} mode="editor" />
+          </PhoneFrame>
         </div>
       </div>
 

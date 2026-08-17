@@ -1,23 +1,33 @@
 "use client";
 
+import InvitationRenderer, { hasTemplate } from "@/components/InvitationRenderer";
 import InvitePreview from "@/components/InvitePreview";
-import EditorialPreview from "@/components/templates/EditorialPreview";
-import NoirPreview from "@/components/templates/NoirPreview";
+import { invitationFromRecord } from "@/lib/demo-data";
+import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
 
-/* The registry: every place in the app that renders an invitation — the
-   template gallery, the /create wizard's design step and AI-chat preview,
-   the customer's manage/preview tab, and the public guest page — goes
-   through this single switch instead of importing a variant directly.
-   Adding a new template variant means adding one entry here; every render
-   site picks it up automatically. Falls back to "classic" (the original
-   hero-panel + timeline layout) for templates that don't set a variant. */
-const REGISTRY = {
-  classic: InvitePreview,
-  editorial: EditorialPreview,
-  noir: NoirPreview,
-};
+/* Compatibility shim.
+   The app's older render sites pass the legacy `cfg` shape
+   ({ palette, font, motif, headline, subheadline }). Rather than
+   rewriting each call site's data plumbing, this adapts that shape into
+   the InvitationRenderer contract so the editor, the manage preview and
+   the published guest page all resolve the SAME template component the
+   gallery and preview pages use.
 
-export default function TemplateRenderer({ cfg, ...rest }) {
-  const Variant = REGISTRY[cfg?.variant] || InvitePreview;
-  return <Variant cfg={cfg} {...rest} />;
+   Invitations created before templates existed have no `cfg.template`;
+   those keep rendering the original InvitePreview so nothing that is
+   already published changes appearance underneath its owner. */
+export default function TemplateRenderer({ cfg, events = [], guestName, compact = false, mode }) {
+  const slug = cfg?.template;
+
+  if (!slug || !hasTemplate(slug)) {
+    return <InvitePreview cfg={cfg} events={events} guestName={guestName} compact={compact} />;
+  }
+
+  return (
+    <InvitationRenderer
+      templateId={slug || DEFAULT_TEMPLATE}
+      mode={mode || (compact ? "gallery" : "editor")}
+      invitationData={invitationFromRecord({ config: cfg, events, guestName })}
+    />
+  );
 }

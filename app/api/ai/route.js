@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseModelJson } from "@/lib/ai/json";
 
 export const runtime = "edge";
 
@@ -86,15 +87,19 @@ export async function POST(req) {
       );
     }
 
-    const body = JSON.stringify({
+    const makeBody = (withThinking) => JSON.stringify({
       systemInstruction: {
         parts: [{ text: `${SYSTEM}\n\nCurrent configuration: ${JSON.stringify(config)}` }],
       },
       contents,
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 900,
+        // Gemini 3 models think by default at "medium", and thinking tokens
+        // count against maxOutputTokens — at 900 the JSON was being cut off
+        // before it closed. Headroom plus minimal thinking.
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
+        ...(withThinking ? { thinkingLevel: "minimal" } : {}),
       },
     });
 
@@ -103,7 +108,10 @@ export async function POST(req) {
     let lastStatus = 502;
     let usedModel = null;
 
+    outer:
     for (const model of MODEL_CHAIN) {
+      // thinkingLevel is Gemini-3 only; drop it before writing off a model.
+      for (const withThinking of [true, false]) {
       let attempt;
       try {
         attempt = await fetch(
@@ -116,7 +124,7 @@ export async function POST(req) {
               // proxy/CDN access log that records query strings).
               "x-goog-api-key": key,
             },
-            body,
+            body: makeBody(withThinking),
           }
         );
       } catch (e) {
@@ -127,15 +135,20 @@ export async function POST(req) {
       if (attempt.ok) {
         res = attempt;
         usedModel = model;
-        break;
+        break outer;
       }
 
       const text = await attempt.text();
       lastStatus = attempt.status;
-      lastDetail = `${model}: ${readGoogleError(text) || text.slice(0, 300)}`;
+      lastDetail = `${model}${withThinking ? " (thinking)" : ""}: ${readGoogleError(text) || text.slice(0, 300)}`;
 
+      // A 400 with thinkingLevel set is usually this model not knowing the
+      // field — retry it without before moving on.
+      if (attempt.status === 400 && withThinking) continue;
       // Not a fallthrough-worthy failure — stop and report it.
-      if (!FALLTHROUGH.has(attempt.status)) break;
+      if (!FALLTHROUGH.has(attempt.status)) break outer;
+      break; // model unavailable — next model
+      }
     }
 
     if (!res) {
@@ -153,16 +166,18 @@ export async function POST(req) {
     }
 
     const data = await res.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ?? "";
+    const candidate = data?.candidates?.[0];
+    const raw = candidate?.content?.parts?.map((p) => p.text).join("") ?? "";
 
-    let parsed;
-    try {
-      parsed = JSON.parse(
-        raw.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim()
-      );
-    } catch {
-      parsed = { reply: raw || "I couldn't parse that — could you rephrase?", config: null };
-    }
+    // parseModelJson also rescues a response cut off mid-object, so a
+    // truncated design edit still applies instead of being dropped.
+    const parsed = parseModelJson(raw) || {
+      reply:
+        candidate?.finishReason === "MAX_TOKENS"
+          ? "That was a bit long for me to finish — could you ask for one change at a time?"
+          : "I couldn't parse that — could you rephrase?",
+      config: null,
+    };
 
     return NextResponse.json({ ...parsed, model: usedModel });
   } catch (err) {

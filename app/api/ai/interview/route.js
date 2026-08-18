@@ -4,6 +4,7 @@ import {
   allowedSlotIds, missingRequired, completeness,
 } from "@/lib/ai/event-types";
 import { mergeDraft } from "@/lib/ai/draft";
+import { parseModelJson } from "@/lib/ai/json";
 import { TEMPLATES } from "@/lib/templates/registry";
 
 export const runtime = "edge";
@@ -126,6 +127,7 @@ function readGoogleError(text) {
   } catch { return null; }
 }
 
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -158,27 +160,39 @@ export async function POST(req) {
       return NextResponse.json({ error: "No message to send." }, { status: 400 });
     }
 
-    const payload = (withSchema) => JSON.stringify({
+    const payload = ({ withSchema, withThinking }) => JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt({ eventType: activeType, draft, missing, today }) }] },
       contents,
       generationConfig: {
         temperature: 0.65,
-        maxOutputTokens: 1200,
+        // Gemini 3 models think by default at "medium", and thinking tokens
+        // are charged against maxOutputTokens. At 1200 the model spent its
+        // budget reasoning and the JSON was truncated mid-key. Headroom plus
+        // minimal thinking — this is structured extraction, not analysis.
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
+        ...(withThinking ? { thinkingLevel: "minimal" } : {}),
         ...(withSchema ? { responseSchema: RESPONSE_SCHEMA } : {}),
       },
     });
+
+    /* Degradation ladder. thinkingLevel is Gemini-3 only, so an older
+       fallback model rejecting it must not take the schema down with it. */
+    const VARIANTS = [
+      { withSchema: true, withThinking: true },
+      { withSchema: true, withThinking: false },
+      { withSchema: false, withThinking: false },
+    ];
 
     let res = null;
     let lastDetail = "";
     let lastStatus = 502;
     let usedModel = null;
+    let usedVariant = null;
 
     outer:
     for (const model of MODEL_CHAIN) {
-      // Try with the schema first; if a model rejects it, retry the same
-      // model prompt-only rather than skipping straight to a weaker model.
-      for (const withSchema of [true, false]) {
+      for (const variant of VARIANTS) {
         let attempt;
         try {
           attempt = await fetch(
@@ -186,7 +200,7 @@ export async function POST(req) {
             {
               method: "POST",
               headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-              body: payload(withSchema),
+              body: payload(variant),
             }
           );
         } catch (e) {
@@ -194,17 +208,18 @@ export async function POST(req) {
           continue;
         }
 
-        if (attempt.ok) { res = attempt; usedModel = model; break outer; }
+        if (attempt.ok) { res = attempt; usedModel = model; usedVariant = variant; break outer; }
 
         const text = await attempt.text();
         lastStatus = attempt.status;
-        lastDetail = `${model}${withSchema ? " (schema)" : ""}: ${readGoogleError(text) || text.slice(0, 240)}`;
+        const tag = `${variant.withSchema ? "schema" : "no-schema"}/${variant.withThinking ? "thinking" : "no-thinking"}`;
+        lastDetail = `${model} (${tag}): ${readGoogleError(text) || text.slice(0, 240)}`;
 
-        // A 400 with the schema on is usually schema rejection — worth the
-        // prompt-only retry. Any other non-fallthrough status is terminal.
-        if (attempt.status === 400 && withSchema) continue;
+        // 400 usually means this model rejected one of the optional config
+        // fields — step down the ladder before giving up on the model.
+        if (attempt.status === 400) continue;
         if (!FALLTHROUGH.has(attempt.status)) break outer;
-        break; // move to the next model
+        break; // model is unavailable — move to the next one
       }
     }
 
@@ -222,16 +237,32 @@ export async function POST(req) {
     }
 
     const data = await res.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ?? "";
+    const candidate = data?.candidates?.[0];
+    const raw = candidate?.content?.parts?.map((p) => p.text).join("") ?? "";
+    const finish = candidate?.finishReason;
 
-    let parsed;
-    try {
-      parsed = JSON.parse(
-        raw.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim()
-      );
-    } catch {
+    let parsed = parseModelJson(raw);
+
+    if (!parsed) {
+      // Distinguish "ran out of room" from "genuinely malformed" — they
+      // need different fixes and the old message conflated them.
+      if (finish === "MAX_TOKENS") {
+        return NextResponse.json(
+          {
+            error: "That answer was too long for the AI to finish. Try splitting it into a couple of shorter messages.",
+            detail: `finishReason=MAX_TOKENS, model=${usedModel}, chars=${raw.length}`,
+          },
+          { status: 502 }
+        );
+      }
+      if (finish && finish !== "STOP") {
+        return NextResponse.json(
+          { error: `The AI stopped early (${finish}). Please rephrase and try again.`, detail: raw.slice(0, 600) },
+          { status: 502 }
+        );
+      }
       return NextResponse.json(
-        { error: "The AI returned something unreadable. Please try again.", detail: raw.slice(0, 200) },
+        { error: "The AI returned something unreadable. Please try again.", detail: raw.slice(0, 600) },
         { status: 502 }
       );
     }

@@ -81,10 +81,27 @@ export default function CreatePage() {
           eventType: draft.eventType,
         }),
       });
-      const data = await res.json();
+      /* Read as text first. A failure that never reached our route — a
+         platform timeout, a cold-start crash — comes back as HTML or plain
+         text, and calling res.json() on it throws
+         `Unexpected token 'A', "An error o"...` which buries the real cause.
+         Parse defensively and show whatever the server actually said. */
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        setErr(
+          `Server error ${res.status}: ${text.slice(0, 200) || "empty response"}. ` +
+          `If this says the deployment failed, the AI call most likely timed out — check /api/ai/models.`
+        );
+        setBusy(false);
+        return;
+      }
 
-      if (!res.ok) {
-        setErr(data.detail ? `${data.error} (${data.detail})` : data.error || "Something went wrong.");
+      if (!res.ok || !data) {
+        const msg = data?.error || `Request failed (${res.status}).`;
+        setErr(data?.detail ? `${msg} (${data.detail})` : msg);
         setBusy(false);
         return;
       }

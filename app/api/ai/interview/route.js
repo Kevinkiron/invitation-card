@@ -6,17 +6,17 @@ import {
 import { mergeDraft } from "@/lib/ai/draft";
 import { parseModelJson } from "@/lib/ai/json";
 import { TEMPLATES } from "@/lib/templates/registry";
+import { generate, readKey } from "@/lib/ai/gemini";
 
-export const runtime = "edge";
-
-/* Same fallback discipline as /api/ai — never pin a single model. */
-const MODEL_CHAIN = process.env.GEMINI_MODEL
-  ? [process.env.GEMINI_MODEL]
-  : ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
-
-const FALLTHROUGH = new Set([400, 403, 404, 429, 500, 503]);
-
-const PLACEHOLDERS = new Set(["your_google_ai_studio_key_here", "your_gemini_api_key", "changeme"]);
+/* nodejs, not edge: a Gemini call with thinking can run past the edge
+   response window, and when it does Vercel returns its own plain-text
+   error page instead of our JSON — which is what broke the client.
+   maxDuration gives us a budget we control; MAX_MS stays under it so we
+   always answer with JSON of our own. */
+export const runtime = "nodejs";
+export const maxDuration = 60;
+const MAX_MS = 45000;
+const PER_CALL_MS = 20000;
 
 /* ── Structured output schema ──────────────────────────────────
    Every writable slot is declared explicitly. Gemini's structured
@@ -120,29 +120,14 @@ RULES
 - Write in British English. Never use emoji.`;
 }
 
-function readGoogleError(text) {
-  try {
-    const j = JSON.parse(text);
-    return j?.error?.message || j?.error?.status || null;
-  } catch { return null; }
-}
-
 
 export async function POST(req) {
   try {
     const body = await req.json();
     const { messages = [], draft = {}, eventType = null } = body;
 
-    const key = process.env.GEMINI_API_KEY?.trim();
-    if (!key) {
-      return NextResponse.json({ error: "GEMINI_API_KEY is not configured on the server." }, { status: 500 });
-    }
-    if (PLACEHOLDERS.has(key.toLowerCase())) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is still the placeholder from .env.example. Add a real key from https://aistudio.google.com/apikey in Vercel, then redeploy." },
-        { status: 500 }
-      );
-    }
+    const { key, error: keyError } = readKey();
+    if (keyError) return NextResponse.json({ error: keyError }, { status: 500 });
 
     const activeType = eventType || draft.eventType || null;
     const missing = activeType ? missingRequired(activeType, draft) : [];
@@ -176,67 +161,33 @@ export async function POST(req) {
       },
     });
 
-    /* Degradation ladder. thinkingLevel is Gemini-3 only, so an older
-       fallback model rejecting it must not take the schema down with it. */
-    const VARIANTS = [
-      { withSchema: true, withThinking: true },
-      { withSchema: true, withThinking: false },
-      { withSchema: false, withThinking: false },
-    ];
+    const started = Date.now();
+    const result = await generate({
+      key,
+      buildBody: payload,
+      deadlineMs: MAX_MS,
+      perCallMs: PER_CALL_MS,
+    });
 
-    let res = null;
-    let lastDetail = "";
-    let lastStatus = 502;
-    let usedModel = null;
-    let usedVariant = null;
-
-    outer:
-    for (const model of MODEL_CHAIN) {
-      for (const variant of VARIANTS) {
-        let attempt;
-        try {
-          attempt = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-              body: payload(variant),
-            }
-          );
-        } catch (e) {
-          lastDetail = `${model}: network error — ${e.message}`;
-          continue;
-        }
-
-        if (attempt.ok) { res = attempt; usedModel = model; usedVariant = variant; break outer; }
-
-        const text = await attempt.text();
-        lastStatus = attempt.status;
-        const tag = `${variant.withSchema ? "schema" : "no-schema"}/${variant.withThinking ? "thinking" : "no-thinking"}`;
-        lastDetail = `${model} (${tag}): ${readGoogleError(text) || text.slice(0, 240)}`;
-
-        // 400 usually means this model rejected one of the optional config
-        // fields — step down the ladder before giving up on the model.
-        if (attempt.status === 400) continue;
-        if (!FALLTHROUGH.has(attempt.status)) break outer;
-        break; // model is unavailable — move to the next one
-      }
-    }
-
-    if (!res) {
-      const rateLimited = lastStatus === 429;
+    if (!result.ok) {
+      const rateLimited = result.status === 429;
+      const timedOut = result.status === 504;
       return NextResponse.json(
         {
           error: rateLimited
             ? "The AI is rate limited right now. Wait a moment and try again."
-            : "Could not reach the AI service.",
-          detail: lastDetail.slice(0, 400),
+            : timedOut
+              ? "The AI took too long to respond. Please try again."
+              : "Could not reach the AI service.",
+          detail: result.detail.slice(0, 400),
+          elapsedMs: Date.now() - started,
         },
-        { status: rateLimited ? 429 : 502 }
+        { status: rateLimited ? 429 : timedOut ? 504 : 502 }
       );
     }
 
-    const data = await res.json();
+    const data = result.data;
+    const usedModel = result.model;
     const candidate = data?.candidates?.[0];
     const raw = candidate?.content?.parts?.map((p) => p.text).join("") ?? "";
     const finish = candidate?.finishReason;

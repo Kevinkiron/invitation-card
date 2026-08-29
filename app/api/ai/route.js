@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
+import { parseModelJson } from "@/lib/ai/json";
+import { generate, modelChain, readKey } from "@/lib/ai/gemini";
 
-export const runtime = "edge";
-
-// Model fallback chain. gemini-2.0-flash was shut down on 1 June 2026 — never
-// hardcode a single model name here again. GEMINI_MODEL (optional) pins one
-// model and skips the chain.
-const MODEL_CHAIN = process.env.GEMINI_MODEL
-  ? [process.env.GEMINI_MODEL]
-  : ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
-
-// Status codes worth retrying on the next model in the chain.
-// 400 is included because Google returns it for an unknown model name.
-const FALLTHROUGH = new Set([400, 403, 404, 429, 500, 503]);
+/* nodejs, not edge — see lib/ai/gemini.js for why. Model selection and the
+   retry ladder live there too, so both AI routes share one implementation
+   and one per-instance memory of what actually works. */
+export const runtime = "nodejs";
+export const maxDuration = 60;
+const MAX_MS = 45000;
+const PER_CALL_MS = 20000;
 
 const SYSTEM = `You are an expert designer of Indian wedding invitations working inside a design tool.
 The user describes a change in plain language; you return an updated design configuration.
@@ -36,41 +33,12 @@ Rules:
 - Never invent event names, dates or venues — those come from the user's own data.
 - Keep subheadline under 120 characters.`;
 
-const PLACEHOLDERS = new Set([
-  "your_google_ai_studio_key_here",
-  "your_gemini_api_key",
-  "changeme",
-]);
-
-function readGoogleError(text) {
-  try {
-    const j = JSON.parse(text);
-    return j?.error?.message || j?.error?.status || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req) {
   try {
     const { messages = [], config = {} } = await req.json();
 
-    const key = process.env.GEMINI_API_KEY?.trim();
-    if (!key) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured on the server." },
-        { status: 500 }
-      );
-    }
-    if (PLACEHOLDERS.has(key.toLowerCase())) {
-      return NextResponse.json(
-        {
-          error:
-            "GEMINI_API_KEY is still set to the placeholder value from .env.example. Add a real key from https://aistudio.google.com/apikey in Vercel → Settings → Environment Variables, then redeploy.",
-        },
-        { status: 500 }
-      );
-    }
+    const { key, error: keyError } = readKey();
+    if (keyError) return NextResponse.json({ error: keyError }, { status: 500 });
 
     const contents = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
@@ -86,83 +54,62 @@ export async function POST(req) {
       );
     }
 
-    const body = JSON.stringify({
+    const makeBody = (withThinking) => JSON.stringify({
       systemInstruction: {
         parts: [{ text: `${SYSTEM}\n\nCurrent configuration: ${JSON.stringify(config)}` }],
       },
       contents,
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 900,
+        // Gemini 3 models think by default at "medium", and thinking tokens
+        // count against maxOutputTokens — at 900 the JSON was being cut off
+        // before it closed. Headroom plus minimal thinking.
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
+        ...(withThinking ? { thinkingLevel: "minimal" } : {}),
       },
     });
 
-    let res = null;
-    let lastDetail = "";
-    let lastStatus = 502;
-    let usedModel = null;
+    const started = Date.now();
+    const result = await generate({
+      key,
+      buildBody: ({ withThinking }) => makeBody(withThinking),
+      deadlineMs: MAX_MS,
+      perCallMs: PER_CALL_MS,
+    });
 
-    for (const model of MODEL_CHAIN) {
-      let attempt;
-      try {
-        attempt = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              // Header auth keeps the key out of the URL (and out of any
-              // proxy/CDN access log that records query strings).
-              "x-goog-api-key": key,
-            },
-            body,
-          }
-        );
-      } catch (e) {
-        lastDetail = `${model}: network error — ${e.message}`;
-        continue;
-      }
-
-      if (attempt.ok) {
-        res = attempt;
-        usedModel = model;
-        break;
-      }
-
-      const text = await attempt.text();
-      lastStatus = attempt.status;
-      lastDetail = `${model}: ${readGoogleError(text) || text.slice(0, 300)}`;
-
-      // Not a fallthrough-worthy failure — stop and report it.
-      if (!FALLTHROUGH.has(attempt.status)) break;
-    }
-
-    if (!res) {
-      const rateLimited = lastStatus === 429;
+    if (!result.ok) {
+      const rateLimited = result.status === 429;
+      const timedOut = result.status === 504;
       return NextResponse.json(
         {
           error: rateLimited
             ? "The AI design service is rate limited right now. Wait a moment and try again."
-            : "The AI design service could not be reached.",
-          detail: lastDetail.slice(0, 400),
-          triedModels: MODEL_CHAIN,
+            : timedOut
+              ? "The AI design service took too long to respond. Please try again."
+              : "The AI design service could not be reached.",
+          detail: result.detail.slice(0, 400),
+          triedModels: modelChain(),
+          elapsedMs: Date.now() - started,
         },
-        { status: rateLimited ? 429 : 502 }
+        { status: rateLimited ? 429 : timedOut ? 504 : 502 }
       );
     }
 
-    const data = await res.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ?? "";
+    const data = result.data;
+    const usedModel = result.model;
+    const candidate = data?.candidates?.[0];
+    const raw = candidate?.content?.parts?.map((p) => p.text).join("") ?? "";
 
-    let parsed;
-    try {
-      parsed = JSON.parse(
-        raw.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim()
-      );
-    } catch {
-      parsed = { reply: raw || "I couldn't parse that — could you rephrase?", config: null };
-    }
+    // parseModelJson also rescues a response cut off mid-object, so a
+    // truncated design edit still applies instead of being dropped.
+    const parsed = parseModelJson(raw) || {
+      reply:
+        candidate?.finishReason === "MAX_TOKENS"
+          ? "That was a bit long for me to finish — could you ask for one change at a time?"
+          : "I couldn't parse that — could you rephrase?",
+      config: null,
+    };
 
     return NextResponse.json({ ...parsed, model: usedModel });
   } catch (err) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
@@ -17,7 +17,16 @@ export default function AuthForm({ mode }) {
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
+  const [redirect, setRedirect] = useState("/dashboard");
   const router = useRouter();
+
+  // Read once on mount so a link like /login?redirect=/create%3Ftemplate%3D...
+  // sends the person back to what they were doing (e.g. picking a template
+  // from the landing page) instead of always dropping them on /dashboard.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("redirect");
+    if (p && p.startsWith("/")) setRedirect(p);
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -32,14 +41,14 @@ export default function AuthForm({ mode }) {
         if (error) throw error;
         if (data.session) {
           if (name) await supabase.from("profiles").update({ full_name: name }).eq("id", data.user.id);
-          router.push("/dashboard");
+          router.push(redirect);
         } else {
           setOk("Account created. Please confirm your email, then sign in.");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
         if (error) throw error;
-        router.push("/dashboard");
+        router.push(redirect);
       }
     } catch (ex) {
       setErr(ex.message || "Something went wrong.");

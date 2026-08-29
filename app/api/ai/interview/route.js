@@ -15,8 +15,8 @@ import { generate, readKey } from "@/lib/ai/gemini";
    always answer with JSON of our own. */
 export const runtime = "nodejs";
 export const maxDuration = 60;
-const MAX_MS = 45000;
-const PER_CALL_MS = 20000;
+const MAX_MS = 50000;
+const PER_CALL_MS = 25000;
 
 /* ── Structured output schema ──────────────────────────────────
    Every writable slot is declared explicitly. Gemini's structured
@@ -145,18 +145,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "No message to send." }, { status: 400 });
     }
 
-    const payload = ({ withSchema, withThinking }) => JSON.stringify({
+    /* Thinking is switched off deliberately. Flash models reason by default,
+       and with this system prompt plus the response schema that reasoning
+       took longer than the request budget — the "timed out after 20s" we
+       were seeing. The field name differs by model family, so lib/ai/gemini
+       walks the ladder and remembers which one this model accepted. */
+    const payload = ({ withSchema, thinkingMode }) => JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt({ eventType: activeType, draft, missing, today }) }] },
       contents,
       generationConfig: {
         temperature: 0.65,
-        // Gemini 3 models think by default at "medium", and thinking tokens
-        // are charged against maxOutputTokens. At 1200 the model spent its
-        // budget reasoning and the JSON was truncated mid-key. Headroom plus
-        // minimal thinking — this is structured extraction, not analysis.
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
-        ...(withThinking ? { thinkingLevel: "minimal" } : {}),
+        ...(thinkingMode === "level" ? { thinkingLevel: "minimal" } : {}),
+        ...(thinkingMode === "budget" ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         ...(withSchema ? { responseSchema: RESPONSE_SCHEMA } : {}),
       },
     });

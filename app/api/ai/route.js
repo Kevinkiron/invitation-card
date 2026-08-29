@@ -7,8 +7,8 @@ import { generate, modelChain, readKey } from "@/lib/ai/gemini";
    and one per-instance memory of what actually works. */
 export const runtime = "nodejs";
 export const maxDuration = 60;
-const MAX_MS = 45000;
-const PER_CALL_MS = 20000;
+const MAX_MS = 50000;
+const PER_CALL_MS = 25000;
 
 const SYSTEM = `You are an expert designer of Indian wedding invitations working inside a design tool.
 The user describes a change in plain language; you return an updated design configuration.
@@ -54,7 +54,7 @@ export async function POST(req) {
       );
     }
 
-    const makeBody = (withThinking) => JSON.stringify({
+    const makeBody = ({ withSchema, thinkingMode }) => JSON.stringify({
       systemInstruction: {
         parts: [{ text: `${SYSTEM}\n\nCurrent configuration: ${JSON.stringify(config)}` }],
       },
@@ -66,14 +66,15 @@ export async function POST(req) {
         // before it closed. Headroom plus minimal thinking.
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
-        ...(withThinking ? { thinkingLevel: "minimal" } : {}),
+        ...(thinkingMode === "level" ? { thinkingLevel: "minimal" } : {}),
+        ...(thinkingMode === "budget" ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     });
 
     const started = Date.now();
     const result = await generate({
       key,
-      buildBody: ({ withThinking }) => makeBody(withThinking),
+      buildBody: makeBody,
       deadlineMs: MAX_MS,
       perCallMs: PER_CALL_MS,
     });

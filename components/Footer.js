@@ -12,7 +12,7 @@ export default function Footer() {
           <div style={{ maxWidth: 320 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
               <Logo size={30} />
-              <span className="display" style={{ fontSize: 20 }}>Coderpace Invites</span>
+              <span className="display" style={{ fontSize: 20 }}>Welcvm Invites</span>
             </div>
             <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.7, margin: 0 }}>
               Digital wedding invitations for Indian celebrations — from Roka to Griha Pravesh,
@@ -31,7 +31,7 @@ export default function Footer() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: C.muted }}>
-          <span>© {new Date().getFullYear()} Coderpace. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
           <span>Hindi · Tamil · Telugu · Marathi · Bengali · English</span>
         </div>
       </div>

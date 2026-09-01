@@ -40,7 +40,7 @@ export default function Nav() {
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <Logo />
           <span style={{ lineHeight: 1 }}>
-            <span className="display" style={{ fontSize: 21, letterSpacing: ".015em", display: "block" }}>Coderpace</span>
+            <span className="display" style={{ fontSize: 21, letterSpacing: ".015em", display: "block" }}>Welcvm</span>
             <span style={{ fontSize: 8.5, letterSpacing: ".3em", textTransform: "uppercase", color: C.muted, display: "block", marginTop: 3 }}>
               Invites
             </span>

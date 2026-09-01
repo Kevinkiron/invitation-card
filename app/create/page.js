@@ -9,6 +9,7 @@ import {
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import InvitationRenderer from "@/components/InvitationRenderer";
+import TokenInvite from "@/components/TokenInvite";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
@@ -16,6 +17,15 @@ import { C, PLANS, money } from "@/lib/theme";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
+
+/* Perceived luminance — decides whether the phone status bar should be
+   light or dark against whatever background the AI chose. */
+function isDark(hex) {
+  const h = String(hex || "").replace("#", "");
+  if (h.length < 6) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
+}
 
 const OPENING = "Hello — I'll build your invitation with you. It'll fill in on the right as we talk.\n\nWhat are you celebrating?";
 
@@ -31,6 +41,9 @@ export default function CreatePage() {
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
   const [templateReason, setTemplateReason] = useState("");
+  // v2: the AI writes the design itself, as tokens. Empty until it does.
+  const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
+  const generative = Boolean(tokens?.design?.palette?.bg);
   const [publishing, setPublishing] = useState(false);
   const [plan, setPlan] = useState("STANDARD");
 
@@ -72,13 +85,13 @@ export default function CreatePage() {
     setErr("");
 
     try {
-      const res = await fetch("/api/ai/interview", {
+      const res = await fetch("/api/ai/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages,
-          draft,
-          eventType: draft.eventType,
+          tokens,
+          turnCount: messages.filter((m) => m.role === "user").length,
         }),
       });
       /* Read as text first. A failure that never reached our route — a
@@ -106,11 +119,11 @@ export default function CreatePage() {
         return;
       }
 
-      // The server returns the validated draft — we never merge blindly.
-      setDraft(data.draft || draft);
+      // The server returns sanitised tokens — we never merge blindly.
+      if (data.tokens) setTokens(data.tokens);
+      if (data.eventKind) setDraft((d) => ({ ...d, eventType: data.eventKind }));
       setProgress(data.progress ?? 0);
       setDone(Boolean(data.done));
-      if (data.templateReason) setTemplateReason(data.templateReason);
 
       const say = [data.reply, data.askNext].filter(Boolean).join("\n\n");
       setMessages((m) => [...m, { role: "assistant", content: say || "Got it." }]);
@@ -317,14 +330,20 @@ export default function CreatePage() {
               <PhoneFrame
                 width={296}
                 height={604}
-                statusColor={["#0B0A0E", "#120A0D"].includes(activeTemplate.theme.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+                statusColor={generative
+                  ? (isDark(tokens.design.palette.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)")
+                  : (["#0B0A0E", "#120A0D"].includes(activeTemplate.theme.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)")}
                 label="Live invitation preview"
               >
-                <InvitationRenderer
-                  templateId={templateSlug}
-                  mode="editor"
-                  invitationData={invitation}
-                />
+                {generative ? (
+                  <TokenInvite tokens={tokens} />
+                ) : (
+                  <InvitationRenderer
+                    templateId={templateSlug}
+                    mode="editor"
+                    invitationData={invitation}
+                  />
+                )}
               </PhoneFrame>
             </div>
 
@@ -332,8 +351,14 @@ export default function CreatePage() {
               <div style={{ fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", color: C.muted, fontWeight: 800, marginBottom: 9 }}>
                 Design
               </div>
+              {generative && (
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.7 }}>
+                  Designed for your event as you talk — no template. Say “warmer”,
+                  “less pink” or “bigger names” and it will change.
+                </div>
+              )}
               <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginBottom: 10 }}>
-                {TEMPLATES.map((t) => {
+                {!generative && TEMPLATES.map((t) => {
                   const on = t.slug === templateSlug;
                   return (
                     <button

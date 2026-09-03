@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import TemplateRenderer from "@/components/TemplateRenderer";
+import TemplateRenderer, { paletteOf } from "@/components/TemplateRenderer";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Reveal, Loading, StatusTag, Counter, Empty, Petals } from "@/components/ui";
@@ -116,7 +116,7 @@ export default function ManagePage() {
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap", marginBottom: 30 }}>
               <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                <div style={{ width: 54, height: 54, borderRadius: 15, background: `linear-gradient(140deg, ${inv.design_config?.palette?.[0] || C.maroon}, ${inv.design_config?.palette?.[1] || C.gold})`, flexShrink: 0 }} />
+                <div style={{ width: 54, height: 54, borderRadius: 15, background: `linear-gradient(140deg, ${paletteOf(inv.design_config, [C.maroon, C.gold])[0]}, ${paletteOf(inv.design_config, [C.maroon, C.gold])[1]})`, flexShrink: 0 }} />
                 <div>
                   <h1 className="display h-lg" style={{ fontSize: 36, margin: "0 0 8px" }}>{inv.title}</h1>
                   <StatusTag status={inv.status} />

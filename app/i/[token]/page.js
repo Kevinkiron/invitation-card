@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, X, Send, Loader2, Heart, CalendarPlus } from "lucide-react";
-import TemplateRenderer from "@/components/TemplateRenderer";
+import TemplateRenderer, { paletteOf } from "@/components/TemplateRenderer";
 import { supabase } from "@/lib/supabase";
 import { Loading, Empty, Reveal } from "@/components/ui";
 import { C } from "@/lib/theme";
@@ -80,12 +80,17 @@ export default function GuestPage() {
   if (loading) return <Loading label="Opening your invitation…" />;
   if (err) return <Empty title={err} sub="Please check the link you were sent, or ask the host to resend it." />;
 
-  const p = inv?.design_config?.palette || [C.maroon, C.gold, C.ivory];
+  /* [heading, accent, background, ink, muted, surface] — taken from the
+     design itself so the RSVP block below the invitation is part of the
+     same object, not a cream form stapled to a black poster. */
+  const p = paletteOf(inv?.design_config, [C.maroon, C.gold, C.ivory, C.ink, C.muted, "#fff"]);
+  const ink = p[3] || C.ink;
+  const muted = p[4] || C.muted;
   const anyAnswered = Object.values(resp).some((r) => r.status !== "pending");
 
   return (
-    <div style={{ background: "rgba(140,123,112,.08)", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 500, margin: "0 auto", background: "#fff", minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
+    <div style={{ background: p[2], minHeight: "100vh" }}>
+      <div style={{ maxWidth: 500, margin: "0 auto", background: p[2], minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
         <div style={{ animation: "msgIn 1s var(--ease) both" }}>
           <TemplateRenderer cfg={inv?.design_config} events={events} guestName={guest?.name} />
         </div>
@@ -97,7 +102,7 @@ export default function GuestPage() {
             <div className="display" style={{ fontSize: 26, textAlign: "center", marginBottom: 8, color: p[0] }}>
               Will you join us?
             </div>
-            <p style={{ textAlign: "center", color: C.muted, fontSize: 13.5, marginBottom: 24, lineHeight: 1.6 }}>
+            <p style={{ textAlign: "center", color: muted, fontSize: 13.5, marginBottom: 24, lineHeight: 1.6 }}>
               Please respond for each function so we can plan the seating.
             </p>
 
@@ -105,8 +110,8 @@ export default function GuestPage() {
               const r = resp[ev.id] || {};
               return (
                 <Reveal key={ev.id} delay={i * 70}>
-                  <div className="card" style={{ marginBottom: 14, padding: 22 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>{ev.name}</div>
+                  <div className="card" style={{ marginBottom: 14, padding: 22, background: p[5] || "#fff", borderColor: "rgba(0,0,0,.08)" }}>
+                    <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14, color: ink }}>{ev.name}</div>
                     <div style={{ display: "flex", gap: 10 }}>
                       <button
                         className={`btn btn-sm ${r.status === "accepted" ? "btn-primary" : "btn-ghost"}`}
@@ -147,7 +152,7 @@ export default function GuestPage() {
               {sending ? <><Loader2 size={16} className="spin" /> Sending…</> : <>Send my response <Send size={15} /></>}
             </button>
 
-            <p style={{ textAlign: "center", fontSize: 11.5, color: C.muted, marginTop: 18 }}>
+            <p style={{ textAlign: "center", fontSize: 11.5, color: muted, marginTop: 18 }}>
               You can reopen this link and change your answer any time.
             </p>
           </div>
@@ -167,7 +172,7 @@ export default function GuestPage() {
             <div className="display" style={{ fontSize: 30, marginBottom: 12, color: p[0] }}>
               Thank you, {guest.name}
             </div>
-            <p style={{ color: C.muted, fontSize: 15, lineHeight: 1.7, maxWidth: 320, margin: "0 auto 24px" }}>
+            <p style={{ color: muted, fontSize: 15, lineHeight: 1.7, maxWidth: 320, margin: "0 auto 24px" }}>
               Your response has been recorded. We can't wait to celebrate with you.
             </p>
             <button className="btn btn-ghost btn-sm" onClick={() => setDone(false)}>

@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
-import InvitationRenderer from "@/components/InvitationRenderer";
 import TokenInvite from "@/components/TokenInvite";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -43,7 +42,7 @@ export default function CreatePage() {
   const [templateReason, setTemplateReason] = useState("");
   // v2: the AI writes the design itself, as tokens. Empty until it does.
   const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
-  const generative = Boolean(tokens?.design?.palette?.bg);
+  const generative = Boolean(tokens?.designed);
   const [publishing, setPublishing] = useState(false);
   const [plan, setPlan] = useState("STANDARD");
 
@@ -138,12 +137,17 @@ export default function CreatePage() {
     setPublishing(true);
     setErr("");
     try {
-      const cfg = draftToConfig(draft, templateSlug);
+      /* v2 stores the design itself. The guest page renders these with the
+         same lib/design/renderer used in the preview, so what they approve
+         is exactly what guests see. */
+      const cfg = generative
+        ? { v: 2, tokens, eventKind: tokens.eventKind || null }
+        : draftToConfig(draft, templateSlug);
       const { data: inv, error } = await supabase
         .from("invitations")
         .insert({
           owner_id: session.user.id,
-          title: cfg.headline,
+          title: (generative ? tokens.content?.headline : cfg.headline) || "Invitation",
           design_config: cfg,
           status: "published",
           plan,
@@ -330,62 +334,35 @@ export default function CreatePage() {
               <PhoneFrame
                 width={296}
                 height={604}
-                statusColor={generative
-                  ? (isDark(tokens.design.palette.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)")
-                  : (["#0B0A0E", "#120A0D"].includes(activeTemplate.theme.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)")}
+                statusColor={generative && isDark(tokens.design.palette.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
                 label="Live invitation preview"
               >
                 {generative ? (
                   <TokenInvite tokens={tokens} />
                 ) : (
-                  <InvitationRenderer
-                    templateId={templateSlug}
-                    mode="editor"
-                    invitationData={invitation}
-                  />
+                  /* Nothing is designed until the user says something. Showing a
+                     stock invitation here was the single most misleading thing on
+                     the page — it implied a template they would be editing. */
+                  <div style={{
+                    height: "100%", display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: 14,
+                    padding: 30, textAlign: "center", background: "#faf7f2",
+                  }}>
+                    <Sparkles size={22} style={{ color: C.gold, opacity: .8 }} />
+                    <div style={{ fontFamily: "inherit", fontSize: 13, lineHeight: 1.7, color: C.muted }}>
+                      Your invitation appears here,<br />designed around your answers.
+                    </div>
+                  </div>
                 )}
               </PhoneFrame>
             </div>
 
             <div style={{ marginTop: 18, textAlign: "center" }}>
-              <div style={{ fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", color: C.muted, fontWeight: 800, marginBottom: 9 }}>
-                Design
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, maxWidth: 300, margin: "0 auto" }}>
+                {generative
+                  ? "Designed for your event as you talk. Say \u201cwarmer\u201d, \u201cless pink\u201d or \u201cbigger names\u201d and it will change."
+                  : "No templates \u2014 the design is written for your event once you describe it."}
               </div>
-              {generative && (
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.7 }}>
-                  Designed for your event as you talk — no template. Say “warmer”,
-                  “less pink” or “bigger names” and it will change.
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginBottom: 10 }}>
-                {!generative && TEMPLATES.map((t) => {
-                  const on = t.slug === templateSlug;
-                  return (
-                    <button
-                      key={t.slug}
-                      onClick={() => setDraft((d) => ({ ...d, templateSlug: t.slug }))}
-                      title={t.name}
-                      aria-label={t.name}
-                      aria-pressed={on}
-                      style={{
-                        cursor: "pointer", padding: "6px 11px", borderRadius: 999,
-                        fontSize: 11, fontWeight: 700,
-                        border: `1px solid ${on ? C.maroon : C.line}`,
-                        background: on ? C.maroon : "#fff",
-                        color: on ? C.ivory : C.muted,
-                        fontFamily: "inherit", transition: "all .3s",
-                      }}
-                    >
-                      {t.name}
-                    </button>
-                  );
-                })}
-              </div>
-              {templateReason && (
-                <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.6, maxWidth: 300, margin: "0 auto" }}>
-                  {templateReason}
-                </p>
-              )}
             </div>
           </aside>
         </div>

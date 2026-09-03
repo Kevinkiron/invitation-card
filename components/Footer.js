@@ -15,13 +15,13 @@ export default function Footer() {
               <span className="display" style={{ fontSize: 20 }}>Welcvm Invites</span>
             </div>
             <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.7, margin: 0 }}>
-              Digital wedding invitations for Indian celebrations — from Roka to Griha Pravesh,
-              delivered to every guest on WhatsApp.
+              Digital invitations that design themselves — weddings, engagements, birthdays,
+              concerts and conferences, shared as one link.
             </p>
           </div>
 
           <div style={{ display: "flex", gap: 60, flexWrap: "wrap" }}>
-            <FootCol title="Product" links={[["Features", "/#features"], ["Pricing", "/#pricing"], ["Get started", "/signup"]]} />
+            <FootCol title="Product" links={[["Events", "/#events"], ["How it works", "/#how"], ["Create invitation", "/create"]]} />
             <FootCol title="Account" links={[["Sign in", "/login"], ["Dashboard", "/dashboard"]]} />
           </div>
         </div>
@@ -32,7 +32,7 @@ export default function Footer() {
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: C.muted }}>
           <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
-          <span>Hindi · Tamil · Telugu · Marathi · Bengali · English</span>
+          <span>Invitations, designed for you · Kerala, India</span>
         </div>
       </div>
     </footer>

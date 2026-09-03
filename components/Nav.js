@@ -50,12 +50,15 @@ export default function Nav() {
         <nav className="nav-desk" style={{ display: "flex", alignItems: "center", gap: 24, fontSize: 14.5, fontWeight: 600 }}>
           {!session ? (
             <>
-              <Link href="/templates" style={{ color: C.muted }}>Templates</Link>
-              <a href="/#features" style={{ color: C.muted }}>Features</a>
-              <a href="/#pricing" style={{ color: C.muted }}>Pricing</a>
+              {/* No "Templates" link any more — the product no longer has
+                  templates, and advertising a gallery undercuts the one
+                  thing that makes it different. */}
+              <a href="/#events" style={{ color: C.muted }}>Events</a>
+              <a href="/#how" style={{ color: C.muted }}>How it works</a>
+              <a href="/#share" style={{ color: C.muted }}>Sharing</a>
               <Link href="/login" style={{ color: C.ink }}>Sign in</Link>
-              <Link href="/signup" className="btn btn-primary btn-sm">
-                Start free <ArrowRight size={14} />
+              <Link href="/create" className="btn btn-primary btn-sm">
+                Create invitation <ArrowRight size={14} />
               </Link>
             </>
           ) : (
@@ -84,11 +87,11 @@ export default function Nav() {
         <div style={{ borderTop: `1px solid ${C.line}`, background: "rgba(253,246,234,.97)", padding: "18px 28px", display: "flex", flexDirection: "column", gap: 16, fontWeight: 600 }}>
           {!session ? (
             <>
-              <Link href="/templates" onClick={() => setOpen(false)}>Templates</Link>
-              <a href="/#features" onClick={() => setOpen(false)}>Features</a>
-              <a href="/#pricing" onClick={() => setOpen(false)}>Pricing</a>
+              <a href="/#events" onClick={() => setOpen(false)}>Events</a>
+              <a href="/#how" onClick={() => setOpen(false)}>How it works</a>
+              <a href="/#share" onClick={() => setOpen(false)}>Sharing</a>
               <Link href="/login" onClick={() => setOpen(false)}>Sign in</Link>
-              <Link href="/signup" onClick={() => setOpen(false)} className="btn btn-primary btn-sm" style={{ alignSelf: "flex-start" }}>Start free</Link>
+              <Link href="/create" onClick={() => setOpen(false)} className="btn btn-primary btn-sm" style={{ alignSelf: "flex-start" }}>Create invitation</Link>
             </>
           ) : (
             <>

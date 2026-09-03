@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
-import { buildSystemPrompt } from "@/lib/ai/design-prompt";
-import { DESIGN_SCHEMA, applyPatch } from "@/lib/design/tokens";
+import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
+import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
@@ -109,10 +109,25 @@ export async function POST(req) {
 
     const patch = r.data || {};
 
-    // The model proposes; applyPatch decides. Anything off-vocabulary,
-    // any bad colour, any unsafe link is dropped before it can reach
-    // the renderer.
-    const next = applyPatch(incoming, patch);
+    /* The model proposes; applyPatch decides. Anything off-vocabulary, any
+       bad colour, any unsafe link is dropped before it can reach the
+       renderer.
+
+       One extra step first: on the turn we learn what kind of event this
+       is, seed the design from that event family BEFORE applying the
+       model's patch. Models frequently send a palette and forget the
+       frame and motif, and a half-specified design would otherwise
+       inherit the generic default — which is how a concert came out with
+       a wedding's arch and botanical leaves. Seed first, model wins. */
+    const kind = patch.eventKind || incoming.eventKind;
+    let base = incoming;
+    if (kind && !incoming.designed) {
+      base = { ...incoming, design: { ...seedDesignFor(kind), ...(incoming.design || {}) } };
+    }
+
+    const next = applyPatch(base, patch);
+    // Seeding alone is not the model designing; only a real patch counts.
+    next.designed = Boolean(incoming.designed) || touchedDesign(patch.design || {}) || Boolean(kind);
 
     const askNext = typeof patch.askNext === "string" ? patch.askNext.trim() : "";
     const reply = dedupeReply(String(patch.reply || "").trim(), askNext);

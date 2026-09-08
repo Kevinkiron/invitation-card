@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Logo } from "./Nav";
+import Wordmark from "./Wordmark";
 import { C } from "@/lib/theme";
 
 export default function Footer() {
@@ -10,9 +10,11 @@ export default function Footer() {
       <div className="wrap" style={{ padding: "54px 28px 34px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 40, flexWrap: "wrap", marginBottom: 36 }}>
           <div style={{ maxWidth: 320 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
-              <Logo size={30} />
-              <span className="display" style={{ fontSize: 20 }}>Welcvm Invites</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 14 }}>
+              <Wordmark size={24} />
+              <span style={{ fontSize: 8.5, letterSpacing: ".3em", textTransform: "uppercase", color: C.muted }}>
+                Invites
+              </span>
             </div>
             <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.7, margin: 0 }}>
               Digital invitations that design themselves — weddings, engagements, birthdays,

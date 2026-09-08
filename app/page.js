@@ -3,6 +3,8 @@ import { ArrowRight, Check, Church, Gem, Cake, House, Star, Mic, Code } from "lu
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ShowcasePhone from "@/components/ShowcasePhone";
+import InvitationWall from "@/components/InvitationWall";
+import { Reveal } from "@/components/ui";
 import { EVENTS, cardMotif, readableOn } from "@/lib/design/showcase";
 import "./landing.css";
 
@@ -91,11 +93,13 @@ export default function Home() {
         {/* ── what are you celebrating ────────────────────────────── */}
         <section className="w-blk" id="events">
           <div className="wrap">
-            <div className="w-eyebrow">Start here</div>
-            <h2 className="w-h2">What are you <em>celebrating?</em></h2>
-            <p className="w-lede">
-              Pick one and start talking. The design begins before you have even given a name.
-            </p>
+            <Reveal>
+              <div className="w-eyebrow">Start here</div>
+              <h2 className="w-h2">What are you <em>celebrating?</em></h2>
+              <p className="w-lede">
+                Pick one and start talking. The design begins before you have even given a name.
+              </p>
+            </Reveal>
 
             <div className="w-egrid">
               {EVENTS.map((e) => {
@@ -121,20 +125,40 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── the wall ────────────────────────────────────────────
+            Twelve invitations, all drawn live by the same renderer. The
+            strongest argument on the page, and the only one a template
+            library cannot answer. */}
+        <section className="w-blk w-wallsec" id="wall">
+          <div className="wrap">
+            <Reveal>
+              <div className="w-eyebrow">Made, not chosen</div>
+              <h2 className="w-h2">None of these <em>existed yesterday</em></h2>
+              <p className="w-lede">
+                Every one was drawn by the same designer that will draw yours — from a
+                sentence, in a few minutes.
+              </p>
+            </Reveal>
+          </div>
+          <InvitationWall />
+        </section>
+
         {/* ── how it works ────────────────────────────────────────── */}
         <section className="w-blk w-steps" id="how">
           <div className="wrap" style={{ position: "relative", zIndex: 2 }}>
-            <div className="w-eyebrow">Four steps</div>
-            <h2 className="w-h2">From a sentence to a <em>shareable link</em></h2>
-            <p className="w-lede">No stress. No learning. Nothing to design.</p>
+            <Reveal>
+              <div className="w-eyebrow">Four steps</div>
+              <h2 className="w-h2">From a sentence to a <em>shareable link</em></h2>
+              <p className="w-lede">No stress. No learning. Nothing to design.</p>
+            </Reveal>
 
             <div className="w-stepgrid">
               {STEPS.map(([title, body, key], i) => (
-                <div className={key ? "w-step key" : "w-step"} key={title}>
+                <Reveal key={title} delay={i * 90} className={key ? "w-step key" : "w-step"}>
                   <div className="w-step-n">{i + 1}</div>
                   <h4>{title}</h4>
                   <p>{body}</p>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -180,6 +204,7 @@ export default function Home() {
         {/* ── final ───────────────────────────────────────────────── */}
         <section className="w-blk w-final">
           <div className="wrap">
+            <div className="w-seal" style={{ marginBottom: 34 }}><i /><b>&#10047;</b><i /></div>
             <div className="w-eyebrow">Your turn</div>
             <h2 className="w-h2">Start with <em>one sentence.</em></h2>
             <p className="w-lede">

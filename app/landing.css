@@ -202,3 +202,98 @@
   .w-stage { transition-duration: .01ms; }
   .w-ecard { transition-duration: .01ms; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PREMIUM LAYER
+   Motion, the invitation wall, and the brand wordmark.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── brand ── */
+.w-page { --brand-ink: #4a443c; --brand-heart: #de6b5a; }
+
+/* ── scroll reveal ──
+   components/ui.js `Reveal` toggles `.in`. globals.css already styles
+   `.reveal`, but the landing page wants a longer, softer travel. */
+.w-page .reveal { opacity: 0; transform: translateY(26px); transition: opacity .95s var(--ease, cubic-bezier(.19,1,.22,1)), transform .95s var(--ease, cubic-bezier(.19,1,.22,1)); }
+.w-page .reveal.in { opacity: 1; transform: none; }
+
+/* ── a gold sheen that crosses the headline once, on load ── */
+.w-h1 em {
+  background: linear-gradient(100deg, var(--w-gold) 0%, #f0d9a0 42%, var(--w-gold) 62%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: w-sheen 4.6s cubic-bezier(.4,0,.2,1) .5s both;
+}
+@keyframes w-sheen { from { background-position: 190% 0 } to { background-position: -40% 0 } }
+
+/* ── hero entrance ── */
+.w-hero > .wrap > div:first-child > * { animation: w-rise .95s var(--ease, cubic-bezier(.19,1,.22,1)) both; }
+.w-hero > .wrap > div:first-child > *:nth-child(1) { animation-delay: .05s }
+.w-hero > .wrap > div:first-child > *:nth-child(2) { animation-delay: .14s }
+.w-hero > .wrap > div:first-child > *:nth-child(3) { animation-delay: .23s }
+.w-hero > .wrap > div:first-child > *:nth-child(4) { animation-delay: .32s }
+.w-hero > .wrap > div:first-child > *:nth-child(5) { animation-delay: .40s }
+@keyframes w-rise { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: none } }
+
+.w-phone { animation: w-phonein 1.5s var(--ease, cubic-bezier(.19,1,.22,1)) .18s both; will-change: transform; }
+@keyframes w-phonein { from { opacity: 0; transform: translateY(42px) rotate(-2.2deg) scale(.95) } to { opacity: 1; transform: none } }
+
+/* A slow drift, so the hero is never completely still. */
+.w-phonewrap { animation: w-float 9s ease-in-out 2s infinite; }
+@keyframes w-float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
+
+/* ── the invitation wall ── */
+.w-wallsec { background: linear-gradient(180deg, var(--cream), #f7f1e4 55%, var(--cream)); overflow: hidden; }
+.w-wall { margin-top: 46px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+.w-wall::before, .w-wall::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: clamp(50px, 11vw, 170px); z-index: 4; pointer-events: none;
+}
+.w-wall::before { left: 0;  background: linear-gradient(90deg, var(--cream), transparent); }
+.w-wall::after  { right: 0; background: linear-gradient(270deg, var(--cream), transparent); }
+
+.w-wallrow { overflow: hidden; }
+.w-walltrack { display: flex; width: max-content; animation: w-marquee 66s linear infinite; }
+.w-walltrack.rev { animation-duration: 78s; animation-direction: reverse; }
+.w-wall:hover .w-walltrack { animation-play-state: paused; }
+@keyframes w-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+
+.w-wallset { display: flex; gap: 20px; padding-right: 20px; }
+
+.w-wallcard { margin: 0; width: var(--card-w); flex-shrink: 0; }
+.w-wallcard-inner {
+  width: var(--card-w); height: var(--card-h);
+  border-radius: 14px; overflow: hidden; background: #fff;
+  border: 1px solid rgba(201, 146, 47, .22);
+  box-shadow: 0 2px 4px rgba(59,10,42,.05), 0 18px 38px -22px rgba(59,10,42,.5);
+  transition: transform .5s cubic-bezier(.2,.7,.3,1), box-shadow .5s ease;
+}
+.w-wallcard:hover .w-wallcard-inner {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 3px 6px rgba(59,10,42,.06), 0 34px 60px -26px rgba(59,10,42,.62);
+}
+.w-wallcap {
+  margin-top: 11px; text-align: center; font-size: 10.5px; letter-spacing: .17em;
+  text-transform: uppercase; color: var(--w-muted);
+}
+
+/* ── ornamental rule ── */
+.w-seal { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 auto; max-width: 300px; }
+.w-seal i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,146,47,.55)); }
+.w-seal i:last-child { background: linear-gradient(270deg, transparent, rgba(201,146,47,.55)); }
+.w-seal b { color: var(--w-gold); font-size: 11px; font-weight: 400; }
+
+/* ── card polish ── */
+.w-ecard { transition: transform .45s cubic-bezier(.2,.7,.3,1), box-shadow .45s ease, border-color .45s ease; }
+.w-ecard:hover { border-color: rgba(201, 146, 47, .5); }
+
+@media (max-width: 560px) {
+  .w-wall { --card-w: 178px; --card-h: 250px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w-walltrack { animation: none; }
+  .w-phonewrap, .w-phone, .w-h1 em { animation: none; }
+  .w-h1 em { -webkit-text-fill-color: var(--w-gold); color: var(--w-gold); }
+  .w-hero > .wrap > div:first-child > * { animation: none; }
+  .w-page .reveal { opacity: 1; transform: none; }
+}

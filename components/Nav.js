@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Shield, LogOut, ArrowRight, Menu, X } from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import Wordmark, { BrandMark } from "./Wordmark";
 import { C } from "@/lib/theme";
 
 export default function Nav() {
@@ -37,13 +38,10 @@ export default function Nav() {
       }}
     >
       <div className="wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "17px 28px" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <Logo />
-          <span style={{ lineHeight: 1 }}>
-            <span className="display" style={{ fontSize: 21, letterSpacing: ".015em", display: "block" }}>Welcvm</span>
-            <span style={{ fontSize: 8.5, letterSpacing: ".3em", textTransform: "uppercase", color: C.muted, display: "block", marginTop: 3 }}>
-              Invites
-            </span>
+        <Link href="/" aria-label="Welcvm home" style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
+          <Wordmark size={27} />
+          <span style={{ fontSize: 8.5, letterSpacing: ".3em", textTransform: "uppercase", color: C.muted }}>
+            Invites
           </span>
         </Link>
 
@@ -113,22 +111,8 @@ export default function Nav() {
   );
 }
 
+/* Kept as a named export because AuthForm imports it. It is now the
+   square brand mark — the same heart, so sign-in matches the nav. */
 export function Logo({ size = 34 }) {
-  return (
-    <span
-      style={{
-        width: size, height: size, borderRadius: 11,
-        background: `linear-gradient(140deg, ${C.maroon}, ${C.plumDeep})`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: `0 6px 16px -8px ${C.plum}`,
-      }}
-    >
-      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <ellipse key={i} cx="12" cy="6.4" rx="2.1" ry="4.2" stroke={C.marigold} strokeWidth="1.15" transform={`rotate(${i * 45} 12 12)`} />
-        ))}
-        <circle cx="12" cy="12" r="1.7" fill={C.marigold} />
-      </svg>
-    </span>
-  );
+  return <BrandMark size={size} radius={Math.round(size * 0.31)} />;
 }

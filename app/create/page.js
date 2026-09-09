@@ -50,6 +50,35 @@ const EVENT_OPENERS = {
   memorial: "It's a memorial service.",
 };
 
+/* Turn the AI's own schedule into the list guests respond to. The first
+   `cards` section is the order of the day / line-up / programme, which is
+   exactly the set of functions worth an RSVP. If there is no such section,
+   one row stands for the whole event. Dates stay null: those columns are
+   typed, and the readable time already lives in the invitation itself. */
+function rsvpRowsFromTokens(tokens) {
+  const sections = tokens?.content?.sections || [];
+  const cards = sections.find((s) => s.type === "cards" && Array.isArray(s.items) && s.items.length);
+  if (cards) {
+    return cards.items.slice(0, 8).map((it) => ({
+      name: String(it.heading || "Celebration").slice(0, 80),
+      event_date: null,
+      event_time: null,
+      venue: String(it.body || "").slice(0, 160),
+      address: "",
+    }));
+  }
+  const only =
+    tokens?.content?.headline ||
+    (tokens?.eventKind ? tokens.eventKind.replace(/[-_]+/g, " ") : "") ||
+    "Celebration";
+  return [{
+    name: only.charAt(0).toUpperCase() + only.slice(1),
+    event_date: null, event_time: null,
+    venue: String(tokens?.content?.place || "").slice(0, 160),
+    address: "",
+  }];
+}
+
 export default function CreatePage() {
   const { session, ready } = useAuth();
   const router = useRouter();
@@ -243,15 +272,25 @@ export default function CreatePage() {
         .single();
       if (error) throw error;
 
-      const rows = invitation.events.map((e, i) => ({
-        invitation_id: inv.id,
-        name: e.name || "Celebration",
-        event_date: e.date || null,
-        event_time: e.time || null,
-        venue: e.venue || "",
-        address: e.address || "",
-        sort_order: i,
-      }));
+      /* The functions guests RSVP to.
+
+         For v2 these must come from what the AI actually captured. The
+         legacy path runs draftToInvitation(), which falls back to
+         DEMO_INVITATION.events when the draft is empty — and in the
+         generative flow the draft is always empty, so EVERY published
+         invitation was silently given the demo wedding's four functions.
+         An engagement was asking guests to RSVP to a Mehendi. */
+      const rows = generative
+        ? rsvpRowsFromTokens(tokens).map((r, i) => ({ ...r, invitation_id: inv.id, sort_order: i }))
+        : invitation.events.map((e, i) => ({
+            invitation_id: inv.id,
+            name: e.name || "Celebration",
+            event_date: e.date || null,
+            event_time: e.time || null,
+            venue: e.venue || "",
+            address: e.address || "",
+            sort_order: i,
+          }));
       if (rows.length) {
         const { error: e2 } = await supabase.from("invitation_events").insert(rows);
         if (e2) throw e2;

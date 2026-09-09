@@ -34,7 +34,7 @@ export default function Footer() {
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: C.muted }}>
           <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
-          <span>Invitations, designed for you · Kerala, India</span>
+          <span>Invitations, designed for you</span>
         </div>
       </div>
     </footer>

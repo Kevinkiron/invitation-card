@@ -25,9 +25,9 @@ const ICONS = { church: Church, ring: Gem, cake: Cake, home: House, star: Star, 
 
 const TRUTHS = [
   ["No templates", "Every invitation is designed for your event alone"],
-  ["Free to start", "Build the whole thing before you pay anything"],
+  ["Any occasion", "Weddings, naming ceremonies, launches, gigs, memorials"],
   ["Your link, forever", "One address to share, and it keeps working"],
-  ["Built in Kerala", "Made for Indian celebrations, and everything else"],
+  ["Your photos, in place", "They land in the portrait and the gallery, not a folder"],
 ];
 
 const STEPS = [
@@ -53,7 +53,7 @@ export default function Home() {
         <header className="w-hero">
           <div className="wrap w-herogrid">
             <div>
-              <div className="w-pill">✦ <b>Built in Kerala</b> · Free to start</div>
+              <div className="w-pill">✦ <b>No templates.</b> Every invitation designed for its own event</div>
               <h1 className="w-h1">
                 Invitations that
                 <br />
@@ -213,7 +213,7 @@ export default function Home() {
             <Link href="/create" className="btn btn-primary">
               Create your invitation <ArrowRight size={15} />
             </Link>
-            <p className="w-fine">Free to start · No card needed</p>
+            <p className="w-fine">It takes one sentence to begin</p>
           </div>
         </section>
       </main>

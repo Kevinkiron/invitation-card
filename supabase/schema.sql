@@ -245,3 +245,41 @@ insert into templates (name, category, base_config) values
 -- After signing up in the app, run:
 -- update profiles set is_admin = true
 -- where id = (select id from auth.users where email = 'you@example.com');
+
+-- ══════════════════════════════════════════════════════════════════════
+-- PHOTO STORAGE
+-- Guests open an invitation link without signing in, so the images behind
+-- it must be readable by anyone. Writing is restricted to the signed-in
+-- owner's own folder: every object is keyed `<auth.uid()>/<filename>`.
+-- ══════════════════════════════════════════════════════════════════════
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'invite-photos', 'invite-photos', true, 8388608,
+  array['image/jpeg','image/png','image/webp','image/heic','image/heif']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "invite photos are publicly readable" on storage.objects;
+create policy "invite photos are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'invite-photos');
+
+drop policy if exists "owners upload into their own folder" on storage.objects;
+create policy "owners upload into their own folder"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'invite-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "owners manage their own photos" on storage.objects;
+create policy "owners manage their own photos"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'invite-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

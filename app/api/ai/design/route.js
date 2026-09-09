@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
 import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
+import { classifyEvent } from "@/lib/ai/classify";
 import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -76,9 +77,22 @@ export async function POST(req) {
       return NextResponse.json({ error: "No message to send." }, { status: 400 });
     }
 
+    /* What the person actually typed. Used both to classify the event
+       ourselves and to choose which variant within a family this
+       invitation starts from. */
+    const said = convo.filter((m) => m.role === "user").map((m) => m.content).join(" \n");
+
+    /* Do not wait for the model to name the event. It frequently omits
+       `eventKind`, and when it does every event used to fall back to the
+       same cream arch — the "only one template ever shows up" bug. Read
+       the conversation instead; the model's own answer still wins when it
+       gives one. */
+    const guessed = classifyEvent(said);
+    const knownKind = incoming.eventKind || guessed.kind;
+
     const system = buildSystemPrompt({
       tokens: incoming,
-      eventKind: incoming.eventKind,
+      eventKind: knownKind,
       turnCount,
       today: new Date().toISOString().slice(0, 10),
     });
@@ -119,13 +133,17 @@ export async function POST(req) {
        frame and motif, and a half-specified design would otherwise
        inherit the generic default — which is how a concert came out with
        a wedding's arch and botanical leaves. Seed first, model wins. */
-    const kind = patch.eventKind || incoming.eventKind;
+    const kind = patch.eventKind || knownKind;
     let base = incoming;
     if (kind && !incoming.designed) {
-      base = { ...incoming, design: { ...seedDesignFor(kind), ...(incoming.design || {}) } };
+      /* `said` picks which variant within the family, so two weddings
+         described differently do not open on identical colours — and the
+         same conversation always rebuilds the same design. */
+      base = { ...incoming, design: { ...seedDesignFor(kind, said), ...(incoming.design || {}) } };
     }
 
     const next = applyPatch(base, patch);
+    next.eventKind = kind || next.eventKind || null;
     // Seeding alone is not the model designing; only a real patch counts.
     next.designed = Boolean(incoming.designed) || touchedDesign(patch.design || {}) || Boolean(kind);
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight, Send, Loader2, Sparkles, Check, RefreshCw,
-  CreditCard, ShieldCheck, AlertTriangle,
+  CreditCard, ShieldCheck, AlertTriangle, Paperclip, X as XIcon,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
@@ -16,6 +16,7 @@ import { C, PLANS, money } from "@/lib/theme";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
+import { uploadPhotos, withPhotos, MAX_PHOTOS } from "@/lib/photos";
 
 /* Perceived luminance — decides whether the phone status bar should be
    light or dark against whatever background the AI chose. */
@@ -26,7 +27,28 @@ function isDark(hex) {
   return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
 }
 
-const OPENING = "Hello — I'll build your invitation with you. It'll fill in on the right as we talk.\n\nWhat are you celebrating?";
+const OPENING = "Hello — I'll build your invitation with you. It'll fill in on the right as we talk.\n\nWhat are you celebrating? Anything at all: a wedding, a housewarming, a naming ceremony, a launch, a gig, a conference.";
+
+/* Arriving from a card on the landing page should not mean answering a
+   question you have already answered. `?event=` opens the conversation on
+   the person's behalf, so the design moves before they type anything. */
+const EVENT_OPENERS = {
+  wedding: "It's a wedding.",
+  engagement: "It's an engagement.",
+  birthday: "It's a birthday.",
+  housewarming: "It's a housewarming.",
+  naming: "It's a naming ceremony.",
+  baptism: "It's a baptism.",
+  concert: "It's a concert.",
+  conference: "It's a conference.",
+  anniversary: "It's a wedding anniversary.",
+  launch: "It's a product launch.",
+  festival: "It's a music festival.",
+  graduation: "It's a graduation.",
+  retirement: "It's a retirement party.",
+  reunion: "It's a reunion.",
+  memorial: "It's a memorial service.",
+};
 
 export default function CreatePage() {
   const { session, ready } = useAuth();
@@ -46,7 +68,14 @@ export default function CreatePage() {
   const [publishing, setPublishing] = useState(false);
   const [plan, setPlan] = useState("STANDARD");
 
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
   const scrollRef = useRef(null);
+  const autoStarted = useRef(false);
+
+  const photoCount =
+    (tokens.content?.heroPhoto ? 1 : 0) +
+    ((tokens.content?.sections || []).find((x) => x.type === "gallery")?.photos?.length || 0);
 
   useEffect(() => {
     if (ready && !session) {
@@ -64,6 +93,25 @@ export default function CreatePage() {
     }
   }, []);
 
+  /* `?event=` comes from the cards on the landing page. Answer the opening
+     question on their behalf so the design appears before they type — that
+     first transformation is the moment the product sells itself. An
+     unknown slug is still sent verbatim, because the model can design for
+     an event this list has never heard of. */
+  useEffect(() => {
+    if (!ready || !session || autoStarted.current) return;
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("event");
+    if (!raw) return;
+    const slug = raw.toLowerCase().replace(/[^a-z -]/g, "").slice(0, 40).trim();
+    if (!slug) return;
+    autoStarted.current = true;
+    const name = slug.replace(/-/g, " ");
+    const article = /^[aeiou]/i.test(name) ? "an" : "a";
+    send(EVENT_OPENERS[slug] || `It's ${article} ${name}.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, session]);
+
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -73,9 +121,48 @@ export default function CreatePage() {
   const invitation = draftToInvitation(draft);
   const activeTemplate = TEMPLATES.find((t) => t.slug === templateSlug) || TEMPLATES[0];
 
-  async function send(text) {
+  /* Photographs never travel through the model. They go straight to
+     storage; only the resulting URL is written into the tokens, and the
+     AI is simply told how many arrived so it can respond and title the
+     gallery. */
+  async function addPhotos(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length || uploading || busy) return;
+    if (!session?.user?.id) { setErr("Please sign in again before adding photos."); return; }
+
+    const room = MAX_PHOTOS + 1 - photoCount;
+    if (room <= 0) { setErr(`That is the maximum of ${MAX_PHOTOS + 1} photos.`); return; }
+
+    setErr("");
+    setUploading(true);
+    try {
+      const { urls, errors } = await uploadPhotos(files.slice(0, room), session.user.id);
+      if (urls.length) {
+        /* Compute the new tokens and hand them to send() explicitly.
+           setTokens() does not apply until the next render, so a plain
+           send() here would post the pre-upload tokens — and the reply
+           would overwrite state with a version that has no photos. The
+           customer would watch their pictures appear and then vanish. */
+        const next = withPhotos(tokens, urls);
+        setTokens(next);
+        const n = urls.length;
+        send(`[Added ${n} photo${n === 1 ? "" : "s"}]`, next);
+      }
+      if (errors.length) setErr(errors.join(" "));
+      else if (files.length > room) setErr(`Only the first ${room} were added — that is the limit.`);
+    } catch (e) {
+      setErr(e.message || "Those photos could not be uploaded.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function send(text, tokensOverride) {
     const content = (text ?? input).trim();
     if (!content || busy) return;
+    // See addPhotos(): state set in the same tick is not readable yet.
+    const outgoing = tokensOverride || tokens;
 
     const nextMessages = [...messages, { role: "user", content }];
     setMessages(nextMessages);
@@ -89,7 +176,7 @@ export default function CreatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages,
-          tokens,
+          tokens: outgoing,
           turnCount: messages.filter((m) => m.role === "user").length,
         }),
       });
@@ -312,18 +399,51 @@ export default function CreatePage() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 9 }}>
-                <input
-                  placeholder={draft.eventType ? "Type your answer…" : "Tell me what you're celebrating…"}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && send()}
-                  disabled={busy}
-                  style={{ flex: 1, padding: "13px 16px", border: `1px solid ${C.line}`, borderRadius: 13, fontSize: 14.5, outline: "none", fontFamily: "inherit", background: "#fff" }}
-                />
-                <button className="btn btn-primary" onClick={() => send()} disabled={busy || !input.trim()} aria-label="Send">
-                  <Send size={15} />
-                </button>
+              <div>
+                <div style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    multiple
+                    hidden
+                    onChange={(e) => addPhotos(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={busy || uploading}
+                    aria-label="Add photos"
+                    title="Add photos"
+                    style={{ padding: "12px 13px" }}
+                  >
+                    {uploading ? <Loader2 size={16} className="spin" /> : <Paperclip size={16} />}
+                  </button>
+
+                  <input
+                    placeholder={
+                      uploading ? "Uploading your photos…"
+                      : draft.eventType ? "Type your answer…"
+                      : "Tell me what you're celebrating…"
+                    }
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && send()}
+                    disabled={busy || uploading}
+                    style={{ flex: 1, padding: "13px 16px", border: `1px solid ${C.line}`, borderRadius: 13, fontSize: 14.5, outline: "none", fontFamily: "inherit", background: "#fff" }}
+                  />
+                  <button className="btn btn-primary" onClick={() => send()} disabled={busy || uploading || !input.trim()} aria-label="Send">
+                    <Send size={15} />
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
+                  <Paperclip size={11} />
+                  {photoCount
+                    ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added — the first is the portrait at the top.`
+                    : "You can add photos at any time. The first becomes the portrait."}
+                </div>
               </div>
             )}
           </section>

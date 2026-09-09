@@ -70,7 +70,11 @@ export default function ShowcasePhone() {
         .inv-root .hero .place{font-size:9.5px;margin-top:7px}
         .inv-root .hero .kicker{font-size:9px;margin-bottom:9px}
         .inv-root .hero .orn{margin-top:14px}
-        .inv-root .hero .deco{width:${frameless ? 200 : 165}px;height:${frameless ? 200 : 165}px;
+                .inv-root .hero .edge{inset:10px}
+        .inv-root .crest{width:40px;height:40px;margin-bottom:12px}
+        .inv-root .crest span{font-size:13px}
+        .inv-root .scrollcue{display:none}
+.inv-root .hero .deco{width:${frameless ? 200 : 165}px;height:${frameless ? 200 : 165}px;
           opacity:${frameless ? 0.9 : 0.45}}
       `;
       shadow.appendChild(fit);

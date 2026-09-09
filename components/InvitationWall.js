@@ -46,7 +46,10 @@ function fitCss(frameless) {
     .inv-root .hero .subhead{font-size:10px;margin-top:7px}
     .inv-root .hero .place{font-size:6.5px;margin-top:5px}
     .inv-root .hero .orn{margin-top:8px;max-width:120px}
-    .inv-root .hero .deco{width:${frameless ? 150 : 108}px;height:${frameless ? 150 : 108}px;
+        .inv-root .hero .edge{inset:8px}
+    .inv-root .crest{display:none}
+    .inv-root .scrollcue{display:none}
+.inv-root .hero .deco{width:${frameless ? 150 : 108}px;height:${frameless ? 150 : 108}px;
       opacity:${frameless ? 0.85 : 0.4}}
     .inv-root section:not(.hero), .inv-root footer{display:none}
   `;

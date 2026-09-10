@@ -1,4 +1,4 @@
-# Coderpace Invites
+# Welcvm Invites
 
 Digital wedding invitations for Indian celebrations — Roka to Griha Pravesh.
 Design by chatting with Gemini, send every guest a personalised link, track RSVPs live.

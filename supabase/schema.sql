@@ -245,3 +245,45 @@ insert into templates (name, category, base_config) values
 -- After signing up in the app, run:
 -- update profiles set is_admin = true
 -- where id = (select id from auth.users where email = 'you@example.com');
+
+-- ══════════════════════════════════════════════════════════════════════
+-- PHOTO STORAGE
+-- Guests open an invitation link without signing in, so the images behind
+-- it must be readable by anyone. Writing is restricted to the signed-in
+-- owner's own folder: every object is keyed `<auth.uid()>/<filename>`.
+--
+-- The bucket is `invitation-photos`. lib/photos.js must use exactly this
+-- name; when it did not, every upload failed with "Bucket not found".
+-- Safe to re-run: it creates the bucket if missing and updates it if not.
+-- ══════════════════════════════════════════════════════════════════════
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'invitation-photos', 'invitation-photos', true, 8388608,
+  array['image/jpeg','image/png','image/webp','image/heic','image/heif']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "photo_public_read" on storage.objects;
+create policy "photo_public_read"
+  on storage.objects for select
+  using (bucket_id = 'invitation-photos');
+
+drop policy if exists "photo_owner_insert" on storage.objects;
+create policy "photo_owner_insert"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'invitation-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "photo_owner_delete" on storage.objects;
+create policy "photo_owner_delete"
+  on storage.objects for delete
+  using (
+    bucket_id = 'invitation-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

@@ -3,503 +3,549 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight, ArrowLeft, Check, Wand2, Send, Loader2, Calendar,
-  CreditCard, ShieldCheck, Sparkles,
+  ArrowRight, Send, Loader2, Sparkles, Check, RefreshCw,
+  CreditCard, ShieldCheck, AlertTriangle, Paperclip, X as XIcon,
 } from "lucide-react";
 import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
-import InvitePreview from "@/components/InvitePreview";
+import PhoneFrame from "@/components/PhoneFrame";
+import TokenInvite from "@/components/TokenInvite";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { Reveal, Loading, Banner, Petals } from "@/components/ui";
+import { Loading, Banner } from "@/components/ui";
 import { C, PLANS, money } from "@/lib/theme";
+import { TEMPLATES } from "@/lib/templates/registry";
+import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
+import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
+import { uploadPhotos, withPhotos, MAX_PHOTOS } from "@/lib/photos";
 
-const STEPS = ["Functions", "Design", "Details", "Customise", "Publish"];
+/* Perceived luminance — decides whether the phone status bar should be
+   light or dark against whatever background the AI chose. */
+function isDark(hex) {
+  const h = String(hex || "").replace("#", "");
+  if (h.length < 6) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
+}
+
+const OPENING = "Hello — I'll build your invitation with you. It'll fill in on the right as we talk.\n\nWhat are you celebrating? Anything at all: a wedding, a housewarming, a naming ceremony, a launch, a gig, a conference.";
+
+/* Arriving from a card on the landing page should not mean answering a
+   question you have already answered. `?event=` opens the conversation on
+   the person's behalf, so the design moves before they type anything. */
+const EVENT_OPENERS = {
+  wedding: "It's a wedding.",
+  engagement: "It's an engagement.",
+  birthday: "It's a birthday.",
+  housewarming: "It's a housewarming.",
+  naming: "It's a naming ceremony.",
+  baptism: "It's a baptism.",
+  concert: "It's a concert.",
+  conference: "It's a conference.",
+  anniversary: "It's a wedding anniversary.",
+  launch: "It's a product launch.",
+  festival: "It's a music festival.",
+  graduation: "It's a graduation.",
+  retirement: "It's a retirement party.",
+  reunion: "It's a reunion.",
+  memorial: "It's a memorial service.",
+};
+
+/* Turn the AI's own schedule into the list guests respond to. The first
+   `cards` section is the order of the day / line-up / programme, which is
+   exactly the set of functions worth an RSVP. If there is no such section,
+   one row stands for the whole event. Dates stay null: those columns are
+   typed, and the readable time already lives in the invitation itself. */
+function rsvpRowsFromTokens(tokens) {
+  const sections = tokens?.content?.sections || [];
+  const cards = sections.find((s) => s.type === "cards" && Array.isArray(s.items) && s.items.length);
+  if (cards) {
+    return cards.items.slice(0, 8).map((it) => ({
+      name: String(it.heading || "Celebration").slice(0, 80),
+      event_date: null,
+      event_time: null,
+      venue: String(it.body || "").slice(0, 160),
+      address: "",
+    }));
+  }
+  const only =
+    tokens?.content?.headline ||
+    (tokens?.eventKind ? tokens.eventKind.replace(/[-_]+/g, " ") : "") ||
+    "Celebration";
+  return [{
+    name: only.charAt(0).toUpperCase() + only.slice(1),
+    event_date: null, event_time: null,
+    venue: String(tokens?.content?.place || "").slice(0, 160),
+    address: "",
+  }];
+}
 
 export default function CreatePage() {
   const { session, ready } = useAuth();
   const router = useRouter();
 
-  const [step, setStep] = useState(0);
-  const [types, setTypes] = useState([]);
-  const [chosen, setChosen] = useState([]);
-  const [tmpls, setTmpls] = useState([]);
-  const [tmpl, setTmpl] = useState(null);
-  const [names, setNames] = useState("");
-  const [details, setDetails] = useState({});
-  const [cfg, setCfg] = useState(null);
+  const [messages, setMessages] = useState([{ role: "assistant", content: OPENING }]);
+  const [draft, setDraft] = useState(emptyDraft(null));
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [done, setDone] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [templateReason, setTemplateReason] = useState("");
+  // v2: the AI writes the design itself, as tokens. Empty until it does.
+  const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
+  const generative = Boolean(tokens?.designed);
+  const [publishing, setPublishing] = useState(false);
+  const [plan, setPlan] = useState("STANDARD");
+
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const scrollRef = useRef(null);
+  const autoStarted = useRef(false);
+
+  const photoCount =
+    (tokens.content?.heroPhoto ? 1 : 0) +
+    ((tokens.content?.sections || []).find((x) => x.type === "gallery")?.photos?.length || 0);
 
   useEffect(() => {
-    if (ready && !session) router.replace("/login");
+    if (ready && !session) {
+      const qs = typeof window !== "undefined" ? window.location.search : "";
+      router.replace(`/login?redirect=${encodeURIComponent(`/create${qs}`)}`);
+    }
   }, [ready, session, router]);
 
+  // If they arrived from a template card, lock that choice in up front.
   useEffect(() => {
-    supabase.from("event_types").select("*").eq("is_active", true).order("name").then(({ data }) => setTypes(data || []));
-    supabase.from("templates").select("*").eq("is_active", true).order("name").then(({ data }) => setTmpls(data || []));
+    if (typeof window === "undefined") return;
+    const slug = new URLSearchParams(window.location.search).get("template");
+    if (slug && TEMPLATES.some((t) => t.slug === slug)) {
+      setDraft((d) => ({ ...d, templateSlug: slug }));
+    }
   }, []);
 
-  useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
+  /* `?event=` comes from the cards on the landing page. Answer the opening
+     question on their behalf so the design appears before they type — that
+     first transformation is the moment the product sells itself. An
+     unknown slug is still sent verbatim, because the model can design for
+     an event this list has never heard of. */
+  useEffect(() => {
+    if (!ready || !session || autoStarted.current) return;
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("event");
+    if (!raw) return;
+    const slug = raw.toLowerCase().replace(/[^a-z -]/g, "").slice(0, 40).trim();
+    if (!slug) return;
+    autoStarted.current = true;
+    const name = slug.replace(/-/g, " ");
+    const article = /^[aeiou]/i.test(name) ? "an" : "a";
+    send(EVENT_OPENERS[slug] || `It's ${article} ${name}.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, session]);
 
-  const events = chosen.map((id) => {
-    const t = types.find((x) => x.id === id);
-    const d = details[id] || {};
-    return { name: t?.name, event_date: d.date, event_time: d.time, venue: d.venue, address: d.address };
-  });
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
 
-  const publish = async (planKey) => {
-    setBusy(true); setErr("");
+  const templateSlug = draft.templateSlug || TEMPLATES[0].slug;
+  const invitation = draftToInvitation(draft);
+  const activeTemplate = TEMPLATES.find((t) => t.slug === templateSlug) || TEMPLATES[0];
+
+  /* Photographs never travel through the model. They go straight to
+     storage; only the resulting URL is written into the tokens, and the
+     AI is simply told how many arrived so it can respond and title the
+     gallery. */
+  async function addPhotos(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length || uploading || busy) return;
+    if (!session?.user?.id) { setErr("Please sign in again before adding photos."); return; }
+
+    const room = MAX_PHOTOS + 1 - photoCount;
+    if (room <= 0) { setErr(`That is the maximum of ${MAX_PHOTOS + 1} photos.`); return; }
+
+    setErr("");
+    setUploading(true);
     try {
-      const price = PLANS[planKey].price;
+      const { urls, errors } = await uploadPhotos(files.slice(0, room), session.user.id);
+      if (urls.length) {
+        /* Compute the new tokens and hand them to send() explicitly.
+           setTokens() does not apply until the next render, so a plain
+           send() here would post the pre-upload tokens — and the reply
+           would overwrite state with a version that has no photos. The
+           customer would watch their pictures appear and then vanish. */
+        const next = withPhotos(tokens, urls);
+        setTokens(next);
+        const n = urls.length;
+        send(`[Added ${n} photo${n === 1 ? "" : "s"}]`, next);
+      }
+      if (errors.length) setErr(errors.join(" "));
+      else if (files.length > room) setErr(`Only the first ${room} were added — that is the limit.`);
+    } catch (e) {
+      setErr(e.message || "Those photos could not be uploaded.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function send(text, tokensOverride) {
+    const content = (text ?? input).trim();
+    if (!content || busy) return;
+    // See addPhotos(): state set in the same tick is not readable yet.
+    const outgoing = tokensOverride || tokens;
+
+    const nextMessages = [...messages, { role: "user", content }];
+    setMessages(nextMessages);
+    setInput("");
+    setBusy(true);
+    setErr("");
+
+    try {
+      const res = await fetch("/api/ai/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: nextMessages,
+          tokens: outgoing,
+          turnCount: messages.filter((m) => m.role === "user").length,
+        }),
+      });
+      /* Read as text first. A failure that never reached our route — a
+         platform timeout, a cold-start crash — comes back as HTML or plain
+         text, and calling res.json() on it throws
+         `Unexpected token 'A', "An error o"...` which buries the real cause.
+         Parse defensively and show whatever the server actually said. */
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        setErr(
+          `Server error ${res.status}: ${text.slice(0, 200) || "empty response"}. ` +
+          `If this says the deployment failed, the AI call most likely timed out — check /api/ai/models.`
+        );
+        setBusy(false);
+        return;
+      }
+
+      if (!res.ok || !data) {
+        const msg = data?.error || `Request failed (${res.status}).`;
+        setErr(data?.detail ? `${msg} (${data.detail})` : msg);
+        setBusy(false);
+        return;
+      }
+
+      // The server returns sanitised tokens — we never merge blindly.
+      if (data.tokens) setTokens(data.tokens);
+      if (data.eventKind) setDraft((d) => ({ ...d, eventType: data.eventKind }));
+      setProgress(data.progress ?? 0);
+      setDone(Boolean(data.done));
+
+      const say = [data.reply, data.askNext].filter(Boolean).join("\n\n");
+      setMessages((m) => [...m, { role: "assistant", content: say || "Got it." }]);
+    } catch (e) {
+      setErr(e.message || "Could not reach the AI.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function publish() {
+    setPublishing(true);
+    setErr("");
+    try {
+      /* v2 stores the design itself. The guest page renders these with the
+         same lib/design/renderer used in the preview, so what they approve
+         is exactly what guests see. */
+      const cfg = generative
+        ? { v: 2, tokens, eventKind: tokens.eventKind || null }
+        : draftToConfig(draft, templateSlug);
       const { data: inv, error } = await supabase
         .from("invitations")
         .insert({
           owner_id: session.user.id,
-          template_id: tmpl.id,
-          title: names || "Untitled Invitation",
+          title: (generative ? tokens.content?.headline : cfg.headline) || "Invitation",
           design_config: cfg,
           status: "published",
-          plan: planKey,
+          plan,
         })
         .select()
         .single();
       if (error) throw error;
 
-      if (chosen.length) {
-        const rows = chosen.map((id, i) => {
-          const t = types.find((x) => x.id === id);
-          const d = details[id] || {};
-          return {
+      /* The functions guests RSVP to.
+
+         For v2 these must come from what the AI actually captured. The
+         legacy path runs draftToInvitation(), which falls back to
+         DEMO_INVITATION.events when the draft is empty — and in the
+         generative flow the draft is always empty, so EVERY published
+         invitation was silently given the demo wedding's four functions.
+         An engagement was asking guests to RSVP to a Mehendi. */
+      const rows = generative
+        ? rsvpRowsFromTokens(tokens).map((r, i) => ({ ...r, invitation_id: inv.id, sort_order: i }))
+        : invitation.events.map((e, i) => ({
             invitation_id: inv.id,
-            event_type_id: id,
-            name: t?.name || "Event",
-            event_date: d.date || null,
-            event_time: d.time || null,
-            venue: d.venue || "",
-            address: d.address || "",
+            name: e.name || "Celebration",
+            event_date: e.date || null,
+            event_time: e.time || null,
+            venue: e.venue || "",
+            address: e.address || "",
             sort_order: i,
-          };
-        });
+          }));
+      if (rows.length) {
         const { error: e2 } = await supabase.from("invitation_events").insert(rows);
         if (e2) throw e2;
       }
 
       await supabase.from("payments").insert({
-        invitation_id: inv.id, amount: price, currency: "INR",
-        plan: planKey, status: "completed", provider: "demo",
+        invitation_id: inv.id, amount: PLANS[plan].price, currency: "INR",
+        plan, status: "completed", provider: "demo",
       });
 
       router.push(`/manage/${inv.id}`);
     } catch (e) {
-      setErr(e.message || "Could not publish. Please try again.");
-      setBusy(false);
+      setErr(
+        `Could not publish: ${e.message || "unknown error"}. If your Supabase project is paused, restore it and try again — your answers are still here.`
+      );
+      setPublishing(false);
     }
-  };
+  }
 
   if (!ready || !session) return <Loading />;
 
+  const eventType = getEventType(draft.eventType);
+
   return (
     <>
-      <Petals count={8} />
-      <div style={{ position: "relative", zIndex: 2, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        <Nav />
-        <main style={{ flex: 1 }}>
-          <div className="wrap" style={{ maxWidth: 960, padding: "44px 28px" }}>
-            <Progress step={step} />
-            {err && <Banner tone="err">{err}</Banner>}
-            <div key={step} style={{ animation: "msgIn .55s var(--ease) both" }}>
-              {step === 0 && <StepFunctions {...{ types, chosen, setChosen }} next={() => setStep(1)} />}
-              {step === 1 && <StepDesign {...{ tmpls, tmpl, setTmpl, setCfg, names }} back={() => setStep(0)} next={() => setStep(2)} />}
-              {step === 2 && <StepDetails {...{ names, setNames, chosen, types, details, setDetails, setCfg }} back={() => setStep(1)} next={() => setStep(3)} />}
-              {step === 3 && <StepAI {...{ cfg, setCfg, events }} back={() => setStep(2)} next={() => setStep(4)} />}
-              {step === 4 && <StepPublish onPay={publish} busy={busy} back={() => setStep(3)} />}
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    </>
-  );
-}
-
-function Progress({ step }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 44, flexWrap: "wrap" }}>
-      {STEPS.map((s, i) => (
-        <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div
-            style={{
-              display: "flex", alignItems: "center", gap: 9, padding: "9px 17px", borderRadius: 999,
-              background: i === step ? `linear-gradient(140deg, ${C.maroon}, ${C.plum})` : i < step ? "rgba(200,162,74,.18)" : "rgba(140,123,112,.08)",
-              color: i === step ? C.ivory : i < step ? "#7A5A17" : C.muted,
-              fontSize: 13, fontWeight: 700,
-              border: `1px solid ${i === step ? "transparent" : i < step ? "rgba(200,162,74,.3)" : C.line}`,
-              transition: "all .45s var(--ease)",
-            }}
-          >
-            {i < step ? <Check size={13} /> : <span style={{ opacity: 0.65, fontFamily: "'Marcellus',serif" }}>{i + 1}</span>}
-            {s}
-          </div>
-          {i < STEPS.length - 1 && <span style={{ width: 16, height: 1, background: C.line }} />}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Head({ title, sub }) {
-  return (
-    <div style={{ marginBottom: 32 }}>
-      <h1 className="display h-lg" style={{ fontSize: 38, margin: "0 0 10px", lineHeight: 1.14 }}>{title}</h1>
-      {sub && <p style={{ color: C.muted, fontSize: 15.5, lineHeight: 1.65, margin: 0, maxWidth: 560 }}>{sub}</p>}
-    </div>
-  );
-}
-
-/* ── Step 1 ── */
-function StepFunctions({ types, chosen, setChosen, next }) {
-  const toggle = (id) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
-  return (
-    <div>
-      <Head title="Which functions are you hosting?" sub="Select every ceremony — each gets its own date, venue, guest list and RSVP count." />
-      <div className="grid g3" style={{ marginBottom: 36 }}>
-        {types.map((t, i) => {
-          const on = chosen.includes(t.id);
-          return (
-            <Reveal key={t.id} delay={i * 40}>
-              <div
-                onClick={() => toggle(t.id)}
-                className="card"
-                style={{
-                  cursor: "pointer", padding: 22, borderWidth: 2, position: "relative",
-                  borderColor: on ? C.maroon : C.line,
-                  background: on ? "rgba(91,18,38,.04)" : "#fff",
-                  transform: on ? "translateY(-4px)" : "none",
-                  boxShadow: on ? `0 22px 40px -26px ${C.maroon}` : "var(--shadow-sm)",
-                }}
-              >
-                {on && (
-                  <span className="pop" style={{ position: "absolute", top: 16, right: 16, width: 24, height: 24, borderRadius: "50%", background: C.maroon, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Check size={14} color={C.ivory} />
-                  </span>
-                )}
-                <div className="display" style={{ fontSize: 21, marginBottom: 6, paddingRight: 28 }}>{t.name}</div>
-                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{t.description}</div>
-              </div>
-            </Reveal>
-          );
-        })}
-      </div>
-      <button className="btn btn-primary" disabled={!chosen.length} onClick={next}>
-        Continue <ArrowRight size={16} />
-      </button>
-    </div>
-  );
-}
-
-/* ── Step 2 ── */
-function StepDesign({ tmpls, tmpl, setTmpl, setCfg, names, back, next }) {
-  const pick = (t) => {
-    setTmpl(t);
-    setCfg({
-      palette: t.base_config?.palette || [C.maroon, C.gold, C.ivory],
-      font: t.base_config?.font || "serif",
-      motif: t.base_config?.motif || "marigold",
-      headline: names || "Aarav & Diya",
-      subheadline: "request the honour of your presence at their wedding",
-    });
-  };
-  return (
-    <div>
-      <Head title="Choose a starting design" sub="Just a starting point — you'll reshape the colours, motifs and wording by describing them in the next step." />
-      <div className="grid g3" style={{ marginBottom: 36 }}>
-        {tmpls.map((t, i) => {
-          const p = t.base_config?.palette || [C.maroon, C.gold, C.ivory];
-          const on = tmpl?.id === t.id;
-          return (
-            <Reveal key={t.id} delay={i * 55}>
-              <div
-                onClick={() => pick(t)}
-                style={{
-                  cursor: "pointer", borderRadius: 18, overflow: "hidden", background: "#fff",
-                  border: `2px solid ${on ? C.maroon : C.line}`,
-                  transform: on ? "translateY(-6px)" : "none",
-                  boxShadow: on ? `0 28px 50px -30px ${C.maroon}` : "var(--shadow-sm)",
-                  transition: "all .38s var(--ease)",
-                }}
-              >
-                <div style={{ height: 190, overflow: "hidden", borderBottom: `1px solid ${C.line}` }}>
-                  <div style={{ transform: "scale(.62)", transformOrigin: "top center", width: "161%", marginLeft: "-30.5%" }}>
-                    <InvitePreview
-                      cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }}
-                      events={[]}
-                      compact
-                    />
-                  </div>
-                </div>
-                <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{t.name}</div>
-                    <div style={{ fontSize: 10.5, color: C.muted, textTransform: "uppercase", letterSpacing: ".1em", marginTop: 3 }}>
-                      {t.base_config?.motif || t.category}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {p.map((c) => (
-                      <span key={c} style={{ width: 13, height: 13, borderRadius: "50%", background: c, border: `1px solid ${C.line}` }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: 12 }}>
-        <button className="btn btn-ghost" onClick={back}><ArrowLeft size={15} /> Back</button>
-        <button className="btn btn-primary" disabled={!tmpl} onClick={next}>Continue <ArrowRight size={16} /></button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Step 3 ── */
-function StepDetails({ names, setNames, chosen, types, details, setDetails, setCfg, back, next }) {
-  const upd = (id, f, v) => setDetails((p) => ({ ...p, [id]: { ...p[id], [f]: v } }));
-  return (
-    <div>
-      <Head title="Add your details" sub="These appear on the invitation and drive each function's RSVP form." />
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="field" style={{ marginBottom: 0, maxWidth: 460 }}>
-          <label>Couple's names, as they should appear</label>
-          <input value={names} onChange={(e) => setNames(e.target.value)} placeholder="e.g. Aarav & Diya" />
-        </div>
-      </div>
-
-      {chosen.map((id, i) => {
-        const t = types.find((x) => x.id === id);
-        const d = details[id] || {};
-        return (
-          <Reveal key={id} delay={i * 55}>
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(232,145,45,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Calendar size={15} color={C.maroon} />
+      <Nav />
+      <main style={{ background: C.paper, minHeight: "100vh" }}>
+        <div className="ai-wrap">
+          {/* ── Conversation ── */}
+          <section className="ai-chat-col">
+            <header style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(140deg, ${C.maroon}, ${C.plum})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Sparkles size={15} color={C.marigold} />
                 </span>
-                <span className="display" style={{ fontSize: 22 }}>{t?.name}</span>
+                <h1 className="display" style={{ fontSize: 24, margin: 0 }}>Build your invitation</h1>
               </div>
-              <div className="grid g2">
-                <div className="field"><label>Date</label><input type="date" value={d.date || ""} onChange={(e) => upd(id, "date", e.target.value)} /></div>
-                <div className="field"><label>Time</label><input type="time" value={d.time || ""} onChange={(e) => upd(id, "time", e.target.value)} /></div>
-                <div className="field"><label>Venue</label><input value={d.venue || ""} onChange={(e) => upd(id, "venue", e.target.value)} placeholder="Rambagh Palace" /></div>
-                <div className="field"><label>Address</label><input value={d.address || ""} onChange={(e) => upd(id, "address", e.target.value)} placeholder="Bhawani Singh Rd, Jaipur" /></div>
+
+              {/* progress */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(140,123,112,.16)", overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%", width: `${Math.round(progress * 100)}%`,
+                      background: `linear-gradient(90deg, ${C.gold}, ${C.marigold})`,
+                      borderRadius: 999, transition: "width .6s var(--ease)",
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: ".08em", minWidth: 78, textAlign: "right" }}>
+                  {eventType ? `${Math.round(progress * 100)}% · ${eventType.label}` : "Getting started"}
+                </span>
               </div>
-            </div>
-          </Reveal>
-        );
-      })}
+            </header>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <button className="btn btn-ghost" onClick={back}><ArrowLeft size={15} /> Back</button>
-        <button className="btn btn-primary" onClick={() => { setCfg((c) => (c ? { ...c, headline: names || c.headline } : c)); next(); }}>
-          Customise with AI <Wand2 size={16} />
-        </button>
-      </div>
-    </div>
-  );
-}
+            {err && <Banner tone="err">{err}</Banner>}
 
-/* ── Step 4: Gemini chat editing ── */
-function StepAI({ cfg, setCfg, events, back, next }) {
-  const [msgs, setMsgs] = useState([
-    { role: "assistant", content: "Tell me how you'd like this to look. Try “make it peacock teal and gold, more regal”, or “write a warmer welcome line for our elders”." },
-  ]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState(false);
-  const box = useRef(null);
-
-  useEffect(() => { if (box.current) box.current.scrollTop = box.current.scrollHeight; }, [msgs, busy]);
-
-  const send = async (preset) => {
-    const text = (preset || input).trim();
-    if (!text || busy) return;
-    const conv = [...msgs, { role: "user", content: text }];
-    setMsgs(conv); setInput(""); setBusy(true);
-    try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: conv, config: cfg }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (data.config) {
-        setCfg((c) => ({ ...c, ...data.config }));
-        setFlash(true);
-        setTimeout(() => setFlash(false), 750);
-      }
-      setMsgs((m) => [...m, { role: "assistant", content: data.reply || "Updated." }]);
-    } catch (e) {
-      setMsgs((m) => [...m, { role: "assistant", content: `I couldn't apply that — ${e.message}` }]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const presets = ["Peacock teal & gold", "More traditional", "Softer, romantic tone", "Minimal and modern"];
-
-  return (
-    <div>
-      <Head title="Shape it in your own words" sub="Describe the change on the left. Your invitation updates on the right, instantly." />
-
-      <div className="ai-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "start", marginBottom: 34 }}>
-        {/* chat */}
-        <div className="card" style={{ padding: 0, display: "flex", flexDirection: "column", height: 580, overflow: "hidden" }}>
-          <div style={{ padding: "16px 22px", borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "center", gap: 11, fontWeight: 700, fontSize: 15 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(140deg, ${C.marigold}, ${C.gold})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Wand2 size={14} color={C.plumDeep} />
-            </span>
-            Design assistant
-            <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: C.muted }}>
-              Gemini
-            </span>
-          </div>
-
-          <div ref={box} className="scroll-y" style={{ flex: 1, overflowY: "auto", padding: 22, display: "flex", flexDirection: "column", gap: 13 }}>
-            {msgs.map((m, i) => (
-              <div
-                key={i}
-                className="chat-msg"
-                style={{
-                  alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                  background: m.role === "user" ? `linear-gradient(140deg, ${C.maroon}, ${C.plum})` : "rgba(140,123,112,.1)",
-                  color: m.role === "user" ? C.ivory : C.ink,
-                  borderRadius: m.role === "user" ? "18px 18px 5px 18px" : "18px 18px 18px 5px",
-                }}
-              >
-                {m.content}
-              </div>
-            ))}
-            {busy && (
-              <div className="chat-msg" style={{ alignSelf: "flex-start", background: "rgba(140,123,112,.1)", borderRadius: "18px 18px 18px 5px", display: "flex", gap: 5, alignItems: "center" }}>
-                <span className="dot" /><span className="dot" /><span className="dot" />
-              </div>
-            )}
-          </div>
-
-          <div style={{ padding: "10px 16px", borderTop: `1px solid ${C.line}`, display: "flex", gap: 7, flexWrap: "wrap" }}>
-            {presets.map((p) => (
-              <button
-                key={p}
-                onClick={() => send(p)}
-                disabled={busy}
-                style={{ border: `1px solid ${C.line}`, background: "#fff", borderRadius: 999, padding: "7px 13px", fontSize: 12, color: C.muted, fontWeight: 600 }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 9, padding: 16, borderTop: `1px solid ${C.line}` }}>
-            <input
-              placeholder="Describe the change…"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              style={{ flex: 1, padding: "12px 15px", border: `1px solid ${C.line}`, borderRadius: 12, fontSize: 14.5, outline: "none" }}
-            />
-            <button className="btn btn-primary btn-sm" onClick={() => send()} disabled={busy} aria-label="Send">
-              <Send size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* preview */}
-        <div
-          style={{
-            borderRadius: 22, overflow: "hidden", height: 580, background: "#fff",
-            border: `1px solid ${flash ? C.gold : C.line}`,
-            boxShadow: flash ? `0 0 0 6px rgba(200,162,74,.18)` : "var(--shadow-md)",
-            transition: "box-shadow .55s, border-color .55s",
-          }}
-        >
-          <div className="scroll-y" style={{ height: "100%", overflowY: "auto" }}>
-            <InvitePreview cfg={cfg} events={events} />
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 12 }}>
-        <button className="btn btn-ghost" onClick={back}><ArrowLeft size={15} /> Back</button>
-        <button className="btn btn-primary" onClick={next}>Continue to publish <ArrowRight size={16} /></button>
-      </div>
-
-      <style jsx>{`@media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr !important; } }`}</style>
-    </div>
-  );
-}
-
-/* ── Step 5 ── */
-function StepPublish({ onPay, busy, back }) {
-  const [plan, setPlan] = useState("STANDARD");
-  return (
-    <div>
-      <Head title="Publish your invitation" sub="One payment, no subscription. In this build the payment step is simulated — connect Razorpay to take real payments." />
-
-      <div className="grid g3" style={{ marginBottom: 30 }}>
-        {Object.entries(PLANS).map(([k, p]) => {
-          const on = plan === k;
-          return (
-            <div
-              key={k}
-              onClick={() => setPlan(k)}
-              className="card"
-              style={{
-                cursor: "pointer", borderWidth: 2,
-                borderColor: on ? C.maroon : C.line,
-                background: on ? "rgba(91,18,38,.04)" : "#fff",
-                transform: on ? "translateY(-5px)" : "none",
-                boxShadow: on ? `0 24px 42px -28px ${C.maroon}` : "var(--shadow-sm)",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontWeight: 700, fontSize: 15.5 }}>{p.label}</span>
-                {on && <span className="pop" style={{ width: 20, height: 20, borderRadius: "50%", background: C.maroon, display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={12} color={C.ivory} /></span>}
-              </div>
-              <div className="display" style={{ fontSize: 32, color: C.maroon, margin: "10px 0 12px" }}>{money(p.price)}</div>
-              {[p.sites, p.guests].map((b) => (
-                <div key={b} style={{ display: "flex", gap: 8, fontSize: 13, color: C.muted, marginBottom: 7 }}>
-                  <Check size={13} color={C.gold} style={{ flexShrink: 0, marginTop: 2 }} /> {b}
+            <div className="ai-thread" ref={scrollRef}>
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className="chat-msg"
+                  style={{
+                    alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                    background: m.role === "user" ? C.maroon : "#fff",
+                    color: m.role === "user" ? C.ivory : C.ink,
+                    border: m.role === "user" ? "none" : `1px solid ${C.line}`,
+                    borderRadius: m.role === "user" ? "18px 18px 5px 18px" : "18px 18px 18px 5px",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {m.content}
                 </div>
               ))}
+
+              {busy && (
+                <div className="chat-msg" style={{ alignSelf: "flex-start", background: "#fff", border: `1px solid ${C.line}`, borderRadius: "18px 18px 18px 5px", display: "flex", gap: 5, alignItems: "center" }}>
+                  <span className="dot" /><span className="dot" /><span className="dot" />
+                </div>
+              )}
             </div>
-          );
-        })}
-      </div>
 
-      <div className="card" style={{ maxWidth: 450, marginBottom: 26 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 20, fontWeight: 700, fontSize: 15 }}>
-          <CreditCard size={17} color={C.maroon} /> Payment details
-        </div>
-        <div className="field"><label>Name on card</label><input placeholder="Simulated — no real charge" /></div>
-        <div className="field"><label>Card number</label><input placeholder="4242 4242 4242 4242" /></div>
-        <div className="grid g2">
-          <div className="field"><label>Expiry</label><input placeholder="MM / YY" /></div>
-          <div className="field"><label>CVV</label><input placeholder="123" /></div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: C.muted, marginTop: 4 }}>
-          <ShieldCheck size={14} color={C.green} /> Your card is never stored on our servers.
-        </div>
-      </div>
+            {/* Event-type chips only until the type is known. */}
+            {!draft.eventType && !busy && (
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
+                {EVENT_TYPE_LIST.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => send(`It's a ${t.label.toLowerCase()}.`)}
+                    style={{
+                      border: `1px solid ${C.line}`, background: "#fff", borderRadius: 999,
+                      padding: "8px 15px", fontSize: 12.5, color: C.ink, fontWeight: 700, cursor: "pointer",
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <button className="btn btn-ghost" onClick={back} disabled={busy}><ArrowLeft size={15} /> Back</button>
-        <button className="btn btn-primary btn-lg" onClick={() => onPay(plan)} disabled={busy}>
-          {busy ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><Sparkles size={16} /> Pay {money(PLANS[plan].price)} & publish</>}
-        </button>
-      </div>
-    </div>
+            {done ? (
+              <div className="card" style={{ padding: 18 }}>
+                <div style={{ display: "flex", gap: 9, alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ width: 24, height: 24, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Check size={14} color="#fff" />
+                  </span>
+                  <strong style={{ fontSize: 15 }}>Your invitation is ready</strong>
+                </div>
+
+                <div className="grid g3" style={{ gap: 8, marginBottom: 14 }}>
+                  {Object.entries(PLANS).map(([k, p]) => (
+                    <button
+                      key={k}
+                      onClick={() => setPlan(k)}
+                      style={{
+                        cursor: "pointer", textAlign: "left", padding: "11px 12px", borderRadius: 12,
+                        border: `2px solid ${plan === k ? C.maroon : C.line}`,
+                        background: plan === k ? "rgba(91,18,38,.04)" : "#fff",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <div style={{ fontSize: 12.5, fontWeight: 800 }}>{p.label}</div>
+                      <div className="display" style={{ fontSize: 19, color: C.maroon, marginTop: 3 }}>{money(p.price)}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
+                  <ShieldCheck size={14} color={C.green} /> Payment is simulated in this build — no card is charged.
+                </div>
+
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
+                  {publishing
+                    ? <><Loader2 size={16} className="spin" /> Publishing…</>
+                    : <><CreditCard size={16} /> Publish invitation</>}
+                </button>
+
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
+                  onClick={() => { setDone(false); send("Actually, I'd like to change something."); }}
+                  disabled={publishing}
+                >
+                  <RefreshCw size={13} /> Keep editing
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    multiple
+                    hidden
+                    onChange={(e) => addPhotos(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={busy || uploading}
+                    aria-label="Add photos"
+                    title="Add photos"
+                    style={{ padding: "12px 13px" }}
+                  >
+                    {uploading ? <Loader2 size={16} className="spin" /> : <Paperclip size={16} />}
+                  </button>
+
+                  <input
+                    placeholder={
+                      uploading ? "Uploading your photos…"
+                      : draft.eventType ? "Type your answer…"
+                      : "Tell me what you're celebrating…"
+                    }
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && send()}
+                    disabled={busy || uploading}
+                    style={{ flex: 1, padding: "13px 16px", border: `1px solid ${C.line}`, borderRadius: 13, fontSize: 14.5, outline: "none", fontFamily: "inherit", background: "#fff" }}
+                  />
+                  <button className="btn btn-primary" onClick={() => send()} disabled={busy || uploading || !input.trim()} aria-label="Send">
+                    <Send size={15} />
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
+                  <Paperclip size={11} />
+                  {photoCount
+                    ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added — the first is the portrait at the top.`
+                    : "You can add photos at any time. The first becomes the portrait."}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ── Live preview ── */}
+          <aside className="ai-preview-col">
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <PhoneFrame
+                width={296}
+                height={604}
+                statusColor={generative && isDark(tokens.design.palette.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+                label="Live invitation preview"
+              >
+                {generative ? (
+                  <TokenInvite tokens={tokens} />
+                ) : (
+                  /* Nothing is designed until the user says something. Showing a
+                     stock invitation here was the single most misleading thing on
+                     the page — it implied a template they would be editing. */
+                  <div style={{
+                    height: "100%", display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: 14,
+                    padding: 30, textAlign: "center", background: "#faf7f2",
+                  }}>
+                    <Sparkles size={22} style={{ color: C.gold, opacity: .8 }} />
+                    <div style={{ fontFamily: "inherit", fontSize: 13, lineHeight: 1.7, color: C.muted }}>
+                      Your invitation appears here,<br />designed around your answers.
+                    </div>
+                  </div>
+                )}
+              </PhoneFrame>
+            </div>
+
+            <div style={{ marginTop: 18, textAlign: "center" }}>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, maxWidth: 300, margin: "0 auto" }}>
+                {generative
+                  ? "Designed for your event as you talk. Say \u201cwarmer\u201d, \u201cless pink\u201d or \u201cbigger names\u201d and it will change."
+                  : "No templates \u2014 the design is written for your event once you describe it."}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <style jsx>{`
+        .ai-wrap {
+          max-width: 1180px; margin: 0 auto;
+          padding: 26px 28px 60px;
+          display: grid; grid-template-columns: 1fr minmax(320px, 380px);
+          gap: 40px; align-items: start;
+        }
+        .ai-chat-col { display: flex; flex-direction: column; min-width: 0; }
+        .ai-thread {
+          display: flex; flex-direction: column; gap: 10px;
+          height: 420px; overflow-y: auto; padding: 4px 2px 14px; margin-bottom: 12px;
+        }
+        .ai-preview-col { position: sticky; top: 92px; }
+        @media (max-width: 940px) {
+          .ai-wrap { grid-template-columns: 1fr; gap: 30px; }
+          .ai-preview-col { position: static; order: -1; }
+          .ai-thread { height: 320px; }
+        }
+      `}</style>
+    </>
   );
 }

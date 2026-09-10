@@ -24,10 +24,18 @@ import "./landing.css";
 const ICONS = { church: Church, ring: Gem, cake: Cake, home: House, star: Star, mic: Mic, code: Code };
 
 const TRUTHS = [
-  ["No templates", "Every invitation is designed for your event alone"],
+  ["Designed for you", "Every invitation is made for your event alone"],
   ["Any occasion", "Weddings, naming ceremonies, launches, gigs, memorials"],
   ["Your link, forever", "One address to share, and it keeps working"],
   ["Your photos, in place", "They land in the portrait and the gallery, not a folder"],
+];
+
+/* The three promises under the hero button. Short enough to read in a
+   glance, concrete enough to be worth the room they take. */
+const ASSURE = [
+  ["Minutes", "not an evening of fiddling"],
+  ["No app", "guests just open the link"],
+  ["Yours to edit", "change it after sending"],
 ];
 
 const STEPS = [
@@ -52,16 +60,16 @@ export default function Home() {
         {/* ── hero ────────────────────────────────────────────────── */}
         <header className="w-hero">
           <div className="wrap w-herogrid">
-            <div>
-              <div className="w-pill">✦ <b>No templates.</b> Every invitation designed for its own event</div>
+            <div className="w-herotext">
+              <div className="w-pill"><i /> Every invitation designed for its own event</div>
               <h1 className="w-h1">
                 Invitations that
                 <br />
                 <em>design themselves.</em>
               </h1>
               <p className="w-hero-sub">
-                Tell us about your event in your own words. Watch a beautiful invitation appear as
-                you talk — no templates, no colour pickers, nothing to learn.
+                Tell us about your event in your own words. Watch a beautiful invitation appear
+                beside you as you talk — no colour pickers, no settings, nothing to learn.
               </p>
               <div className="w-hero-cta">
                 <Link href="/create" className="btn btn-primary">
@@ -69,7 +77,15 @@ export default function Home() {
                 </Link>
                 <a href="#how" className="btn btn-ghost">See how it works</a>
               </div>
-              <p className="w-hero-note">Ready in minutes · <b>Your link, forever</b></p>
+
+              <div className="w-assure">
+                {ASSURE.map(([t, d]) => (
+                  <div className="w-as" key={t}>
+                    <b>{t}</b>
+                    <span>{d}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <ShowcasePhone />
@@ -82,6 +98,7 @@ export default function Home() {
             <div className="w-truthgrid">
               {TRUTHS.map(([t, d]) => (
                 <div className="w-truth" key={t}>
+                  <span className="w-truth-orn">&#10047;</span>
                   <div className="w-truth-t">{t}</div>
                   <div className="w-truth-d">{d}</div>
                 </div>
@@ -106,17 +123,23 @@ export default function Home() {
                 const [bg, accent, deep] = e.palette;
                 const Icon = ICONS[e.icon] || Star;
                 return (
-                  <Link key={e.slug} href={`/create?event=${e.slug}`} className="w-ecard">
+                  <Link
+                    key={e.slug}
+                    href={`/create?event=${e.slug}`}
+                    className="w-ecard"
+                    style={{ "--ec-accent": accent, "--ec-deep": deep }}
+                  >
                     <div className="w-eart" style={{ background: bg }}>
                       <div className="w-emotif" style={{ backgroundImage: `url("${cardMotif(e.motif, accent)}")` }} />
+                      <div className="w-eveil" />
                       <div className="w-echip" style={{ background: deep, color: readableOn(deep) }}>
-                        <Icon size={21} />
+                        <Icon size={20} />
                       </div>
                     </div>
                     <div className="w-ebody">
                       <h3>{e.name}</h3>
                       <p>{e.tag}</p>
-                      <span className="w-ego">Get started <ArrowRight size={13} /></span>
+                      <span className="w-ego">Start here <ArrowRight size={13} /></span>
                     </div>
                   </Link>
                 );

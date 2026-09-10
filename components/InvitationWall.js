@@ -26,32 +26,42 @@ import { WALL } from "@/lib/design/showcase";
       correct on a real invitation page and enormous inside a 232px card.
    ══════════════════════════════════════════════════════════════════════ */
 
-const CARD_W = 232;
-const CARD_H = 326;
+const CARD_W = 248;
+const CARD_H = 348;
 
 function fitCss(frameless) {
   /* Tuned so the tallest combination a design can produce — epigraph plus
      framed portrait plus kicker plus two-line headline plus subhead plus
-     venue — still clears the bottom of a 326px card. The anniversary
-     design overflowed at the first set of numbers. */
+     venue — still clears the bottom of the card. The anniversary design
+     overflowed at the first set of numbers.
+
+     Every selector here is doubled (`.inv-root.inv-root`) on purpose. The
+     renderer sizes a populated portrait with `.inv-root .hero.hasphoto
+     .frame`, which is one class more specific than a plain three-class
+     override — so the earlier `.inv-root .hero .frame{width:82px}` lost,
+     the portrait rendered at its full 300px inside a 232px card, and the
+     names were pushed clean off the bottom. Half the wall was an empty
+     gradient. Doubling the root class wins without `!important`. */
   return `
-    .inv-root{height:100%;overflow:hidden;border-radius:0}
-    .inv-root .hero{min-height:100%;padding:18px 13px}
-    .inv-root .hero .frame{width:${frameless ? 0 : 82}px;margin-bottom:8px;
+    .inv-root.inv-root{height:100%;overflow:hidden;border-radius:0}
+    .inv-root.inv-root .hero{min-height:100%;max-height:100%;padding:16px 13px;justify-content:center}
+    .inv-root.inv-root .hero .frame,
+    .inv-root.inv-root .hero.hasphoto .frame{width:${frameless ? 0 : 88}px;margin-bottom:9px;
       box-shadow:0 6px 16px rgba(0,0,0,.13),0 0 0 3px var(--bg),0 0 0 4px var(--accent-soft)}
-    .inv-root .hero .epigraph{font-size:8.5px;margin-bottom:7px;max-width:165px;line-height:1.5}
-    .inv-root .hero .kicker{font-size:6.5px;letter-spacing:.24em;margin-bottom:6px}
-    .inv-root .hero .h1{font-size:${frameless ? "clamp(24px,9vw,38px)" : "clamp(17px,5.4vw,25px)"}}
-    .inv-root .hero .joiner{font-size:.42em}
-    .inv-root .hero .subhead{font-size:10px;margin-top:7px}
-    .inv-root .hero .place{font-size:6.5px;margin-top:5px}
-    .inv-root .hero .orn{margin-top:8px;max-width:120px}
-        .inv-root .hero .edge{inset:8px}
-    .inv-root .crest{display:none}
-    .inv-root .scrollcue{display:none}
-.inv-root .hero .deco{width:${frameless ? 150 : 108}px;height:${frameless ? 150 : 108}px;
+    .inv-root.inv-root .hero .epigraph{font-size:8.5px;margin-bottom:7px;max-width:165px;line-height:1.5}
+    .inv-root.inv-root .hero .epigraph .src{font-size:6px;margin-top:5px}
+    .inv-root.inv-root .hero .kicker{font-size:6.5px;letter-spacing:.24em;margin-bottom:6px}
+    .inv-root.inv-root .hero .h1{font-size:${frameless ? "clamp(24px,9vw,38px)" : "clamp(17px,5.4vw,26px)"}}
+    .inv-root.inv-root .hero .joiner{font-size:.42em}
+    .inv-root.inv-root .hero .subhead{font-size:10.5px;margin-top:8px}
+    .inv-root.inv-root .hero .place{font-size:6.5px;margin-top:5px}
+    .inv-root.inv-root .hero .orn{margin-top:9px;max-width:120px}
+    .inv-root.inv-root .hero .edge{inset:8px}
+    .inv-root.inv-root .crest{display:none}
+    .inv-root.inv-root .scrollcue{display:none}
+    .inv-root.inv-root .hero .deco{width:${frameless ? 160 : 116}px;height:${frameless ? 160 : 116}px;
       opacity:${frameless ? 0.85 : 0.4}}
-    .inv-root section:not(.hero), .inv-root footer{display:none}
+    .inv-root.inv-root section:not(.hero), .inv-root.inv-root footer{display:none}
   `;
 }
 

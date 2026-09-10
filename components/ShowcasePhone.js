@@ -54,27 +54,34 @@ export default function ShowcasePhone() {
       /* Fit the invitation to the phone rather than the browser viewport.
          The renderer sizes its hero in `vw`, which is right on a real
          invitation page and far too big inside a ~286px mock-up. These
-         overrides exist only for the showcase. Selectors must match the
-         renderer's own specificity (`.inv-root .hero …`) and this sheet
-         is appended last, so it wins. */
+         overrides exist only for the showcase.
+
+         Every selector is doubled (`.inv-root.inv-root`). Appending the
+         sheet last is not enough on its own: the renderer sizes a
+         populated portrait with `.inv-root .hero.hasphoto .frame`, which
+         is one class more specific than a plain `.inv-root .hero .frame`.
+         With the old selector the wedding portrait rendered at its full
+         300px inside a 284px screen — a blurred slab that filled the phone
+         and pushed the couple's names below the fold. */
       const frameless = s.design.frame === "none";
       const fit = document.createElement("style");
       fit.textContent = `
-        .inv-root{height:100%;overflow-y:auto;scrollbar-width:none}
-        .inv-root::-webkit-scrollbar{display:none}
-        .inv-root .hero{min-height:100%;padding:34px 14px}
-        .inv-root .hero .frame{width:132px;margin-bottom:14px;
+        .inv-root.inv-root{height:100%;overflow-y:auto;scrollbar-width:none}
+        .inv-root.inv-root::-webkit-scrollbar{display:none}
+        .inv-root.inv-root .hero{min-height:100%;padding:30px 14px}
+        .inv-root.inv-root .hero .frame,
+        .inv-root.inv-root .hero.hasphoto .frame{width:146px;margin-bottom:16px;
           box-shadow:0 12px 30px rgba(0,0,0,.14),0 0 0 5px var(--bg),0 0 0 6px var(--accent-soft)}
-        .inv-root .hero .epigraph{font-size:12.5px;margin-bottom:14px;max-width:230px}
-        .inv-root .hero .subhead{font-size:16.5px;margin-top:12px}
-        .inv-root .hero .place{font-size:9.5px;margin-top:7px}
-        .inv-root .hero .kicker{font-size:9px;margin-bottom:9px}
-        .inv-root .hero .orn{margin-top:14px}
-                .inv-root .hero .edge{inset:10px}
-        .inv-root .crest{width:40px;height:40px;margin-bottom:12px}
-        .inv-root .crest span{font-size:13px}
-        .inv-root .scrollcue{display:none}
-.inv-root .hero .deco{width:${frameless ? 200 : 165}px;height:${frameless ? 200 : 165}px;
+        .inv-root.inv-root .hero .epigraph{font-size:12.5px;margin-bottom:14px;max-width:230px}
+        .inv-root.inv-root .hero .subhead{font-size:16.5px;margin-top:12px}
+        .inv-root.inv-root .hero .place{font-size:9.5px;margin-top:7px}
+        .inv-root.inv-root .hero .kicker{font-size:9px;margin-bottom:9px}
+        .inv-root.inv-root .hero .orn{margin-top:14px}
+        .inv-root.inv-root .hero .edge{inset:10px}
+        .inv-root.inv-root .crest{width:40px;height:40px;margin-bottom:12px}
+        .inv-root.inv-root .crest span{font-size:13px}
+        .inv-root.inv-root .scrollcue{display:none}
+        .inv-root.inv-root .hero .deco{width:${frameless ? 200 : 175}px;height:${frameless ? 200 : 175}px;
           opacity:${frameless ? 0.9 : 0.45}}
       `;
       shadow.appendChild(fit);

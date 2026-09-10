@@ -66,12 +66,23 @@ export default function ShowcasePhone() {
       const frameless = s.design.frame === "none";
       const fit = document.createElement("style");
       fit.textContent = `
-        .inv-root.inv-root{height:100%;overflow-y:auto;scrollbar-width:none}
+        .inv-root.inv-root{height:100%;overflow-y:auto;scrollbar-width:none;background:var(--bg)}
         .inv-root.inv-root::-webkit-scrollbar{display:none}
+        /* The phone screen IS the sheet, so the sheet box is dissolved
+           entirely. display:contents rather than max-width:none, because
+           the hero's min-height:100% has to resolve against .inv-root's
+           definite height — through an auto-height sheet it computes to
+           nothing and the hero collapses to its text. */
+        .inv-root.inv-root .sheet{display:contents}
+        /* Every measure in the renderer is a fraction of --m, which is
+           min(100vw, --sheet). Inside a 284px mock-up the viewport is the
+           wrong ruler, so the sheet is redeclared at roughly phone width —
+           one line that resizes type, ornaments and rules together. */
+        .inv-root.inv-root{--sheet:330px}
         .inv-root.inv-root .hero{min-height:100%;padding:30px 14px}
         .inv-root.inv-root .hero .frame,
-        .inv-root.inv-root .hero.hasphoto .frame{width:146px;margin-bottom:16px;
-          box-shadow:0 12px 30px rgba(0,0,0,.14),0 0 0 5px var(--bg),0 0 0 6px var(--accent-soft)}
+        .inv-root.inv-root .hero.hasphoto .frame{width:104px;margin-top:18px;margin-bottom:0;
+          box-shadow:0 10px 24px -10px rgba(0,0,0,.22),0 0 0 4px var(--bg),0 0 0 5px var(--accent-soft)}
         .inv-root.inv-root .hero .epigraph{font-size:12.5px;margin-bottom:14px;max-width:230px}
         .inv-root.inv-root .hero .subhead{font-size:16.5px;margin-top:12px}
         .inv-root.inv-root .hero .place{font-size:9.5px;margin-top:7px}
@@ -81,8 +92,8 @@ export default function ShowcasePhone() {
         .inv-root.inv-root .crest{width:40px;height:40px;margin-bottom:12px}
         .inv-root.inv-root .crest span{font-size:13px}
         .inv-root.inv-root .scrollcue{display:none}
-        .inv-root.inv-root .hero .deco{width:${frameless ? 200 : 175}px;height:${frameless ? 200 : 175}px;
-          opacity:${frameless ? 0.9 : 0.45}}
+        .inv-root.inv-root .hero .deco{width:${frameless ? 170 : 104}px;height:${frameless ? 170 : 104}px;
+          opacity:${frameless ? 0.9 : 0.4}}
       `;
       shadow.appendChild(fit);
       return st;

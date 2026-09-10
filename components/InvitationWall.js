@@ -43,7 +43,14 @@ function fitCss(frameless) {
      names were pushed clean off the bottom. Half the wall was an empty
      gradient. Doubling the root class wins without `!important`. */
   return `
-    .inv-root.inv-root{height:100%;overflow:hidden;border-radius:0}
+    .inv-root.inv-root{height:100%;overflow:hidden;border-radius:0;background:var(--bg)}
+    /* The renderer centres the invitation in a 600px sheet on a darker
+       ground. Inside a 248px card the card IS the sheet, so the sheet box
+       is dissolved — the hero's min-height:100% has to resolve against
+       .inv-root's definite height, not through an auto-height wrapper. */
+    .inv-root.inv-root .sheet{display:contents}
+    /* Same reason as the hero phone: --m must be the card, not the window. */
+    .inv-root.inv-root{--sheet:${CARD_W}px}
     .inv-root.inv-root .hero{min-height:100%;max-height:100%;padding:16px 13px;justify-content:center}
     .inv-root.inv-root .hero .frame,
     .inv-root.inv-root .hero.hasphoto .frame{width:${frameless ? 0 : 88}px;margin-bottom:9px;
@@ -59,8 +66,8 @@ function fitCss(frameless) {
     .inv-root.inv-root .hero .edge{inset:8px}
     .inv-root.inv-root .crest{display:none}
     .inv-root.inv-root .scrollcue{display:none}
-    .inv-root.inv-root .hero .deco{width:${frameless ? 160 : 116}px;height:${frameless ? 160 : 116}px;
-      opacity:${frameless ? 0.85 : 0.4}}
+    .inv-root.inv-root .hero .deco{width:${frameless ? 160 : 92}px;height:${frameless ? 160 : 92}px;
+      opacity:${frameless ? 0.85 : 0.34}}
     .inv-root.inv-root section:not(.hero), .inv-root.inv-root footer{display:none}
   `;
 }

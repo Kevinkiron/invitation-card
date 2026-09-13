@@ -16,6 +16,9 @@
   --plum:         #3B0A2A;
   --plum-deep:    #26061B;
   --maroon:       #5B1226;
+  --heart:        #DE6B5A;    /* coral — the ♥ in Welcvm; used for primary CTAs */
+  --heart-deep:   #C4523F;
+  --heart-soft:   #F2C4BB;
   --marigold:     #E8912D;
   --gold:         #C9922F;
   --gold-soft:    #E4C77E;
@@ -227,14 +230,15 @@ input, select, textarea { font-family: inherit; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
-/* Primary: maroon→plum gradient, shimmer sweep on hover */
+/* Primary: brand coral heart gradient — the ♥ in Welcvm */
 .btn-primary {
-  background: linear-gradient(135deg, var(--maroon) 0%, var(--plum) 100%);
+  background: linear-gradient(135deg, var(--heart) 0%, var(--heart-deep) 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(91, 18, 38, .30), 0 1px 3px rgba(91,18,38,.2);
+  box-shadow: 0 4px 20px rgba(222, 107, 90, .38), 0 1px 4px rgba(222,107,90,.2);
 }
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 8px 32px rgba(91, 18, 38, .38), 0 2px 6px rgba(91,18,38,.25);
+  box-shadow: 0 8px 36px rgba(222, 107, 90, .50), 0 2px 8px rgba(222,107,90,.28);
+  background: linear-gradient(135deg, #e8735f 0%, var(--heart) 100%);
 }
 .btn-primary::after {
   content: ''; position: absolute; top: 0; left: -120%;

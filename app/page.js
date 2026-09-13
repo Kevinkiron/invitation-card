@@ -78,7 +78,7 @@ const ASSURE = [
 
 const STEPS = [
   { title: "Just talk", body: "Say what you are celebrating, the way you would tell a friend.", key: false },
-  { title: "It designs itself", body: "A look made for your event — not picked from a shelf. Say "warmer" or "bigger names" and it changes.", key: true },
+  { title: "It designs itself", body: 'A look made for your event — not picked from a shelf. Say "warmer" or "bigger names" and it changes.', key: true },
   { title: "Add your photos", body: "Drop them into the chat. They appear in the invitation where they belong.", key: false },
   { title: "Share the link", body: "One address on WhatsApp. Guests open it, RSVP, and add their own photos.", key: false },
 ];

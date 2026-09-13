@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, Check, Church, Gem, Cake, House, Star, Mic, Code, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Church, Gem, Cake, House, Star, Mic, Code } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ShowcasePhone from "@/components/ShowcasePhone";
 import InvitationWall from "@/components/InvitationWall";
 import { Reveal } from "@/components/ui";
-import { EVENTS, cardMotif, readableOn } from "@/lib/design/showcase";
+import { EVENTS, cardMotif } from "@/lib/design/showcase";
 import "./landing.css";
+
 
 /* ══════════════════════════════════════════════════════════════════════
    The landing page — BigDates.ai-inspired UI, Welcvm branding.
@@ -190,9 +191,9 @@ export default function Home() {
 
             <div className="w-egrid">
               {EVENTS.map((e, i) => {
-                const [bg, accent, deep] = e.palette;
                 const Icon = ICONS[e.icon] || Star;
                 const colors = Object.values(EVENT_ACCENTS)[i % Object.keys(EVENT_ACCENTS).length];
+
                 return (
                   <Link
                     key={e.slug}

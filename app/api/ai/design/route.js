@@ -64,6 +64,7 @@ function dedupeReply(reply, askNext) {
 }
 
 export async function POST(req) {
+  const started = Date.now();
   try {
     const body = await req.json();
     const { messages = [], tokens: incoming = {}, turnCount = 0 } = body;

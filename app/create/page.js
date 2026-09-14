@@ -9,6 +9,8 @@ import {
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import TokenInvite from "@/components/TokenInvite";
+import WeddingCinema from "@/components/WeddingCinema";
+import { isCinema } from "@/lib/design/wedding-tokens";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
@@ -56,6 +58,28 @@ const EVENT_OPENERS = {
    one row stands for the whole event. Dates stay null: those columns are
    typed, and the readable time already lives in the invitation itself. */
 function rsvpRowsFromTokens(tokens) {
+  if (isCinema(tokens)) {
+    const events = Array.isArray(tokens?.events) ? tokens.events : [];
+    if (events.length) {
+      return events.map((e) => ({
+        name: String(e.name || e.title || "Wedding Ceremony").slice(0, 80),
+        event_date: e.date || null,
+        event_time: e.time || null,
+        venue: String(e.venue || tokens?.venue?.name || "").slice(0, 160),
+        address: String(e.address || tokens?.venue?.address || "").slice(0, 160),
+      }));
+    }
+    const bride = tokens?.couple?.bride;
+    const groom = tokens?.couple?.groom;
+    return [{
+      name: bride && groom ? `${bride} & ${groom}'s Wedding` : "Wedding Ceremony",
+      event_date: null,
+      event_time: null,
+      venue: String(tokens?.venue?.name || "").slice(0, 160),
+      address: String(tokens?.venue?.address || "").slice(0, 160),
+    }];
+  }
+
   const sections = tokens?.content?.sections || [];
   const cards = sections.find((s) => s.type === "cards" && Array.isArray(s.items) && s.items.length);
   if (cards) {
@@ -94,6 +118,8 @@ export default function CreatePage() {
   // v2: the AI writes the design itself, as tokens. Empty until it does.
   const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
   const generative = Boolean(tokens?.designed);
+  const isWedding = tokens?.eventKind === "wedding" || draft.eventType === "wedding";
+  const cinemaMode = isCinema(tokens) || isWedding;
   const [publishing, setPublishing] = useState(false);
   const [plan, setPlan] = useState("STANDARD");
 
@@ -256,14 +282,18 @@ export default function CreatePage() {
       /* v2 stores the design itself. The guest page renders these with the
          same lib/design/renderer used in the preview, so what they approve
          is exactly what guests see. */
+      const isCin = isCinema(tokens);
+      const cinemaTitle = tokens.couple?.bride && tokens.couple?.groom
+        ? `${tokens.couple.bride} & ${tokens.couple.groom}'s Wedding`
+        : "Wedding Invitation";
       const cfg = generative
-        ? { v: 2, tokens, eventKind: tokens.eventKind || null }
+        ? { v: 2, tokens, eventKind: tokens.eventKind || (isCin ? "wedding" : null) }
         : draftToConfig(draft, templateSlug);
       const { data: inv, error } = await supabase
         .from("invitations")
         .insert({
           owner_id: session.user.id,
-          title: (generative ? tokens.content?.headline : cfg.headline) || "Invitation",
+          title: (generative ? (isCin ? cinemaTitle : tokens.content?.headline) : cfg.headline) || "Invitation",
           design_config: cfg,
           status: "published",
           plan,
@@ -323,8 +353,8 @@ export default function CreatePage() {
           <section className="ai-chat-col">
             <header style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(140deg, ${C.maroon}, ${C.plum})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Sparkles size={15} color={C.marigold} />
+                <span style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(140deg, ${C.heart}, ${C.heartDeep})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Sparkles size={15} color="#fff" />
                 </span>
                 <h1 className="display" style={{ fontSize: 24, margin: 0 }}>Build your invitation</h1>
               </div>
@@ -355,8 +385,8 @@ export default function CreatePage() {
                   className="chat-msg"
                   style={{
                     alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                    background: m.role === "user" ? C.maroon : "#fff",
-                    color: m.role === "user" ? C.ivory : C.ink,
+                    background: m.role === "user" ? C.heart : "#fff",
+                    color: m.role === "user" ? "#fff" : C.ink,
                     border: m.role === "user" ? "none" : `1px solid ${C.line}`,
                     borderRadius: m.role === "user" ? "18px 18px 5px 18px" : "18px 18px 18px 5px",
                     whiteSpace: "pre-wrap",
@@ -375,7 +405,7 @@ export default function CreatePage() {
 
             {/* Event-type chips only until the type is known. */}
             {!draft.eventType && !busy && (
-              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
+              <div className="ai-chips">
                 {EVENT_TYPE_LIST.map((t) => (
                   <button
                     key={t.id}
@@ -407,13 +437,13 @@ export default function CreatePage() {
                       onClick={() => setPlan(k)}
                       style={{
                         cursor: "pointer", textAlign: "left", padding: "11px 12px", borderRadius: 12,
-                        border: `2px solid ${plan === k ? C.maroon : C.line}`,
-                        background: plan === k ? "rgba(91,18,38,.04)" : "#fff",
+                        border: `2px solid ${plan === k ? C.heart : C.line}`,
+                        background: plan === k ? "rgba(222,107,90,.06)" : "#fff",
                         fontFamily: "inherit",
                       }}
                     >
                       <div style={{ fontSize: 12.5, fontWeight: 800 }}>{p.label}</div>
-                      <div className="display" style={{ fontSize: 19, color: C.maroon, marginTop: 3 }}>{money(p.price)}</div>
+                      <div className="display" style={{ fontSize: 19, color: C.heart, marginTop: 3 }}>{money(p.price)}</div>
                     </button>
                   ))}
                 </div>
@@ -439,7 +469,7 @@ export default function CreatePage() {
               </div>
             ) : (
               <div>
-                <div style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                <div className="ai-input-row">
                   <input
                     ref={fileRef}
                     type="file"
@@ -455,7 +485,7 @@ export default function CreatePage() {
                     disabled={busy || uploading}
                     aria-label="Add photos"
                     title="Add photos"
-                    style={{ padding: "12px 13px" }}
+                    style={{ padding: "12px 13px", flexShrink: 0 }}
                   >
                     {uploading ? <Loader2 size={16} className="spin" /> : <Paperclip size={16} />}
                   </button>
@@ -470,9 +500,9 @@ export default function CreatePage() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && send()}
                     disabled={busy || uploading}
-                    style={{ flex: 1, padding: "13px 16px", border: `1px solid ${C.line}`, borderRadius: 13, fontSize: 14.5, outline: "none", fontFamily: "inherit", background: "#fff" }}
+                    style={{ flex: 1, minWidth: 0, padding: "13px 16px", border: `1px solid ${C.line}`, borderRadius: 13, fontSize: 14.5, outline: "none", fontFamily: "inherit", background: "#fff" }}
                   />
-                  <button className="btn btn-primary" onClick={() => send()} disabled={busy || uploading || !input.trim()} aria-label="Send">
+                  <button className="btn btn-primary" onClick={() => send()} disabled={busy || uploading || !input.trim()} aria-label="Send" style={{ flexShrink: 0 }}>
                     <Send size={15} />
                   </button>
                 </div>
@@ -493,11 +523,15 @@ export default function CreatePage() {
               <PhoneFrame
                 width={296}
                 height={604}
-                statusColor={generative && isDark(tokens.design.palette.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
+                statusColor={generative && !cinemaMode && isDark(tokens.design?.palette?.bg) ? "rgba(255,255,255,.9)" : "rgba(20,16,14,.85)"}
                 label="Live invitation preview"
               >
                 {generative ? (
-                  <TokenInvite tokens={tokens} />
+                  cinemaMode ? (
+                    <WeddingCinema tokens={tokens} preview />
+                  ) : (
+                    <TokenInvite tokens={tokens} />
+                  )
                 ) : (
                   /* Nothing is designed until the user says something. Showing a
                      stock invitation here was the single most misleading thing on
@@ -527,25 +561,7 @@ export default function CreatePage() {
         </div>
       </main>
 
-      <style jsx>{`
-        .ai-wrap {
-          max-width: 1180px; margin: 0 auto;
-          padding: 26px 28px 60px;
-          display: grid; grid-template-columns: 1fr minmax(320px, 380px);
-          gap: 40px; align-items: start;
-        }
-        .ai-chat-col { display: flex; flex-direction: column; min-width: 0; }
-        .ai-thread {
-          display: flex; flex-direction: column; gap: 10px;
-          height: 420px; overflow-y: auto; padding: 4px 2px 14px; margin-bottom: 12px;
-        }
-        .ai-preview-col { position: sticky; top: 92px; }
-        @media (max-width: 940px) {
-          .ai-wrap { grid-template-columns: 1fr; gap: 30px; }
-          .ai-preview-col { position: static; order: -1; }
-          .ai-thread { height: 320px; }
-        }
-      `}</style>
+      {/* Responsive styles for the chat layout are in app/responsive.css */}
     </>
   );
 }

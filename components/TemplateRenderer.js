@@ -3,6 +3,8 @@
 import InvitationRenderer, { hasTemplate } from "@/components/InvitationRenderer";
 import InvitePreview from "@/components/InvitePreview";
 import TokenInvite from "@/components/TokenInvite";
+import WeddingCinema from "@/components/WeddingCinema";
+import { isCinema } from "@/lib/design/wedding-tokens";
 import { invitationFromRecord } from "@/lib/demo-data";
 import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
 
@@ -14,6 +16,8 @@ import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
      v2      { v: 2, tokens }   — the AI designed it. lib/design/renderer
                                   draws it: the same code that drew the
                                   live preview while they were chatting.
+                                  For weddings, WeddingCinema draws the
+                                  cinematic template.
      legacy  { template: … }    — one of the prebuilt template components.
      oldest  { palette, … }     — pre-template invitations, kept rendering
                                   through InvitePreview so nothing already
@@ -24,6 +28,10 @@ import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
    way through to InvitePreview, which then had nothing to draw. */
 export default function TemplateRenderer({ cfg, events = [], guestName, compact = false, mode }) {
   if (cfg?.v === 2) {
+    const cinema = isCinema(cfg.tokens) || isCinema(cfg);
+    if (cinema) {
+      return <WeddingCinema tokens={cfg.tokens || cfg} preview={compact} />;
+    }
     return <TokenInvite tokens={cfg.tokens} fit={compact ? "scroll" : "flow"} />;
   }
 
@@ -48,6 +56,17 @@ export default function TemplateRenderer({ cfg, events = [], guestName, compact 
    Callers pass a fallback for configs that carry no palette at all. */
 export function paletteOf(cfg, fallback) {
   if (cfg?.v === 2) {
+    if (isCinema(cfg.tokens) || isCinema(cfg)) {
+      const p = cfg.tokens?.palette || cfg.palette || {};
+      return [
+        p.primary || "#8f294e",
+        p.accent || "#c69a55",
+        p.paper || "#fff8ea",
+        p.text || "#4f392f",
+        p.secondary || "#7b594e",
+        p.paper || "#fff8ea",
+      ];
+    }
     const p = cfg.tokens?.design?.palette;
     if (p?.bg) return [p.deep || p.ink, p.accent, p.bg, p.ink, p.muted, p.surface];
   }

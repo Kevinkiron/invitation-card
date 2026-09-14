@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
 import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
+import { buildWeddingCinemaPrompt } from "@/lib/ai/wedding-prompt";
 import { classifyEvent } from "@/lib/ai/classify";
 import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
+import { WEDDING_CINEMA_SCHEMA, patchWeddingTokens, cinemaProgress, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
@@ -88,8 +90,72 @@ export async function POST(req) {
        the conversation instead; the model's own answer still wins when it
        gives one. */
     const guessed = classifyEvent(said);
-    const knownKind = incoming.eventKind || guessed.kind;
+    const kind = incoming.eventKind || guessed.kind;
+    const knownKind = kind;
 
+    /* ── Wedding Cinema path ─────────────────────────────────────────
+       Weddings get the cinematic template: a completely different
+       prompt, schema, and token structure. The switch is on whether
+       the event is a wedding (detected from the conversation or from
+       the incoming tokens having the `_cinema` flag). */
+    const isWedding = kind === "wedding" || guessed.family === "wedding" || isCinema(incoming);
+
+    if (isWedding) {
+      /* Wedding-specific system prompt */
+      const weddingSystem = buildWeddingCinemaPrompt({
+        tokens: incoming,
+        turnCount,
+        today: new Date().toISOString().slice(0, 10),
+      });
+
+      const wr = await chat({
+        system: weddingSystem,
+        messages: convo,
+        schema: WEDDING_CINEMA_SCHEMA,
+        maxTokens: 4000,
+        geminiKey: key,
+      });
+
+      if (!wr.ok) {
+        const rate = wr.status === 429;
+        const slow = wr.status === 504;
+        return NextResponse.json(
+          {
+            error: rate ? "The AI is rate limited right now. Wait a moment and try again."
+                  : slow ? "The AI took too long to respond. Please try again."
+                  : "Could not reach the AI service.",
+            detail: (wr.detail || "").slice(0, 400),
+            elapsedMs: Date.now() - started,
+          },
+          { status: rate ? 429 : slow ? 504 : 502 }
+        );
+      }
+
+      const wp = wr.data || {};
+
+      /* Merge: start from current cinema tokens, patch in the new data */
+      const base = isCinema(incoming) ? incoming : { ...emptyWeddingTokens(), ...incoming };
+      const next = patchWeddingTokens(base, wp);
+      next.eventKind = "wedding";
+      next.designed = true;
+
+      const askNext = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
+      const reply = dedupeReply(String(wp.reply || "").trim(), askNext);
+
+      return NextResponse.json({
+        reply: reply || "Got it.",
+        askNext: wp.done ? "" : askNext,
+        done: Boolean(wp.done),
+        tokens: next,
+        eventKind: "wedding",
+        progress: cinemaProgress(next),
+        model: wr.model,
+        provider: info.provider,
+        elapsedMs: Date.now() - started,
+      });
+    }
+
+    /* ── Generic path (non-wedding events) ── */
     const system = buildSystemPrompt({
       tokens: incoming,
       eventKind: knownKind,
@@ -97,7 +163,6 @@ export async function POST(req) {
       today: new Date().toISOString().slice(0, 10),
     });
 
-    const started = Date.now();
     const r = await chat({
       system,
       messages: convo,
@@ -112,8 +177,8 @@ export async function POST(req) {
       return NextResponse.json(
         {
           error: rate ? "The AI is rate limited right now. Wait a moment and try again."
-               : slow ? "The AI took too long to respond. Please try again."
-               : "Could not reach the AI service.",
+                : slow ? "The AI took too long to respond. Please try again."
+                : "Could not reach the AI service.",
           detail: (r.detail || "").slice(0, 400),
           elapsedMs: Date.now() - started,
         },
@@ -122,29 +187,13 @@ export async function POST(req) {
     }
 
     const patch = r.data || {};
-
-    /* The model proposes; applyPatch decides. Anything off-vocabulary, any
-       bad colour, any unsafe link is dropped before it can reach the
-       renderer.
-
-       One extra step first: on the turn we learn what kind of event this
-       is, seed the design from that event family BEFORE applying the
-       model's patch. Models frequently send a palette and forget the
-       frame and motif, and a half-specified design would otherwise
-       inherit the generic default — which is how a concert came out with
-       a wedding's arch and botanical leaves. Seed first, model wins. */
-    const kind = patch.eventKind || knownKind;
     let base = incoming;
     if (kind && !incoming.designed) {
-      /* `said` picks which variant within the family, so two weddings
-         described differently do not open on identical colours — and the
-         same conversation always rebuilds the same design. */
       base = { ...incoming, design: { ...seedDesignFor(kind, said), ...(incoming.design || {}) } };
     }
 
     const next = applyPatch(base, patch);
     next.eventKind = kind || next.eventKind || null;
-    // Seeding alone is not the model designing; only a real patch counts.
     next.designed = Boolean(incoming.designed) || touchedDesign(patch.design || {}) || Boolean(kind);
 
     const askNext = typeof patch.askNext === "string" ? patch.askNext.trim() : "";

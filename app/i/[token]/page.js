@@ -147,6 +147,29 @@ export default function GuestPage() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  /* A guest seeing "We could not save that" learns nothing, and neither
+     does whoever they complain to — the first time this fired it took a
+     database query to discover the table simply was not there. Postgres
+     already says why; these translate the three causes that can actually
+     reach a guest and log the rest for us. */
+  const explain = (error) => {
+    const code = String(error?.code || "");
+    const msg = String(error?.message || "");
+    if (code === "42P01" || /does not exist/i.test(msg)) {
+      return "RSVPs are not switched on for this invitation yet. Please let the couple know.";
+    }
+    if (code === "42501" || /row-level security|permission denied/i.test(msg)) {
+      return "This invitation is not open for replies yet. Please let the couple know.";
+    }
+    if (code === "23514") {
+      return "That does not look right — please check the number of guests and try again.";
+    }
+    if (/fetch|network|Failed to fetch/i.test(msg)) {
+      return "We could not reach the server. Check your connection and try again.";
+    }
+    return "We could not save that. Please try again.";
+  };
+
   const submit = async () => {
     setSending(true);
     setSendErr("");
@@ -160,11 +183,16 @@ export default function GuestPage() {
         party_size: Math.max(1, Math.min(50, Number(form.party_size) || 1)),
         blessing: form.blessing.trim() || null,
       });
-      if (error) { setSendErr("We could not save that. Please try again."); return; }
+      if (error) {
+        console.error("[rsvp] insert failed", error);
+        setSendErr(explain(error));
+        return;
+      }
       setDone(true);
       await loadWishes(inv.id);
-    } catch {
-      setSendErr("We could not save that. Please try again.");
+    } catch (e) {
+      console.error("[rsvp] insert threw", e);
+      setSendErr(explain(e));
     } finally {
       setSending(false);
     }

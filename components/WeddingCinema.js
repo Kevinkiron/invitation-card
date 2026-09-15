@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { MapPin, Calendar, ChevronDown } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
+import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
 
 /* ══════════════════════════════════════════════════════════════════════
    WEDDING CINEMA — Cinematic scroll-driven wedding invitation
@@ -33,6 +34,19 @@ function safeMapHref(raw) {
   } catch {
     return "";
   }
+}
+
+/* Mix a hex colour towards white. Used for petal faces, so a bloom drawn
+   from any palette keeps a light side and a shadow side. */
+function lighten(hex, t) {
+  const v = String(hex || "").replace("#", "");
+  const x = v.length === 3 ? v.split("").map((c) => c + c).join("") : v;
+  if (x.length < 6) return hex;
+  const n = parseInt(x.slice(0, 6), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) =>
+    Math.round(c + (255 - c) * t)
+  );
+  return "#" + ch.map((c) => c.toString(16).padStart(2, "0")).join("");
 }
 
 function monogram(bride, groom) {
@@ -116,6 +130,123 @@ function SceneHeading({ eyebrow, title, intro }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   SCRATCH TO REVEAL
+
+   The date is not printed on the invitation — it is under a panel of gold
+   foil that the guest rubs away, and until they do, the hero reads "the
+   date awaits its reveal" and the card underneath says "reveal the date
+   above". It is the one moment on the page the guest performs rather than
+   scrolls past, and it is the reason the date scene exists at all.
+
+   The canvas starts covered and is erased with destination-out; once
+   enough of it is gone the whole panel fades and the date stays revealed.
+   `touch-action: none` is scoped to this box alone so rubbing it does not
+   fight the page scroll, and there is a plain button underneath for
+   anyone using a keyboard or a screen reader.
+   ══════════════════════════════════════════════════════════════════════ */
+function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
+  const wrapRef = useRef(null);
+  const canvasRef = useRef(null);
+  const stateRef = useRef({ drawing: false, done: false });
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const cv = canvasRef.current;
+    if (!wrap || !cv) return;
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const box = wrap.getBoundingClientRect();
+    const w = Math.max(1, Math.round(box.width));
+    const h = Math.max(1, Math.round(box.height));
+    cv.width = w * dpr;
+    cv.height = h * dpr;
+    cv.style.width = `${w}px`;
+    cv.style.height = `${h}px`;
+
+    const ctx = cv.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    /* The foil itself: a brushed diagonal sweep so it reads as leaf
+       rather than a grey box. */
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, deep);
+    g.addColorStop(0.42, accent);
+    g.addColorStop(0.58, "#f0dcae");
+    g.addColorStop(1, deep);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = "#fff";
+    for (let i = -h; i < w; i += 7) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + h, h);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    const pointAt = (e) => {
+      const r = cv.getBoundingClientRect();
+      const p = e.touches?.[0] || e;
+      return { x: p.clientX - r.left, y: p.clientY - r.top };
+    };
+
+    const rub = (e) => {
+      if (!stateRef.current.drawing || stateRef.current.done) return;
+      const { x, y } = pointAt(e);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(x, y, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    };
+
+    /* Sampling every pixel on every move is wasteful; a coarse grid is
+       plenty to decide when enough foil has gone. */
+    const cleared = () => {
+      const data = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      let clear = 0, total = 0;
+      for (let i = 3; i < data.length; i += 4 * 40) {
+        total += 1;
+        if (data[i] < 24) clear += 1;
+      }
+      return total ? clear / total : 0;
+    };
+
+    const finish = () => {
+      if (stateRef.current.done) return;
+      stateRef.current.done = true;
+      onDone();
+    };
+
+    const up = () => {
+      stateRef.current.drawing = false;
+      if (cleared() > 0.42) finish();
+    };
+    const down = (e) => { stateRef.current.drawing = true; rub(e); };
+
+    cv.addEventListener("pointerdown", down);
+    cv.addEventListener("pointermove", rub);
+    window.addEventListener("pointerup", up);
+    cv.addEventListener("pointerleave", up);
+
+    return () => {
+      cv.removeEventListener("pointerdown", down);
+      cv.removeEventListener("pointermove", rub);
+      window.removeEventListener("pointerup", up);
+      cv.removeEventListener("pointerleave", up);
+    };
+  }, [onDone, accent, deep]);
+
+  return (
+    <div className="wc-scratch" ref={wrapRef}>
+      <canvas ref={canvasRef} className="wc-scratch-canvas" aria-hidden="true" />
+      <span className="wc-scratch-hint">Rub to reveal</span>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════ */
 export default function WeddingCinema({ tokens: rawTokens, preview = false, guest = null }) {
@@ -131,6 +262,12 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
   const [opened, setOpened] = useState(preview);
   const openInvitation = useCallback(() => setOpened(true), []);
 
+  /* The date stays under the foil until the guest rubs it off. In the
+     create-page preview it is already revealed — the couple are editing
+     their own invitation, not being surprised by it. */
+  const [dateRevealed, setDateRevealed] = useState(preview);
+  const revealDate = useCallback(() => setDateRevealed(true), []);
+
   /* Scroll progress */
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -142,6 +279,27 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [preview]);
+
+  /* Which chapter is on screen. Read from the scenes themselves via
+     data-chapter, so adding or removing a scene cannot leave a stale
+     label behind in a hard-coded list. */
+  const [chapter, setChapter] = useState("");
+  useEffect(() => {
+    if (preview) return;
+    const marked = Array.from(document.querySelectorAll("[data-chapter]"));
+    if (!marked.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const hit = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (hit) setChapter(hit.target.dataset.chapter);
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.2, 0.6, 1] }
+    );
+    marked.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [preview, story.length, events.length]);
 
   /* Set CSS custom properties from palette */
   const style = useMemo(() => {
@@ -169,6 +327,12 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
         <div className="wc-progress" aria-hidden="true">
           <div className="wc-progress-fill" style={{ transform: `scaleX(${progress})` }} />
         </div>
+      )}
+
+      {/* The chapter the guest is currently in, as a pill in the corner —
+          a long scroll needs somewhere to tell you where you are. */}
+      {!preview && chapter && (
+        <div className="wc-chapter-chip" aria-hidden="true">{chapter}</div>
       )}
 
       {/* ── Opening overlay ── */}
@@ -199,8 +363,12 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
             <span>{groom}</span>
           </h1>
           {invitation.message && <p className="wc-hero-message">{invitation.message}</p>}
-          {invitation.displayDate && <div className="wc-hero-date">{invitation.displayDate}</div>}
-          <a className="wc-hero-cta" href="#events">
+          {invitation.displayDate && (
+            <div className={`wc-hero-date ${dateRevealed ? "" : "wc-hero-date-waiting"}`}>
+              {dateRevealed ? invitation.displayDate : "The date awaits its reveal"}
+            </div>
+          )}
+          <a className="wc-hero-cta" href="#story">
             Begin the story <ChevronDown size={16} />
           </a>
         </div>
@@ -209,7 +377,13 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── DATE REVEAL ── */}
       {invitation.displayDate && (
-        <DateScene dated={dated} />
+        <DateScene
+          dated={dated}
+          revealed={dateRevealed}
+          onReveal={revealDate}
+          accent={style["--wc-accent"]}
+          deep={style["--wc-primary"]}
+        />
       )}
 
       {/* ── INVITATION CARD ── */}
@@ -221,6 +395,8 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
         bride={bride}
         groom={groom}
         dated={dated}
+        dateRevealed={dateRevealed}
+        palette={tokens.palette}
       />
 
       {/* ── COUPLE ── */}
@@ -236,7 +412,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── LOVE STORY ── */}
       {story.length > 0 && (
-        <section className="wc-scene" id="story">
+        <section className="wc-scene" id="story" data-chapter="Our story">
           <SceneHeading
             eyebrow="Their Story"
             title="A collection of beautiful almosts becoming forever"
@@ -251,7 +427,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── EVENTS TIMELINE ── */}
       {events.length > 0 && (
-        <section className="wc-scene" id="events">
+        <section className="wc-scene" id="events" data-chapter="The celebrations">
           <SceneHeading
             eyebrow="The Celebrations"
             title="A wedding told in ceremonies, colour, music and light"
@@ -259,7 +435,13 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
           <div className="wc-timeline">
             <div className="wc-timeline-line" aria-hidden="true" />
             {events.map((ev, i) => (
-              <EventCard key={ev.id || i} event={ev} index={i} total={events.length} />
+              <EventCard
+                key={ev.id || i}
+                event={ev}
+                index={i}
+                total={events.length}
+                fallbackVenue={[venue.name, venue.city].filter(Boolean).join(", ")}
+              />
             ))}
           </div>
         </section>
@@ -267,7 +449,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── GALLERY ── */}
       {media.galleryImages?.length > 0 && (
-        <section className="wc-scene" id="gallery">
+        <section className="wc-scene" id="gallery" data-chapter="Gallery">
           <SceneHeading eyebrow="A Few Favourite Frames" title="Gallery" intro="Scroll through the photographs that brought us here." />
           <div className="wc-gallery-scroll">
             {media.galleryImages.map((url, i) => (
@@ -282,7 +464,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── VENUE ── */}
       {venue.name && (
-        <section className="wc-venue-scene" id="venue">
+        <section className="wc-venue-scene" id="venue" data-chapter="The destination">
           <SceneHeading
             eyebrow="The Destination"
             title={venue.name}
@@ -325,7 +507,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {/* ── SOCIAL / HASHTAG ── */}
       {(social.hashtag || social.instagram) && (
-        <section className="wc-scene" id="share">
+        <section className="wc-scene" id="share" data-chapter="Share">
           <SceneHeading eyebrow="Share the Moment" title="Share the celebration with us" />
           {social.hashtag && <div className="wc-hashtag">#{social.hashtag}</div>}
           <p className="wc-share-note">
@@ -365,18 +547,33 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
    SUB-COMPONENTS
    ══════════════════════════════════════════════════════════════════════ */
 
-function DateScene({ dated }) {
+function DateScene({ dated, revealed, onReveal, accent, deep }) {
   const [ref, vis] = useReveal();
   return (
     <section ref={ref} className="wc-scene wc-date-scene">
       <div className="wc-date-halo" aria-hidden="true" />
       <p className="wc-eyebrow" style={{ textAlign: "center" }}>The date is written</p>
-      <div className={`wc-date-lockup wc-fade ${vis ? "wc-visible" : ""}`}>
-        {dated.day && <b className="wc-date-day">{dated.day}</b>}
-        {dated.month && <span className="wc-date-month">{dated.month}</span>}
-        {dated.year && <i className="wc-date-year" style={{ fontStyle: "normal" }}>{dated.year}</i>}
+
+      <div className="wc-date-stack">
+        <div className={`wc-date-lockup wc-fade ${vis ? "wc-visible" : ""}`}>
+          {dated.day && <b className="wc-date-day">{dated.day}</b>}
+          {dated.month && <span className="wc-date-month">{dated.month}</span>}
+          {dated.year && <i className="wc-date-year" style={{ fontStyle: "normal" }}>{dated.year}</i>}
+        </div>
+        {!revealed && <ScratchPanel onDone={onReveal} accent={accent} deep={deep} />}
       </div>
-      <p className="wc-date-hint">Save it in your hearts &amp; calendars</p>
+
+      {!revealed && (
+        /* Rubbing is a pointer gesture. This is the same door for anyone
+           on a keyboard, a screen reader, or simply out of patience. */
+        <button type="button" className="wc-date-skip" onClick={onReveal}>
+          Reveal the date
+        </button>
+      )}
+
+      <p className="wc-date-hint">
+        {revealed ? "Save it in your hearts & calendars" : "Rub the foil away"}
+      </p>
     </section>
   );
 }
@@ -399,42 +596,54 @@ const FAITH_MARK = {
   none: "✦",
 };
 
-function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated }) {
+function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, dateRevealed, palette }) {
   const [ref, vis] = useReveal();
   const faith = String(invitation.religion || "").trim().toLowerCase();
   const mark = FAITH_MARK[faith] || "✦";
+  const gold = palette?.accent || "#c69a55";
+  const deepBloom = palette?.primary || "#8f294e";
+  /* The petals need two tones or the gradient collapses and the cluster
+     reads as a maroon blob. Lift the palette's own primary towards pink
+     for the face of the petal and keep the original for its shadow. */
+  const bloom = lighten(deepBloom, 0.42);
+
   return (
-    <section ref={ref} className="wc-scene" id="families">
+    <section ref={ref} className="wc-scene" id="families" data-chapter="The families">
       <div className={`wc-inv-card wc-fade ${vis ? "wc-visible" : ""}`}>
-        <div className="wc-inv-icon">
-          <svg viewBox="0 0 80 80" fill="none" style={{ width: "100%", height: "100%" }} role="presentation">
-            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth=".5" opacity=".3" />
-            <text x="40" y="46" textAnchor="middle" fontSize="28" fill="currentColor" opacity=".6">
-              {mark}
-            </text>
-          </svg>
+        {/* The frame: festoon bulbs all the way round, lanterns hung
+            inside them, blooms in two corners. All drawn, no assets. */}
+        <BulbFrame gold={gold} />
+        <span className="wc-lantern-slot wc-lantern-l"><Lantern gold={gold} cord={40} /></span>
+        <span className="wc-lantern-slot wc-lantern-r"><Lantern gold={gold} cord={58} /></span>
+        <span className="wc-floral-slot wc-floral-bl"><FloralCorner id="bl" bloom={bloom} deep={deepBloom} /></span>
+        <span className="wc-floral-slot wc-floral-br"><FloralCorner id="br" bloom={bloom} deep={deepBloom} /></span>
+
+        <div className="wc-inv-inner">
+          <DeityMedallion mark={mark} gold={gold} />
+          {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
+
+          {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}
+          <p className="wc-inv-kicker">{invitation.kicker || "Together With Their Families"}</p>
+          <div className="wc-inv-monogram">{mono}</div>
+          {invitation.message && <p className="wc-inv-message">{invitation.message}</p>}
+          <h1>
+            <span>{bride}</span>
+            <em>&amp;</em>
+            <span>{groom}</span>
+          </h1>
+
+          <div className="wc-inv-divider"><RuleOrnament gold={gold} /></div>
+
+          {invitation.displayDate && (
+            <>
+              <p className="wc-inv-date-label">Wedding Date</p>
+              <p className={`wc-inv-date ${dateRevealed ? "" : "wc-inv-date-waiting"}`}>
+                {dateRevealed ? invitation.displayDate : "Reveal the date above"}
+              </p>
+            </>
+          )}
+          {venue.name && <p className="wc-inv-venue">{venue.name}{venue.city ? `, ${venue.city}` : ""}</p>}
         </div>
-        {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
-
-        {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}
-        <p className="wc-inv-kicker">{invitation.kicker || "Together With Their Families"}</p>
-        <div className="wc-inv-monogram">{mono}</div>
-        {invitation.message && <p className="wc-inv-message">{invitation.message}</p>}
-        <h1>
-          <span>{bride}</span>
-          <em>&amp;</em>
-          <span>{groom}</span>
-        </h1>
-
-        <div className="wc-inv-divider"><i /><b>✦</b><i /></div>
-
-        {invitation.displayDate && (
-          <>
-            <p className="wc-inv-date-label">Wedding Date</p>
-            <p className="wc-inv-date">{invitation.displayDate}</p>
-          </>
-        )}
-        {venue.name && <p className="wc-inv-venue">{venue.name}{venue.city ? `, ${venue.city}` : ""}</p>}
       </div>
     </section>
   );
@@ -478,8 +687,34 @@ function StoryChapter({ chapter, index, image }) {
   );
 }
 
-function EventCard({ event, index, total }) {
+/* "Add to calendar" on a timeline card. A Google Calendar template URL
+   rather than a downloaded .ics: a phone opens it in the calendar app
+   already signed in, and there is no file for the guest to find. Only
+   offered when the function actually carries a date — a button that adds
+   an event at an unknown time is worse than no button. */
+function calendarHref(event, fallbackVenue) {
+  const date = String(event?.date || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "";
+  const pad = (s, d) => (s || d).padStart(2, "0");
+  const [sh, sm] = String(event.time || "").split(":");
+  const [eh, em] = String(event.endTime || "").split(":");
+  const start = `${date.replace(/-/g, "")}T${pad(sh, "10")}${pad(sm, "00")}00`;
+  const endH = eh || String(Math.min(23, Number(pad(sh, "10")) + 2));
+  const end = `${date.replace(/-/g, "")}T${pad(endH, "12")}${pad(em, "00")}00`;
+  const where = [event.venue, event.address || fallbackVenue].filter(Boolean).join(", ");
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.name || "Wedding celebration",
+    dates: `${start}/${end}`,
+    location: where,
+    details: event.description || "",
+  });
+  return `https://calendar.google.com/calendar/render?${q.toString()}`;
+}
+
+function EventCard({ event, index, total, fallbackVenue }) {
   const [ref, vis] = useReveal();
+  const cal = calendarHref(event, fallbackVenue);
   return (
     <article ref={ref} className={`wc-event ${vis ? "wc-visible" : ""}`}>
       <span className="wc-event-dot" aria-hidden="true" />
@@ -503,6 +738,11 @@ function EventCard({ event, index, total }) {
         {event.address && <address className="wc-event-address">{event.address}</address>}
         {event.description && <p className="wc-event-desc">{event.description}</p>}
         {event.dressCode && <p className="wc-event-dress">Dress: {event.dressCode}</p>}
+        {cal && (
+          <a className="wc-event-cal" href={cal} target="_blank" rel="noreferrer">
+            <Calendar size={13} /> Add to calendar
+          </a>
+        )}
       </div>
     </article>
   );

@@ -188,9 +188,9 @@
 }
 .wc-scene-heading h2 {
   font-family: 'Cormorant Garamond', serif;
-  font-weight: 300;
-  font-size: clamp(30px, 6vw, 48px);
-  line-height: 1.15;
+  font-weight: 400;
+  font-size: clamp(32px, 9vw, 48px);
+  line-height: 1.12;
   letter-spacing: -.01em;
   margin-bottom: 14px;
 }
@@ -330,6 +330,67 @@
   font-style: italic;
 }
 
+/* ── Scratch to reveal ──
+   The foil sits exactly over the date lockup, so the two are stacked in
+   one relatively-positioned box rather than laid out in flow. */
+/* The chapter pill, top-left, tracking the scene on screen. */
+.wc-chapter-chip {
+  position: fixed; top: 18px; left: 18px; z-index: 40;
+  padding: 8px 16px; border-radius: 999px;
+  background: rgba(12, 4, 10, .62);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  border: 1px solid rgba(255, 248, 236, .16);
+  font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--wc-paper); pointer-events: none;
+  animation: wc-chip-in .5s var(--wc-ease, cubic-bezier(.19, 1, .22, 1)) both;
+}
+@keyframes wc-chip-in { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+
+.wc-date-stack { position: relative; display: inline-block; }
+.wc-scratch {
+  position: absolute; inset: 0;
+  border-radius: 14px; overflow: hidden;
+  /* Scoped to this box only: the rest of the page still scrolls on a
+     phone, but a finger dragged across the foil rubs instead of scrolls. */
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 18px 44px -22px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .18);
+  animation: wc-foil-in .7s var(--wc-ease, cubic-bezier(.19, 1, .22, 1)) both;
+}
+.wc-scratch:active { cursor: grabbing; }
+.wc-scratch-canvas { display: block; width: 100%; height: 100%; }
+.wc-scratch-hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  font-size: 10px; letter-spacing: .26em; text-transform: uppercase;
+  color: rgba(26, 12, 20, .72); pointer-events: none;
+  animation: wc-foil-pulse 2.6s ease-in-out infinite;
+}
+@keyframes wc-foil-in { from { opacity: 0; transform: scale(1.04) } to { opacity: 1; transform: none } }
+@keyframes wc-foil-pulse { 0%, 100% { opacity: .55 } 50% { opacity: 1 } }
+
+.wc-date-skip {
+  display: block; margin: 18px auto 0;
+  background: none; border: 1px solid var(--wc-line);
+  color: var(--wc-muted); border-radius: 999px;
+  padding: 9px 20px; font-family: inherit; font-size: 11px;
+  letter-spacing: .2em; text-transform: uppercase; cursor: pointer;
+  transition: color .3s ease, border-color .3s ease;
+}
+.wc-date-skip:hover { color: var(--wc-accent); border-color: var(--wc-accent); }
+
+/* Before the reveal, the hero and the card say so rather than showing
+   the date they are hiding. */
+.wc-hero-date-waiting,
+.wc-inv-date-waiting {
+  font-style: italic;
+  opacity: .78;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-scratch, .wc-scratch-hint { animation: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    INVITATION CARD (embedded wedding card)
    ══════════════════════════════════════════════════════════════════════ */
@@ -354,11 +415,45 @@
   opacity: .3;
   pointer-events: none;
 }
-.wc-inv-icon {
-  width: 72px; height: 72px;
-  margin: 0 auto 20px;
-  opacity: .7;
+/* Laid paper rather than flat cream — two faint washes plus the grain
+   that already runs over the whole page. */
+.wc-inv-card::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, .55), transparent 60%),
+    radial-gradient(90% 60% at 50% 100%, rgba(198, 154, 85, .10), transparent 70%);
 }
+/* Everything readable sits above the ornament. */
+.wc-inv-inner { position: relative; z-index: 3; }
+
+/* ── the drawn frame ── */
+.wc-bulbframe {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 2; pointer-events: none;
+}
+.wc-bulb { animation: wc-twinkle 3.6s ease-in-out infinite; transform-origin: center; }
+@keyframes wc-twinkle { 0%, 100% { opacity: .78 } 50% { opacity: 1 } }
+
+.wc-lantern-slot {
+  position: absolute; top: 26px; width: 34px; z-index: 2; pointer-events: none;
+  animation: wc-sway 6.5s ease-in-out infinite;
+  transform-origin: 50% 0;
+}
+.wc-lantern-l { left: 20px; }
+.wc-lantern-r { right: 20px; animation-duration: 8.2s; animation-delay: -2s; }
+.wc-lantern { width: 100%; height: auto; display: block; }
+@keyframes wc-sway { 0%, 100% { transform: rotate(-2.2deg) } 50% { transform: rotate(2.2deg) } }
+
+.wc-floral-slot {
+  position: absolute; width: 154px; z-index: 2; pointer-events: none; opacity: .95;
+}
+.wc-floral { width: 100%; height: auto; display: block; }
+.wc-floral-bl { left: -8px;  bottom: -10px; transform: rotate(-8deg); }
+.wc-floral-br { right: -8px; bottom: -10px; transform: rotate(8deg) scaleX(-1); }
+
+.wc-medallion { display: block; margin: 0 auto 14px; }
+.wc-ruleorn { display: block; width: min(220px, 70%); height: auto; margin: 22px auto; }
 .wc-inv-parents {
   font-family: 'Cormorant Garamond', serif;
   font-size: 14px;
@@ -379,10 +474,15 @@
   margin-bottom: 12px;
 }
 .wc-inv-card h1 {
-  font-family: 'Great Vibes', cursive;
-  font-weight: 400;
-  font-size: clamp(38px, 10vw, 56px);
-  line-height: 1.2;
+  /* The reference sets the names as a poster, not as a signature:
+     uppercase, heavy, tightly leaded. Measured against it, ours were
+     running about 1.4x too small and far too light. */
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(40px, 12vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -.005em;
+  text-transform: uppercase;
   color: var(--wc-primary);
   margin-bottom: 8px;
 }
@@ -513,8 +613,8 @@
 }
 .wc-story-chapter h3 {
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(24px, 5vw, 34px);
-  font-weight: 300;
+  font-size: clamp(27px, 7.4vw, 36px);
+  font-weight: 500;
   margin-bottom: 14px;
 }
 .wc-story-chapter p {
@@ -608,13 +708,13 @@
 }
 .wc-event-copy h3 {
   font-family: 'Great Vibes', cursive;
-  font-size: clamp(28px, 6vw, 40px);
-  font-weight: 400;
+  font-size: clamp(34px, 10vw, 46px);
+  font-weight: 600;
   margin-bottom: 10px;
 }
 .wc-event-time {
   font-family: 'Lato', sans-serif;
-  font-size: 13px;
+  font-size: 17px;
   color: var(--wc-accent);
   letter-spacing: .1em;
   margin-bottom: 8px;
@@ -640,6 +740,17 @@
   font-size: 12px;
   color: var(--wc-accent);
   font-style: italic;
+}
+.wc-event-cal {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 16px; padding: 9px 16px;
+  border: 1px solid var(--wc-line); border-radius: 999px;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--wc-muted);
+  transition: color .3s ease, border-color .3s ease, transform .3s ease;
+}
+.wc-event-cal:hover {
+  color: var(--wc-accent); border-color: var(--wc-accent); transform: translateY(-1px);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -995,7 +1106,7 @@
 @media (max-width: 480px) {
   .wc-hero-copy { padding: 40px 18px; }
   .wc-hero-copy h1 { font-size: 48px; }
-  .wc-scene-heading h2 { font-size: 28px; }
+  .wc-scene-heading h2 { font-size: clamp(30px, 8.4vw, 38px); }
   .wc-story-chapters { gap: 50px; }
   .wc-closing-image { width: 160px; height: 160px; }
 }

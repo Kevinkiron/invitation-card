@@ -172,13 +172,30 @@ export async function POST(req) {
          turn and never reaches the end. */
       next = ackWeddingStep(next, askedStep);
 
-      const askNext = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
+      /* THE QUESTION IS OURS, NOT THE MODEL'S.
+
+         `askNext` is not something we can depend on the model to send.
+         Measured against the live endpoint, gemini-3.5-flash-lite answers
+         "It's a wedding" with a warm `reply` and an EMPTY `askNext` —
+         every time. The interview then just stops: the couple see "How
+         wonderful." and a blank box, at 0%, with nothing to answer.
+
+         We already know exactly what to ask, because the step plan
+         computed it. So ask the next unanswered step ourselves, and let
+         the model's wording win only when it actually sent some. The
+         interview can no longer stall, ask twice, or wander off the
+         template. */
+      const followUp = nextWeddingStep(next);
+      const modelAsk = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
+      const askNext = followUp ? modelAsk || followUp.ask(next) : "";
+
       const reply = dedupeReply(String(wp.reply || "").trim(), askNext);
 
-      /* The model does not get to declare victory early. Names, date,
-         venue and at least one function have to be on the page before
-         the publish button means anything. */
-      const done = Boolean(wp.done) && weddingPublishable(next);
+      /* The model does not get to declare victory early either. Names,
+         date, venue and at least one function have to be on the page
+         before the publish button means anything — and nothing is done
+         while a step is still unanswered. */
+      const done = !followUp && weddingPublishable(next);
 
       return NextResponse.json({
         reply: reply || "Got it.",

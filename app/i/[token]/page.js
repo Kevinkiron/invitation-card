@@ -1,12 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Check, X, Send, Loader2, Heart, CalendarPlus } from "lucide-react";
+import { Check, X, Send, Loader2, Heart, HelpCircle } from "lucide-react";
 import TemplateRenderer, { paletteOf } from "@/components/TemplateRenderer";
 import { supabase } from "@/lib/supabase";
-import { Loading, Empty, Reveal } from "@/components/ui";
+import { Loading, Empty } from "@/components/ui";
 import { C } from "@/lib/theme";
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE GUEST PAGE — one link, shared with everybody.
+
+   This used to be a per-person URL: a row in `guests` for every invitee,
+   each with its own token, and the couple sending a different link to
+   each of them. Nobody shares an invitation that way — one link goes into
+   the family group and travels from there. So the address is now the
+   invitation's own slug, and everyone holding it sees the same page.
+
+   Which means we no longer know who is reading, so the RSVP asks. The
+   stepper collects the name and number the `guests` row used to hold,
+   from the person actually replying:
+
+     1. yes / maybe / no
+     2. name, number, email (optional)
+     3. a blessing for the couple, then send
+
+   Old per-guest links still resolve: if the code in the URL is not a
+   slug, it is looked up as a guest token and shows the same invitation.
+   ══════════════════════════════════════════════════════════════════════ */
 
 /* Relative luminance, for deciding whether a colour needs light or dark
    text on top of it. */
@@ -44,6 +65,7 @@ function skinOf(cfg, p) {
     fill, onFill,
     onDeep: best(deep),
     onAccent: onFill,
+    dark,
     line: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)",
     fieldBg: dark ? "rgba(255,255,255,.06)" : "#fff",
     display: d?.fonts?.display || "'Marcellus', Georgia, serif",
@@ -53,70 +75,96 @@ function skinOf(cfg, p) {
   };
 }
 
+const CHOICES = [
+  { key: "yes",   mark: <Check size={20} />,      title: "Yes",   sub: "Joyfully",      line: "We will be there" },
+  { key: "maybe", mark: <HelpCircle size={20} />, title: "Maybe", sub: "Still confirming", line: "We will let you know" },
+  { key: "no",    mark: <X size={20} />,          title: "No",    sub: "Regretfully",   line: "Sending our love" },
+];
+
+const EMPTY_FORM = { status: "", name: "", phone: "", email: "", party_size: 1, blessing: "" };
+
 export default function GuestPage() {
-  const { token } = useParams();
-  const [guest, setGuest] = useState(null);
+  /* The folder is still [token]; the value is now normally an invitation
+     slug, so `code` reads more honestly for a public address. */
+  const { token: code } = useParams();
+
   const [inv, setInv] = useState(null);
   const [events, setEvents] = useState([]);
-  const [existing, setExisting] = useState([]);
-  const [resp, setResp] = useState({});
-  const [note, setNote] = useState("");
+  const [wishes, setWishes] = useState([]);
+  const [greeting, setGreeting] = useState("");   // legacy per-guest links only
+
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendErr, setSendErr] = useState("");
+
+  const loadWishes = useCallback(async (invitationId) => {
+    const { data } = await supabase
+      .from("invitation_wishes")
+      .select("name, blessing, created_at")
+      .eq("invitation_id", invitationId)
+      .order("created_at", { ascending: false })
+      .limit(40);
+    setWishes(data || []);
+  }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        const { data: g } = await supabase.from("guests").select("*").eq("token", token).maybeSingle();
-        if (!g) { setErr("This invitation link isn't valid."); return; }
-        setGuest(g);
-        supabase.from("guests").update({ viewed_at: new Date().toISOString() }).eq("id", g.id).then(() => {});
+        /* The link is the slug. Fall back to the old guest token so that
+           anything already sent out keeps working. */
+        let { data: i } = await supabase
+          .from("invitations").select("*").eq("slug", code).maybeSingle();
 
-        const [{ data: i }, { data: e }, { data: r }] = await Promise.all([
-          supabase.from("invitations").select("*").eq("id", g.invitation_id).maybeSingle(),
-          supabase.from("invitation_events").select("*").eq("invitation_id", g.invitation_id).order("sort_order"),
-          supabase.from("rsvps").select("*").eq("guest_id", g.id),
-        ]);
-        setInv(i); setEvents(e || []); setExisting(r || []);
-
-        const init = {};
-        (e || []).forEach((ev) => {
-          const ex = (r || []).find((x) => x.invitation_event_id === ev.id);
-          init[ev.id] = { status: ex?.status || "pending", party_size: ex?.party_size || 1 };
-        });
-        setResp(init);
-        if ((r || []).some((x) => x.status !== "pending")) {
-          setNote((r || []).find((x) => x.message)?.message || "");
+        if (!i) {
+          const { data: g } = await supabase
+            .from("guests").select("id, name, invitation_id").eq("token", code).maybeSingle();
+          if (g) {
+            setGreeting(g.name || "");
+            const r = await supabase.from("invitations").select("*").eq("id", g.invitation_id).maybeSingle();
+            i = r.data;
+            supabase.from("guests").update({ viewed_at: new Date().toISOString() }).eq("id", g.id).then(() => {});
+          }
         }
+
+        if (!i) { setErr("This invitation link isn't valid."); return; }
+        setInv(i);
+
+        const { data: e } = await supabase
+          .from("invitation_events").select("*").eq("invitation_id", i.id).order("sort_order");
+        setEvents(e || []);
+        await loadWishes(i.id);
       } catch {
         setErr("Something went wrong loading this invitation.");
       } finally {
         setLoading(false);
       }
     })();
-  }, [token]);
+  }, [code, loadWishes]);
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async () => {
     setSending(true);
+    setSendErr("");
     try {
-      for (const ev of events) {
-        const r = resp[ev.id];
-        const ex = existing.find((x) => x.invitation_event_id === ev.id);
-        const body = {
-          guest_id: guest.id,
-          invitation_event_id: ev.id,
-          status: r.status,
-          party_size: Number(r.party_size) || 1,
-          message: note,
-          responded_at: new Date().toISOString(),
-        };
-        if (ex) await supabase.from("rsvps").update(body).eq("id", ex.id);
-        else await supabase.from("rsvps").insert(body);
-      }
+      const { error } = await supabase.from("guest_responses").insert({
+        invitation_id: inv.id,
+        name: form.name.trim(),
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        status: form.status || "yes",
+        party_size: Math.max(1, Math.min(50, Number(form.party_size) || 1)),
+        blessing: form.blessing.trim() || null,
+      });
+      if (error) { setSendErr("We could not save that. Please try again."); return; }
       setDone(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      await loadWishes(inv.id);
+    } catch {
+      setSendErr("We could not save that. Please try again.");
     } finally {
       setSending(false);
     }
@@ -129,16 +177,13 @@ export default function GuestPage() {
      design itself so the RSVP block below the invitation is part of the
      same object, not a cream form stapled to a black poster. */
   const p = paletteOf(inv?.design_config, [C.maroon, C.gold, C.ivory, C.ink, C.muted, "#fff"]);
-  const ink = p[3] || C.ink;
-  const muted = p[4] || C.muted;
-
-  /* The RSVP form is app chrome, not renderer output, so it was styled by
-     globals.css — which is built for the cream SaaS pages. On a dark
-     invitation that meant near-black button text on a near-black ground:
-     the accept/decline buttons were invisible. Everything below now takes
-     its colours and its typefaces from the invitation itself. */
   const skin = skinOf(inv?.design_config, p);
-  const anyAnswered = Object.values(resp).some((r) => r.status !== "pending");
+  const tokens = inv?.design_config?.tokens;
+  const rsvpNote =
+    tokens?.rsvp?.note ||
+    (tokens?.rsvp?.deadline ? `Kindly reply by ${tokens.rsvp.deadline}.` : "");
+
+  const canContinue = step === 1 ? Boolean(form.status) : step === 2 ? form.name.trim().length > 1 : true;
 
   return (
     <div style={{ background: skin.bg, minHeight: "100vh" }}>
@@ -149,130 +194,245 @@ export default function GuestPage() {
         .rsvp-orn i{flex:1;height:1px;background:${skin.line}}
         .rsvp-orn b{color:${skin.accent};font-size:12px;font-weight:400;line-height:1}
         .rsvp-h{font-family:${skin.display};font-weight:500;font-size:27px;text-align:center;
-          margin:0 0 10px;color:${skin.deep === skin.bg ? skin.ink : skin.deep}}
+          color:${skin.ink};margin:0 0 8px}
         .rsvp-sub{text-align:center;color:${skin.muted};font-size:13.5px;line-height:1.65;margin:0 0 26px}
 
-        .rsvp-card{background:${skin.fieldBg};border:1px solid ${skin.line};border-radius:${skin.radius};
-          padding:22px;margin-bottom:14px}
-        .rsvp-name{font-family:${skin.display};font-size:18px;color:${skin.ink};margin-bottom:15px}
-        .rsvp-choice{display:flex;gap:10px;flex-wrap:wrap}
+        .rsvp-steps{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 14px}
+        .rsvp-step{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;font-size:12px;font-weight:700;border:1px solid ${skin.line};
+          color:${skin.muted};background:transparent;transition:.3s}
+        .rsvp-step.on{background:${skin.fill};border-color:${skin.fill};color:${skin.onFill}}
+        .rsvp-step.past{border-color:${skin.accent};color:${skin.accent}}
+        .rsvp-steprule{width:26px;height:1px;background:${skin.line}}
+        .rsvp-legend{text-align:center;font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+          color:${skin.muted};margin:0 0 22px}
 
-        /* Buttons take the invitation's own colours. Before this they used
-           the app's .btn-ghost — cream border, near-black text — which
-           disappeared completely on a dark invitation. */
-        .rsvp-btn{flex:1 1 140px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
-          padding:12px 14px;border-radius:${skin.pill};cursor:pointer;font:inherit;font-size:13px;
-          background:transparent;color:${skin.ink};border:1px solid ${skin.line};
-          transition:background .25s ease,color .25s ease,border-color .25s ease,transform .25s ease}
-        .rsvp-btn:hover{border-color:${skin.accent};transform:translateY(-1px)}
-        .rsvp-btn.on{background:${skin.fill};border-color:${skin.fill};color:${skin.onFill}}
-        .rsvp-btn.off{background:${skin.line};border-color:${skin.line};color:${skin.ink}}
+        .rsvp-card{background:${skin.fieldBg};border:1px solid ${skin.line};border-radius:${skin.radius};
+          padding:18px 18px 20px}
+        .rsvp-choice{display:flex;flex-direction:column;gap:11px}
+        .rsvp-opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+          padding:15px 17px;border-radius:${skin.radius};cursor:pointer;
+          border:1px solid ${skin.line};background:${skin.fieldBg};color:${skin.ink};
+          font-family:inherit;transition:border-color .25s,background .25s,transform .2s}
+        .rsvp-opt:hover{border-color:${skin.accent};transform:translateY(-1px)}
+        .rsvp-opt.on{border-color:${skin.fill};background:${skin.fill};color:${skin.onFill}}
+        .rsvp-opt .ic{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;
+          align-items:center;justify-content:center;border:1px solid currentColor;opacity:.9}
+        .rsvp-opt b{display:block;font-size:16px;font-weight:600;line-height:1.2}
+        .rsvp-opt em{display:block;font-size:12px;font-style:normal;opacity:.75;margin-top:2px}
 
         .rsvp-field{margin-top:16px}
+        .rsvp-card>.rsvp-field:first-child{margin-top:0}
         .rsvp-field label{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
-          color:${skin.muted};margin-bottom:8px}
+          color:${skin.muted};margin-bottom:7px}
         .rsvp-field input,.rsvp-field textarea{width:100%;padding:13px 15px;border-radius:${skin.radius};
-          background:${skin.fieldBg};border:1px solid ${skin.line};color:${skin.ink};
-          font:inherit;font-size:14.5px;outline:none;resize:vertical}
+          border:1px solid ${skin.line};background:${skin.fieldBg};color:${skin.ink};
+          font-size:15px;font-family:inherit;outline:none;transition:border-color .2s}
         .rsvp-field input:focus,.rsvp-field textarea:focus{border-color:${skin.accent}}
         .rsvp-field ::placeholder{color:${skin.muted};opacity:.8}
+        .rsvp-row{display:flex;gap:12px}
+        .rsvp-row>*{flex:1;min-width:0}
 
-        .rsvp-send{width:100%;margin-top:22px;padding:17px 20px;border:none;cursor:pointer;
-          border-radius:${skin.pill};background:${skin.fill};color:${skin.onFill};
-          font:inherit;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-          display:inline-flex;align-items:center;justify-content:center;gap:9px;
-          transition:transform .3s ease,box-shadow .3s ease}
+        .rsvp-actions{display:flex;gap:10px;margin-top:22px}
+        .rsvp-send{flex:1;padding:16px 20px;border:none;cursor:pointer;border-radius:${skin.pill};
+          background:${skin.fill};color:${skin.onFill};font-size:14px;font-weight:700;
+          font-family:inherit;display:inline-flex;align-items:center;
+          justify-content:center;gap:9px;transition:transform .2s,box-shadow .3s}
         .rsvp-send:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 32px rgba(0,0,0,.24)}
         .rsvp-send:disabled{opacity:.45;cursor:not-allowed}
-        .rsvp-fine{text-align:center;font-size:11.5px;color:${skin.muted};margin-top:18px}
+        .rsvp-back{padding:16px 20px;border-radius:${skin.pill};cursor:pointer;font-family:inherit;
+          background:transparent;border:1px solid ${skin.line};color:${skin.muted};font-size:14px}
+        .rsvp-fine{text-align:center;font-size:11.5px;color:${skin.muted};margin-top:18px;line-height:1.6}
+        .rsvp-err{text-align:center;font-size:13px;color:#e06a5c;margin-top:14px}
+
+        .wish-list{display:flex;flex-direction:column;gap:12px}
+        .wish{background:${skin.fieldBg};border:1px solid ${skin.line};border-radius:${skin.radius};
+          padding:15px 17px;margin:0}
+        .wish p{margin:0 0 8px;font-family:${skin.display};font-size:15.5px;line-height:1.6;
+          color:${skin.ink};font-style:italic}
+        .wish figcaption{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:${skin.accent}}
+        .wish-empty{text-align:center;color:${skin.muted};font-size:13.5px;line-height:1.7;padding:18px 10px}
       `}</style>
+
       <div style={{ maxWidth: 500, margin: "0 auto", background: p[2], minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
         <div style={{ animation: "msgIn 1s var(--ease) both" }}>
-          <TemplateRenderer cfg={inv?.design_config} events={events} guestName={guest?.name} />
+          <TemplateRenderer cfg={inv?.design_config} events={events} guestName={greeting} />
         </div>
 
-        {!done ? (
-          <div className="rsvp" style={{ padding: "10px 26px 56px", background: skin.bg }}>
-            <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
+        {/* ── RSVP ── */}
+        <div className="rsvp" style={{ padding: "10px 26px 44px", background: skin.bg }}>
+          <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
 
-            <h2 className="rsvp-h">Will you join us?</h2>
-            <p className="rsvp-sub">
-              Please respond for each function so we can plan the seating.
-            </p>
+          {!done ? (
+            <>
+              <h2 className="rsvp-h">Will you celebrate with us?</h2>
+              <p className="rsvp-sub">
+                {rsvpNote || "Let us know if you can make it, so we can keep a place for you."}
+              </p>
 
-            {events.map((ev, i) => {
-              const r = resp[ev.id] || {};
-              return (
-                <Reveal key={ev.id} delay={i * 70}>
-                  <div className="rsvp-card">
-                    <div className="rsvp-name">{ev.name}</div>
-                    <div className="rsvp-choice">
-                      <button
-                        type="button"
-                        className={`rsvp-btn ${r.status === "accepted" ? "on" : ""}`}
-                        onClick={() => setResp((s) => ({ ...s, [ev.id]: { ...s[ev.id], status: "accepted" } }))}
-                      >
-                        <Check size={14} /> Joyfully accept
-                      </button>
-                      <button
-                        type="button"
-                        className={`rsvp-btn ${r.status === "declined" ? "off" : ""}`}
-                        onClick={() => setResp((s) => ({ ...s, [ev.id]: { ...s[ev.id], status: "declined" } }))}
-                      >
-                        <X size={14} /> Regretfully decline
-                      </button>
+              <div className="rsvp-steps">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {n > 1 && <i className="rsvp-steprule" />}
+                    <div className={`rsvp-step ${step === n ? "on" : step > n ? "past" : ""}`}>{n}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="rsvp-legend">
+                {step === 1 ? "Response" : step === 2 ? "Your details" : "A blessing"}
+              </p>
+
+              {step === 1 && (
+                <div className="rsvp-choice">
+                  {CHOICES.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className={`rsvp-opt ${form.status === c.key ? "on" : ""}`}
+                      onClick={() => { set("status", c.key); setStep(2); }}
+                    >
+                      <span className="ic">{c.mark}</span>
+                      <span>
+                        <b>{c.title}</b>
+                        <em>{c.sub} · {c.line}</em>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="rsvp-card">
+                  <div className="rsvp-field">
+                    <label htmlFor="g-name">Your name</label>
+                    <input
+                      id="g-name" value={form.name} autoComplete="name"
+                      onChange={(e) => set("name", e.target.value)}
+                      placeholder="So the couple know who replied"
+                    />
+                  </div>
+                  <div className="rsvp-field">
+                    <label htmlFor="g-phone">Phone number</label>
+                    <input
+                      id="g-phone" value={form.phone} inputMode="tel" autoComplete="tel"
+                      onChange={(e) => set("phone", e.target.value)}
+                      placeholder="In case they need to reach you"
+                    />
+                  </div>
+                  <div className="rsvp-row">
+                    <div className="rsvp-field">
+                      <label htmlFor="g-email">Email (optional)</label>
+                      <input
+                        id="g-email" value={form.email} type="email" autoComplete="email"
+                        onChange={(e) => set("email", e.target.value)}
+                        placeholder="Optional"
+                      />
                     </div>
-                    {r.status === "accepted" && (
-                      <div className="rsvp-field" style={{ animation: "msgIn .4s both" }}>
-                        <label htmlFor={`n-${ev.id}`}>How many attending?</label>
+                    {form.status !== "no" && (
+                      <div className="rsvp-field">
+                        <label htmlFor="g-party">How many of you</label>
                         <input
-                          id={`n-${ev.id}`} type="number" min="1"
-                          value={r.party_size}
-                          onChange={(e) => setResp((s) => ({ ...s, [ev.id]: { ...s[ev.id], party_size: e.target.value } }))}
+                          id="g-party" value={form.party_size} type="number" min={1} max={50}
+                          onChange={(e) => set("party_size", e.target.value)}
                         />
                       </div>
                     )}
                   </div>
-                </Reveal>
-              );
-            })}
+                </div>
+              )}
 
-            <div className="rsvp-field">
-              <label htmlFor="rsvp-note">A message for the hosts (optional)</label>
-              <textarea id="rsvp-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
-                placeholder="A line to say you are thinking of them…" />
-            </div>
+              {step === 3 && (
+                <div className="rsvp-card">
+                  <div className="rsvp-field">
+                    <label htmlFor="g-bless">A blessing or a note</label>
+                    <textarea
+                      id="g-bless" rows={4} value={form.blessing}
+                      onChange={(e) => set("blessing", e.target.value)}
+                      placeholder="Wishing you a lifetime of love and laughter…"
+                    />
+                  </div>
+                  <p className="rsvp-fine" style={{ textAlign: "left", marginTop: 12 }}>
+                    Your message appears further down this page for other guests to read.
+                    Leave it empty if you would rather not.
+                  </p>
+                </div>
+              )}
 
-            <button className="rsvp-send" onClick={submit} disabled={sending || !anyAnswered}>
-              {sending ? <><Loader2 size={16} className="spin" /> Sending…</> : <>Send my response <Send size={15} /></>}
-            </button>
+              <div className="rsvp-actions">
+                {step > 1 && (
+                  <button type="button" className="rsvp-back" onClick={() => setStep(step - 1)}>
+                    Back
+                  </button>
+                )}
+                {step < 3 ? (
+                  <button
+                    type="button" className="rsvp-send" disabled={!canContinue}
+                    onClick={() => setStep(step + 1)}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button type="button" className="rsvp-send" disabled={sending} onClick={submit}>
+                    {sending ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
+                    {sending ? "Sending…" : "Send my RSVP"}
+                  </button>
+                )}
+              </div>
 
-            <p className="rsvp-fine">You can reopen this link and change your answer any time.</p>
-          </div>
-        ) : (
-          <div style={{ padding: "48px 30px 70px", textAlign: "center", background: skin.bg, fontFamily: skin.body }}>
-            <div
-              className="pop"
-              style={{
-                width: 74, height: 74, borderRadius: "50%", margin: "0 auto 24px",
-                background: `linear-gradient(140deg, ${skin.accent}, ${skin.deep})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 16px 34px -18px ${p[0]}`,
-              }}
-            >
-              <Heart size={30} color={skin.onAccent} fill={skin.onAccent} />
+              {sendErr && <p className="rsvp-err">{sendErr}</p>}
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "12px 0 6px" }}>
+              <div
+                className="pop"
+                style={{
+                  width: 74, height: 74, borderRadius: "50%", margin: "0 auto 24px",
+                  background: `linear-gradient(140deg, ${skin.accent}, ${skin.deep})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 16px 34px -18px ${p[0]}`,
+                }}
+              >
+                <Heart size={30} color={skin.onAccent} fill={skin.onAccent} />
+              </div>
+              <div style={{ fontFamily: skin.display, fontSize: 30, marginBottom: 12, color: skin.ink }}>
+                Thank you, {form.name.trim().split(" ")[0] || "friend"}
+              </div>
+              <p style={{ color: skin.muted, fontSize: 15, lineHeight: 1.7, maxWidth: 330, margin: "0 auto 22px" }}>
+                {form.status === "no"
+                  ? "We are sorry to miss you, and grateful you told us."
+                  : "Your reply is with the couple. They cannot wait to see you."}
+              </p>
+              <button
+                type="button" className="rsvp-back"
+                onClick={() => { setForm(EMPTY_FORM); setStep(1); setDone(false); }}
+              >
+                Reply for someone else
+              </button>
             </div>
-            <div style={{ fontFamily: skin.display, fontSize: 30, marginBottom: 12, color: skin.deep === skin.bg ? skin.ink : skin.deep }}>
-              Thank you, {guest.name}
+          )}
+        </div>
+
+        {/* ── BLESSINGS & WISHES ── */}
+        <div className="rsvp" style={{ padding: "6px 26px 64px", background: skin.bg }}>
+          <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
+          <h2 className="rsvp-h">Blessings &amp; Wishes</h2>
+          <p className="rsvp-sub">What everyone is saying to the couple.</p>
+
+          {wishes.length ? (
+            <div className="wish-list">
+              {wishes.map((w, i) => (
+                <figure className="wish" key={i}>
+                  <p>&ldquo;{w.blessing}&rdquo;</p>
+                  <figcaption>{w.name}</figcaption>
+                </figure>
+              ))}
             </div>
-            <p style={{ color: muted, fontSize: 15, lineHeight: 1.7, maxWidth: 320, margin: "0 auto 24px" }}>
-              Your response has been recorded. We can't wait to celebrate with you.
+          ) : (
+            <p className="wish-empty">
+              Be the first to leave a blessing for this beautiful new chapter.
             </p>
-            <button className="btn btn-ghost btn-sm" onClick={() => setDone(false)}>
-              <CalendarPlus size={14} /> Change my response
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

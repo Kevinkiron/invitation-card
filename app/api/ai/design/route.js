@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
 import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
-import { buildWeddingCinemaPrompt, weddingProgress, weddingPublishable } from "@/lib/ai/wedding-prompt";
+import {
+  buildWeddingCinemaPrompt,
+  nextWeddingStep,
+  ackWeddingStep,
+  weddingProgress,
+  weddingPublishable,
+} from "@/lib/ai/wedding-prompt";
 import { classifyEvent } from "@/lib/ai/classify";
 import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
 import { WEDDING_CINEMA_SCHEMA, patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
@@ -117,7 +123,11 @@ export async function POST(req) {
     const isWedding = kind === "wedding" || WEDDING_FUNCTIONS.has(kind) || isCinema(incoming);
 
     if (isWedding) {
-      /* Wedding-specific system prompt */
+      /* The step we are about to put to them. Computed here, not read back
+         out of the model's answer, so the acknowledgement below records
+         what was actually asked. */
+      const askedStep = nextWeddingStep(incoming);
+
       const weddingSystem = buildWeddingCinemaPrompt({
         tokens: incoming,
         turnCount,
@@ -151,14 +161,16 @@ export async function POST(req) {
 
       /* Merge: start from current cinema tokens, patch in the new data */
       const base = isCinema(incoming) ? incoming : { ...emptyWeddingTokens(), ...incoming };
-      const next = patchWeddingTokens(base, wp);
+      let next = patchWeddingTokens(base, wp);
       next.eventKind = "wedding";
       next.designed = true;
 
-      /* Remember the questions that have no data of their own to prove
-         they were asked, or the interview loops on them forever. */
-      if (/paperclip|photo/i.test(wp.askNext || "")) next._askedPhotos = true;
-      if (/parking|airport|station|getting there/i.test(wp.askNext || "")) next._askedLogistics = true;
+      /* A photograph arrives through the paperclip and a couple with no
+         parking to mention leaves the field empty for good, so those
+         questions cannot prove they were answered from the tokens alone.
+         Record that we put them; otherwise the interview asks again every
+         turn and never reaches the end. */
+      next = ackWeddingStep(next, askedStep);
 
       const askNext = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
       const reply = dedupeReply(String(wp.reply || "").trim(), askNext);

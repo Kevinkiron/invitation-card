@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { MapPin, Calendar, ChevronDown } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 
@@ -14,6 +14,27 @@ import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── Helpers ── */
+/* A map link is pasted by the couple and rendered into an href, so it is
+   checked rather than trusted: https only, and only the hosts Google
+   actually uses. Anything else falls through to the search query. */
+function safeMapHref(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "https:") return "";
+    const ok = [
+      "maps.google.com", "www.google.com", "google.com",
+      "maps.app.goo.gl", "goo.gl", "g.co",
+    ];
+    const host = u.hostname.toLowerCase();
+    if (ok.includes(host) || host.endsWith(".google.com")) return u.toString();
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 function monogram(bride, groom) {
   return `${(bride || "A").charAt(0)}${(groom || "V").charAt(0)}`;
 }
@@ -42,17 +63,24 @@ function useReveal(threshold = 0.15) {
   return [ref, visible];
 }
 
-/* ── Word-by-word reveal component ── */
+/* ── Word-by-word reveal component ──
+   The space goes BETWEEN the spans, not inside them. `.wc-word` is an
+   inline-block, and an inline-block drops its own trailing whitespace —
+   so with the space inside, every scene heading on the page rendered as
+   "Sharethecelebrationwithus". A bare text node between the boxes is a
+   real space and still gives the line somewhere to break. */
 function WordReveal({ text, visible, delay = 0 }) {
-  const words = (text || "").split(" ");
+  const words = String(text || "").split(/\s+/).filter(Boolean);
   return words.map((word, i) => (
-    <span
-      key={i}
-      className={`wc-word ${visible ? "wc-revealed" : ""}`}
-      style={{ transitionDelay: `${delay + i * 80}ms` }}
-    >
-      {word}{" "}
-    </span>
+    <Fragment key={i}>
+      <span
+        className={`wc-word ${visible ? "wc-revealed" : ""}`}
+        style={{ transitionDelay: `${delay + i * 80}ms` }}
+      >
+        {word}
+      </span>
+      {i < words.length - 1 ? " " : null}
+    </Fragment>
   ));
 }
 
@@ -215,7 +243,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
           />
           <div className="wc-story-chapters">
             {story.map((ch, i) => (
-              <StoryChapter key={ch.id || i} chapter={ch} index={i} />
+              <StoryChapter key={ch.id || i} chapter={ch} index={i} image={media.storyImages?.[i]} />
             ))}
           </div>
         </section>
@@ -278,8 +306,17 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
               />
             </div>
           )}
-          {venue.mapQuery && (
-            <a className="wc-venue-cta" href={`https://maps.google.com/?q=${encodeURIComponent(venue.mapQuery)}`} target="_blank" rel="noreferrer">
+          {/* A pasted link is the exact pin the couple chose; a query is
+              our guess at it, so the link wins for the button. The embed
+              still has to use the query — Google will not render a short
+              goo.gl link inside an iframe. */}
+          {(venue.mapLink || venue.mapQuery) && (
+            <a
+              className="wc-venue-cta"
+              href={safeMapHref(venue.mapLink) || `https://maps.google.com/?q=${encodeURIComponent(venue.mapQuery)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               <MapPin size={16} /> Open in Maps
             </a>
           )}
@@ -287,13 +324,27 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
       )}
 
       {/* ── SOCIAL / HASHTAG ── */}
-      {social.hashtag && (
-        <section className="wc-scene">
+      {(social.hashtag || social.instagram) && (
+        <section className="wc-scene" id="share">
           <SceneHeading eyebrow="Share the Moment" title="Share the celebration with us" />
-          <div className="wc-hashtag">#{social.hashtag}</div>
-          <p style={{ textAlign: "center", fontSize: 14, color: "var(--wc-muted)" }}>
+          {social.hashtag && <div className="wc-hashtag">#{social.hashtag}</div>}
+          <p className="wc-share-note">
             Share your favourite moments and tag the couple after the celebration.
           </p>
+          {social.instagram && (
+            /* Opens the couple's Instagram. instagram.com/_u/<handle> is
+               the link the app intercepts on a phone, so guests land in
+               Instagram itself rather than a browser tab; on a laptop it
+               redirects to the ordinary profile page. */
+            <a
+              className="wc-share-cta"
+              href={`https://instagram.com/_u/${encodeURIComponent(String(social.instagram).replace(/^@/, ""))}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Post a story · @{String(social.instagram).replace(/^@/, "")}
+            </a>
+          )}
         </section>
       )}
 
@@ -301,6 +352,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
       <ClosingFooter
         couple={couple}
         invitation={invitation}
+        media={media}
         mono={mono}
         bride={bride}
         groom={groom}
@@ -329,20 +381,40 @@ function DateScene({ dated }) {
   );
 }
 
+/* The symbol at the head of the invitation card. This used to be a
+   hard-coded ॐ, which is the right mark on a Hindu card and the wrong one
+   on every other — a Christian or Muslim family opened their own
+   invitation and found someone else's faith at the top of it. The
+   interview asks once; anything unrecognised falls back to the neutral
+   ornament rather than guessing. */
+const FAITH_MARK = {
+  hindu: "ॐ",
+  jain: "ॐ",
+  muslim: "☪",
+  christian: "✝",
+  catholic: "✝",
+  sikh: "☬",
+  buddhist: "☸",
+  interfaith: "✦",
+  none: "✦",
+};
+
 function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated }) {
   const [ref, vis] = useReveal();
+  const faith = String(invitation.religion || "").trim().toLowerCase();
+  const mark = FAITH_MARK[faith] || "✦";
   return (
     <section ref={ref} className="wc-scene" id="families">
       <div className={`wc-inv-card wc-fade ${vis ? "wc-visible" : ""}`}>
-        {/* Ganesh ji or ornament icon */}
         <div className="wc-inv-icon">
-          <svg viewBox="0 0 80 80" fill="none" style={{ width: "100%", height: "100%" }}>
+          <svg viewBox="0 0 80 80" fill="none" style={{ width: "100%", height: "100%" }} role="presentation">
             <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth=".5" opacity=".3" />
-            <text x="40" y="46" textAnchor="middle" fontFamily="'Great Vibes', cursive" fontSize="28" fill="currentColor" opacity=".6">
-              ॐ
+            <text x="40" y="46" textAnchor="middle" fontSize="28" fill="currentColor" opacity=".6">
+              {mark}
             </text>
           </svg>
         </div>
+        {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
 
         {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}
         <p className="wc-inv-kicker">{invitation.kicker || "Together With Their Families"}</p>
@@ -386,13 +458,17 @@ function CoupleCard({ role, name, intro, photo }) {
   );
 }
 
-function StoryChapter({ chapter, index }) {
+/* `image` is the photograph the couple uploaded for this chapter, taken
+   from media.storyImages by position. The model never writes a URL, so
+   chapter.imageUrl only ever holds one on older saved invitations. */
+function StoryChapter({ chapter, index, image }) {
   const [ref, vis] = useReveal();
+  const photo = image || chapter.imageUrl;
   return (
     <article ref={ref} className={`wc-story-chapter ${vis ? "wc-visible" : ""}`}>
-      {chapter.imageUrl && (
+      {photo && (
         <div className="wc-story-image">
-          <img src={chapter.imageUrl} alt={chapter.title} loading="lazy" />
+          <img src={photo} alt={chapter.title || `Chapter ${index + 1}`} loading="lazy" />
         </div>
       )}
       <div className="wc-story-number">Chapter {String(index + 1).padStart(2, "0")}</div>
@@ -432,25 +508,37 @@ function EventCard({ event, index, total }) {
   );
 }
 
-function ClosingFooter({ couple, invitation, mono, bride, groom }) {
+/* The last thing a guest sees: the thank-you, set over a full-width
+   photograph of the couple rather than beside a small one. The image is a
+   background so the words sit on top of it; without one the monogram
+   stands in and nothing looks broken. */
+function ClosingFooter({ couple, invitation, media, mono, bride, groom }) {
   const [ref, vis] = useReveal();
+  const backdrop = media?.closingImage || couple.couplePhoto;
+  const note = invitation.thankYouNote || invitation.closingMessage;
   return (
-    <footer ref={ref} className={`wc-closing wc-fade ${vis ? "wc-visible" : ""}`}>
-      {couple.couplePhoto ? (
-        <div className="wc-closing-image">
-          <img src={couple.couplePhoto} alt={`${bride} & ${groom}`} />
-        </div>
-      ) : (
-        <div className="wc-closing-monogram">{mono}</div>
+    <footer
+      ref={ref}
+      className={`wc-closing wc-fade ${backdrop ? "wc-closing-hasimage" : ""} ${vis ? "wc-visible" : ""}`}
+    >
+      {backdrop && (
+        <>
+          <img className="wc-closing-backdrop" src={backdrop} alt="" aria-hidden="true" />
+          <div className="wc-closing-veil" aria-hidden="true" />
+        </>
       )}
-      {invitation.closingMessage && <p className="wc-closing-message">{invitation.closingMessage}</p>}
-      {invitation.closingBlessing && <p className="wc-closing-blessing">{invitation.closingBlessing}</p>}
-      <h2>
-        {bride}
-        <em>&amp;</em>
-        {groom}
-      </h2>
-      <small>Wedding Cinema by Welcvm</small>
+      <div className="wc-closing-copy">
+        {!backdrop && <div className="wc-closing-monogram">{mono}</div>}
+        {backdrop && <div className="wc-closing-monogram wc-closing-monogram-over">{mono}</div>}
+        {note && <p className="wc-closing-message">{note}</p>}
+        {invitation.closingBlessing && <p className="wc-closing-blessing">{invitation.closingBlessing}</p>}
+        <h2>
+          {bride}
+          <em>&amp;</em>
+          {groom}
+        </h2>
+        <small>Wedding Cinema by Welcvm</small>
+      </div>
     </footer>
   );
 }

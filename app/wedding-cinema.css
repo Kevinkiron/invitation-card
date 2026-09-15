@@ -836,6 +836,32 @@
   text-align: center;
   margin-bottom: 16px;
 }
+.wc-share-note {
+  text-align: center; font-size: 14px; color: var(--wc-muted);
+  max-width: 420px; margin: 0 auto; line-height: 1.7;
+}
+/* Opens Instagram on the couple's profile. */
+.wc-share-cta {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  width: fit-content; margin: 26px auto 0;
+  padding: 13px 26px; border-radius: 999px;
+  border: 1px solid var(--wc-accent); color: var(--wc-accent);
+  font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+  transition: background .3s ease, color .3s ease, transform .3s ease;
+}
+.wc-share-cta:hover {
+  background: var(--wc-accent); color: #160e10; transform: translateY(-2px);
+}
+
+/* The invocation under the faith symbol at the head of the card. */
+.wc-inv-deity {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; font-style: italic;
+  color: var(--wc-accent);
+  margin: -6px 0 18px;
+  letter-spacing: .02em;
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    CLOSING FOOTER
@@ -844,6 +870,34 @@
   text-align: center;
   padding: 80px 24px 60px;
   position: relative;
+}
+/* With a photograph the thank-you becomes a full-bleed closing frame:
+   the image fills the footer and the words sit on top of it, rather than
+   a small round portrait above them. */
+.wc-closing-hasimage {
+  min-height: 88vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 96px 24px;
+}
+.wc-closing-backdrop {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: 0;
+}
+.wc-closing-veil {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,.45) 20%, rgba(0,0,0,.72) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.55), transparent 32%, rgba(0,0,0,.6));
+}
+.wc-closing-copy { position: relative; z-index: 2; width: 100%; }
+.wc-closing-hasimage .wc-closing-message { color: rgba(255,255,255,.88); }
+.wc-closing-hasimage h2 { color: #fff; }
+.wc-closing-hasimage small { color: rgba(255,255,255,.7); }
+.wc-closing-monogram-over {
+  width: 92px; height: 92px; margin: 0 auto 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,.35); border-radius: 50%;
 }
 .wc-closing-image {
   width: 220px; height: 220px;

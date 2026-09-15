@@ -1,0 +1,288 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Welcvm — App-wide Responsive CSS
+   Imported in globals.css via @import.
+
+   Covers: landing, nav, create/chat, dashboard, manage, footer.
+   Breakpoints: 1024px, 860px, 640px, 480px, 375px
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── NAV ── */
+@media (max-width: 860px) {
+  .w-nav-links  { display: none !important; }
+  .w-nav-burger { display: flex !important; align-items: center; }
+}
+@media (max-width: 480px) {
+  .w-nav-inner { padding: 12px 16px !important; }
+  .w-nav-drawer { padding: 14px 16px !important; }
+}
+
+/* ── LANDING HERO ── */
+@media (max-width: 960px) {
+  .w-herogrid {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+  .w-hero-sub { max-width: none !important; }
+  .w-phonewrap { padding-bottom: 36px !important; }
+}
+@media (max-width: 640px) {
+  .w-hero { padding: 40px 0 56px !important; }
+  .w-h1 { font-size: clamp(34px, 9vw, 52px) !important; }
+  .w-hero-cta {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .w-hero-cta .btn { width: 100% !important; justify-content: center !important; }
+  .w-cta-note { text-align: center !important; }
+  .w-assure {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .w-as {
+    padding: 10px 0 !important;
+    border-left: 0 !important;
+    border-top: 1px solid rgba(201,146,47,.2) !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+  }
+  .w-as:first-child { border-top: none !important; padding-top: 0 !important; }
+  .w-as b  { font-size: 14px !important; }
+  .w-as span { font-size: 12px !important; }
+}
+@media (max-width: 375px) {
+  .w-h1 { font-size: 30px !important; }
+}
+
+/* ── TRUTH STRIP ── */
+@media (max-width: 860px) {
+  .w-truthgrid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 500px) {
+  .w-truthgrid { grid-template-columns: 1fr !important; }
+  .w-truth { padding: 20px 16px !important; text-align: left !important; }
+  .w-truth-orn { margin: 0 0 10px !important; }
+}
+
+/* ── EVENT CATEGORY CARDS ── */
+@media (max-width: 1060px) {
+  .w-egrid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 760px) {
+  .w-egrid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+}
+@media (max-width: 480px) {
+  .w-egrid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .w-eart { height: 120px !important; }
+}
+
+/* ── SECTION HEADINGS ── */
+@media (max-width: 640px) {
+  .w-h2 { font-size: clamp(24px, 7vw, 36px) !important; }
+  .w-lede { font-size: 14.5px !important; }
+  .w-blk { padding: 48px 0 !important; }
+}
+
+/* ── HOW IT WORKS STEPS ── */
+@media (max-width: 860px) {
+  .w-stepgrid { grid-template-columns: repeat(2, 1fr) !important; gap: 28px !important; }
+  .w-stepgrid::before { display: none !important; }
+}
+@media (max-width: 500px) {
+  .w-stepgrid { grid-template-columns: 1fr !important; gap: 20px !important; }
+  .w-step { text-align: left !important; display: flex !important; gap: 16px !important; align-items: flex-start !important; }
+  .w-step-n { margin: 0 !important; flex-shrink: 0 !important; width: 44px !important; height: 44px !important; }
+  .w-step p { max-width: none !important; }
+}
+
+/* ── SHARING SECTION ── */
+@media (max-width: 820px) {
+  .w-sharegrid { grid-template-columns: 1fr !important; gap: 36px !important; }
+  .w-chatcard { max-width: 480px !important; }
+}
+@media (max-width: 480px) {
+  .w-chatcard { max-width: 100% !important; }
+}
+
+/* ── INVITATION WALL ── */
+@media (max-width: 560px) {
+  .w-wall { --card-w: 172px; --card-h: 242px; }
+}
+@media (max-width: 375px) {
+  .w-wall { --card-w: 148px; --card-h: 210px; }
+}
+
+/* ── WRAP PADDING ── */
+@media (max-width: 480px) {
+  .wrap, .w-wrap { padding: 0 16px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CREATE / CHAT PAGE
+   ══════════════════════════════════════════════════════════════════════ */
+.ai-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 28px 60px;
+  display: grid;
+  grid-template-columns: 1fr minmax(300px, 370px);
+  gap: 36px;
+  align-items: start;
+}
+.ai-chat-col { display: flex; flex-direction: column; min-width: 0; }
+.ai-thread {
+  display: flex; flex-direction: column; gap: 10px;
+  height: 420px; overflow-y: auto;
+  padding: 4px 2px 14px; margin-bottom: 12px;
+}
+/* Prevent thread messages overflowing on small screens */
+.ai-thread .chat-msg {
+  max-width: 88% !important;
+  word-break: break-word !important;
+}
+.ai-preview-col { position: sticky; top: 88px; }
+
+@media (max-width: 940px) {
+  .ai-wrap {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    padding: 20px 20px 48px !important;
+  }
+  .ai-preview-col {
+    position: static !important;
+    order: -1 !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+  .ai-thread { height: 300px !important; }
+}
+@media (max-width: 640px) {
+  .ai-wrap { padding: 16px 16px 40px !important; }
+  .ai-thread { height: 260px !important; }
+}
+@media (max-width: 480px) {
+  .ai-wrap { padding: 14px 12px 32px !important; }
+  .ai-thread { height: 240px !important; }
+}
+
+/* Event type chips - wrap properly */
+.ai-chips {
+  display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px;
+}
+
+/* Input row never overflows */
+.ai-input-row {
+  display: flex; gap: 9px; align-items: center;
+}
+.ai-input-row input {
+  flex: 1; min-width: 0;
+  padding: 13px 16px;
+  border-radius: 13px; font-size: 14.5px;
+  outline: none; font-family: inherit;
+}
+@media (max-width: 480px) {
+  .ai-input-row { gap: 6px; }
+  .ai-input-row input { font-size: 14px !important; padding: 11px 13px !important; }
+  .ai-input-row .btn { padding: 11px 14px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DASHBOARD PAGE
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Stats grid: 1 column on mobile */
+  .dash-stats.g3 { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+  /* Invitation list rows: stack vertically */
+  .dash-inv-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .dash-inv-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Page title */
+  .dash-header { flex-direction: column !important; align-items: flex-start !important; }
+  .dash-header h1 { font-size: 28px !important; }
+}
+@media (max-width: 480px) {
+  .dash-header h1 { font-size: 24px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MANAGE PAGE
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Tab bar scrolls on mobile */
+.manage-tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.manage-tabs::-webkit-scrollbar { display: none; }
+
+@media (max-width: 640px) {
+  /* RSVP stats: 2 col */
+  .manage-stats.g4 { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+
+  /* Guest row: stack on mobile */
+  .manage-guest-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .manage-guest-actions {
+    align-self: flex-end !important;
+  }
+
+  /* Add guest form: full width */
+  .manage-add-form {
+    flex-direction: column !important;
+  }
+  .manage-add-form .field { flex: none !important; width: 100% !important; }
+  .manage-add-form .btn { width: 100% !important; justify-content: center !important; }
+}
+@media (max-width: 480px) {
+  .manage-stats.g4 { grid-template-columns: 1fr 1fr !important; }
+  .manage-stats .card { padding: 16px !important; }
+}
+
+/* Table always horizontally scrollable */
+.manage-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   GLOBAL UTILITY FIXES FOR SMALL SCREENS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Buttons: never overflow their container */
+.btn { max-width: 100%; }
+
+/* Cards: comfortable padding on tiny screens */
+@media (max-width: 480px) {
+  .card { padding: 18px 16px !important; }
+  .card-hover:hover { transform: none !important; }  /* disable lift on touch */
+}
+
+/* Grid helpers: never break below 1 col */
+@media (max-width: 480px) {
+  .g2, .g3, .g4 { grid-template-columns: 1fr !important; }
+}
+
+/* Footer: stack on mobile */
+@media (max-width: 640px) {
+  .foot-top { flex-direction: column !important; }
+  .foot-cols { gap: 32px !important; }
+}
+
+/* Prevent horizontal scroll on the whole page */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}

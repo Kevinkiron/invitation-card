@@ -1,29 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+/* ══════════════════════════════════════════════════════════════════════
+   Welcvm — Global Design System
+   Inspired by BigDates.ai style language, adapted for Welcvm branding.
 
+   Primary font: DM Sans (same as BigDates.ai)
+   Brand palette: gold / maroon / plum (Welcvm identity)
+   Per-event accent colours mirror BigDates' category card pattern.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
+
+/* ── Design tokens ── */
 :root {
-  --ink: #1B1116;
-  --plum: #3B0A2A;
-  --plum-deep: #26061B;
-  --maroon: #5B1226;
-  --marigold: #E8912D;
-  --gold: #C8A24A;
-  --gold-soft: #EBD5A0;
-  --peacock: #0E5C63;
-  --ivory: #FDF6EA;
-  --paper: #FFFFFF;
-  --line: #E9DCC9;
-  --muted: #8C7B70;
-  --green: #3F7D53;
-  --red: #B8443F;
+  /* Core brand */
+  --ink:          #1a0f14;    /* deep plum-black — primary text */
+  --plum:         #3B0A2A;
+  --plum-deep:    #26061B;
+  --maroon:       #5B1226;
+  --heart:        #DE6B5A;    /* coral — the ♥ in Welcvm; used for primary CTAs */
+  --heart-deep:   #C4523F;
+  --heart-soft:   #F2C4BB;
+  --marigold:     #E8912D;
+  --gold:         #C9922F;
+  --gold-soft:    #E4C77E;
+  --gold-pale:    #FDF3E0;
+  --peacock:      #0E5C63;
+  --ivory:        #FEFCFA;    /* near-white warm base */
+  --surface:      #FFFFFF;
+  --paper:        #FFFFFF;
+  --line:         #EDE5D8;
+  --line-soft:    #F5EFE6;
+  --muted:        #7A6570;
+  --green:        #3F7D53;
+  --red:          #B8443F;
 
-  --shadow-sm: 0 2px 10px rgba(27, 17, 22, .05);
-  --shadow-md: 0 18px 42px -26px rgba(27, 17, 22, .38);
-  --shadow-lg: 0 46px 90px -40px rgba(27, 17, 22, .55);
-  --ease: cubic-bezier(.19, 1, .22, 1);
+  /* Per-event accent palette — mirrors BigDates category colour system */
+  --wedding-accent:   #B8405E;
+  --birthday-accent:  #9B59B6;
+  --baptism-accent:   #5D9BCC;
+  --naming-accent:    #E8A87C;
+  --babyshower-accent:#E87A90;
+  --housewarming-accent:#6B8E6B;
+  --concert-accent:   #E8A030;
+  --memorial-accent:  #4A5568;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 3px rgba(26, 15, 20, .06);
+  --shadow-sm: 0 2px 8px rgba(26, 15, 20, .08);
+  --shadow-md: 0 8px 32px rgba(26, 15, 20, .10);
+  --shadow-lg: 0 24px 64px rgba(26, 15, 20, .14);
+  --shadow-xl: 0 40px 96px rgba(26, 15, 20, .18);
+
+  /* Motion */
+  --ease:   cubic-bezier(.19, 1, .22, 1);
   --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-out: cubic-bezier(.0, 0, .2, 1);
 }
 
-* { box-sizing: border-box; }
+/* ── Base reset ── */
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   margin: 0;
@@ -32,7 +66,9 @@ html, body {
 }
 
 body {
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink);
   background: var(--ivory);
   -webkit-font-smoothing: antialiased;
@@ -40,17 +76,16 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle paper grain over the whole page */
+/* Subtle warm ambient light */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: .35;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(232, 145, 45, .05), transparent 55%),
-    radial-gradient(circle at 82% 12%, rgba(14, 92, 99, .05), transparent 50%);
+  background:
+    radial-gradient(ellipse 60% 50% at 8% 0%, rgba(201, 146, 47, .07), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 96% 90%, rgba(91, 18, 38, .05), transparent 55%);
 }
 
 .display { font-family: 'Marcellus', 'Cormorant Garamond', serif; font-weight: 400; letter-spacing: .002em; }
@@ -59,7 +94,7 @@ a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
 
-/* ─────────── FOIL / SHIMMER ─────────── */
+/* ── FOIL / SHIMMER ── */
 .foil {
   background: linear-gradient(100deg,
     var(--gold) 12%, #F5E3B4 32%, var(--marigold) 47%,
@@ -84,7 +119,7 @@ input, select, textarea { font-family: inherit; }
   background: linear-gradient(90deg, transparent, var(--line), var(--gold), var(--line), transparent);
 }
 
-/* ─────────── AMBIENT PETALS ─────────── */
+/* ── PETAL AMBIENT ── */
 .petal {
   position: fixed; top: -50px; z-index: 1;
   pointer-events: none; opacity: 0;
@@ -99,7 +134,7 @@ input, select, textarea { font-family: inherit; }
   100% { transform: translateY(106vh) rotate(460deg) translateX(80px); opacity: 0; }
 }
 
-/* ─────────── PHONE MOCKUP (hero) ─────────── */
+/* ── PHONE MOCKUP ── */
 .phone-stage { perspective: 1500px; }
 
 .phone {
@@ -110,7 +145,7 @@ input, select, textarea { font-family: inherit; }
   padding: 11px;
   background: linear-gradient(155deg, #2A2024 0%, #120C10 42%, #2A2024 100%);
   box-shadow:
-    var(--shadow-lg),
+    var(--shadow-xl),
     0 0 0 1px rgba(200, 162, 74, .3),
     inset 0 1px 1px rgba(255, 255, 255, .16);
   transform-style: preserve-3d;
@@ -141,16 +176,13 @@ input, select, textarea { font-family: inherit; }
   text-shadow: 0 1px 3px rgba(0, 0, 0, .4);
   letter-spacing: .02em;
 }
-.phone-scroll {
-  height: 100%; overflow: hidden;
-}
+.phone-scroll { height: 100%; overflow: hidden; }
 .phone-glare {
   position: absolute; inset: 0; z-index: 6; pointer-events: none;
   border-radius: 36px;
   background: linear-gradient(112deg, rgba(255,255,255,.16) 0%, transparent 34%, transparent 66%, rgba(255,255,255,.07) 100%);
 }
 
-/* floating gold orbit ring behind the phone */
 .orbit {
   position: absolute; border-radius: 50%; pointer-events: none;
   border: 1px solid rgba(200, 162, 74, .28);
@@ -160,7 +192,7 @@ input, select, textarea { font-family: inherit; }
 
 .float-tag {
   position: absolute; z-index: 8;
-  background: rgba(255, 255, 255, .84);
+  background: rgba(255, 255, 255, .92);
   backdrop-filter: saturate(180%) blur(14px);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -175,56 +207,112 @@ input, select, textarea { font-family: inherit; }
   50% { transform: translateY(-11px); }
 }
 
-/* ─────────── SCROLL REVEAL ─────────── */
+/* ── SCROLL REVEAL ── */
 .reveal {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity .9s var(--ease), transform .9s var(--ease);
+  transform: translateY(28px);
+  transition: opacity .85s var(--ease), transform .85s var(--ease);
 }
 .reveal.in { opacity: 1; transform: none; }
 
-/* ─────────── BUTTONS ─────────── */
+/* ── BUTTONS — BigDates style: pill shape, animated arrow ── */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 13px 26px; border-radius: 999px;
-  font-weight: 700; font-size: 14.5px; letter-spacing: .005em;
-  border: 1px solid transparent; position: relative; overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700; font-size: 15px; letter-spacing: -.01em;
+  border: 1.5px solid transparent; position: relative; overflow: hidden;
   transition: transform .22s var(--spring), box-shadow .3s, background .25s, color .25s, border-color .25s;
-  white-space: nowrap;
+  white-space: nowrap; cursor: pointer;
 }
-.btn:hover:not(:disabled) { transform: translateY(-2.5px); }
-.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:hover:not(:disabled) { transform: translateY(-2px); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(.98); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
+/* Primary: brand coral heart gradient — the ♥ in Welcvm */
 .btn-primary {
-  background: linear-gradient(140deg, var(--maroon), var(--plum));
-  color: var(--ivory);
-  box-shadow: 0 12px 28px -14px var(--plum);
+  background: linear-gradient(135deg, var(--heart) 0%, var(--heart-deep) 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(222, 107, 90, .38), 0 1px 4px rgba(222,107,90,.2);
 }
-.btn-primary:hover:not(:disabled) { box-shadow: 0 22px 40px -16px var(--plum); }
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 8px 36px rgba(222, 107, 90, .50), 0 2px 8px rgba(222,107,90,.28);
+  background: linear-gradient(135deg, #e8735f 0%, var(--heart) 100%);
+}
 .btn-primary::after {
   content: ''; position: absolute; top: 0; left: -120%;
   width: 55%; height: 100%; transform: skewX(-22deg);
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
-  transition: left .7s var(--ease);
+  transition: left .65s var(--ease);
 }
 .btn-primary:hover::after { left: 150%; }
 
+/* Arrow inside .btn — animated on hover */
+.btn .btn-arrow {
+  display: inline-flex; align-items: center;
+  transition: transform .28s var(--spring);
+}
+.btn:hover .btn-arrow { transform: translateX(4px); }
+
+/* Gold CTA variant */
 .btn-gold {
   background: linear-gradient(135deg, var(--marigold), var(--gold));
   color: var(--plum-deep);
-  box-shadow: 0 12px 26px -14px var(--marigold);
+  box-shadow: 0 4px 16px rgba(232, 145, 45, .3);
 }
-.btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
-.btn-ghost:hover:not(:disabled) { border-color: var(--gold); color: var(--maroon); background: rgba(200,162,74,.07); }
-.btn-danger { background: rgba(184, 68, 63, .08); border-color: rgba(184,68,63,.4); color: var(--red); }
-.btn-sm { padding: 9px 17px; font-size: 13px; }
-.btn-lg { padding: 16px 32px; font-size: 15.5px; }
 
-/* ─────────── CARDS ─────────── */
+/* Ghost / outline */
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--maroon);
+  background: rgba(201, 146, 47, .06);
+}
+
+/* Danger */
+.btn-danger {
+  background: rgba(184, 68, 63, .08);
+  border-color: rgba(184, 68, 63, .4);
+  color: var(--red);
+}
+
+/* Sizes */
+.btn-sm { padding: 9px 18px; font-size: 13.5px; }
+.btn-lg { padding: 16px 34px; font-size: 16px; }
+
+/* ── BADGE / PILL — BigDates style ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; letter-spacing: -.01em;
+  background: rgba(255, 255, 255, .9);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+.badge-gold {
+  background: rgba(201, 146, 47, .1);
+  border-color: rgba(201, 146, 47, .3);
+  color: #8B6014;
+}
+
+/* Section badge — small pill above section headings */
+.section-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  border: 1px solid currentColor;
+  opacity: .9;
+}
+
+/* ── CARDS ── */
 .card {
-  background: var(--paper);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 28px;
@@ -232,12 +320,12 @@ input, select, textarea { font-family: inherit; }
   transition: transform .38s var(--ease), box-shadow .38s, border-color .38s;
 }
 .card-hover:hover {
-  transform: translateY(-6px);
+  transform: translateY(-5px);
   box-shadow: var(--shadow-md);
-  border-color: var(--gold);
+  border-color: rgba(201, 146, 47, .45);
 }
 
-/* corner-flourish card used for feature blocks */
+/* Corner-flourish card */
 .card-orn { position: relative; overflow: hidden; }
 .card-orn::before {
   content: ''; position: absolute; top: -1px; right: -1px;
@@ -249,7 +337,7 @@ input, select, textarea { font-family: inherit; }
 }
 .card-orn:hover::before { opacity: .8; }
 
-/* ─────────── FORM ─────────── */
+/* ── FORM ── */
 .field { margin-bottom: 17px; }
 .field label {
   display: block; font-size: 12px; font-weight: 700;
@@ -258,18 +346,18 @@ input, select, textarea { font-family: inherit; }
 }
 .field input, .field select, .field textarea {
   width: 100%; padding: 13px 15px;
-  border: 1px solid var(--line); border-radius: 12px;
-  font-size: 15px; background: var(--paper); color: var(--ink);
+  border: 1.5px solid var(--line); border-radius: 12px;
+  font-size: 15px; background: var(--surface); color: var(--ink);
   transition: border-color .22s, box-shadow .22s, background .22s;
 }
-.field input::placeholder, .field textarea::placeholder { color: #BDB0A5; }
+.field input::placeholder, .field textarea::placeholder { color: #C8BAB0; }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none; border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(200, 162, 74, .15);
+  box-shadow: 0 0 0 4px rgba(201, 146, 47, .14);
 }
 .field input[type="color"] { height: 48px; padding: 5px; cursor: pointer; }
 
-/* ─────────── MISC ─────────── */
+/* ── MISC UTILITIES ── */
 .tag {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 700; padding: 5px 12px;
@@ -299,6 +387,7 @@ input, select, textarea { font-family: inherit; }
 .pop { animation: pop .45s var(--spring) both; }
 @keyframes pop { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
 
+/* ── TABLE ── */
 table.dt { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.dt th {
   text-align: left; padding: 14px 18px; font-size: 10.5px;
@@ -307,13 +396,15 @@ table.dt th {
 }
 table.dt td { padding: 16px 18px; border-bottom: 1px solid var(--line); }
 table.dt tbody tr { transition: background .2s; }
-table.dt tbody tr:hover { background: rgba(232, 145, 45, .05); }
+table.dt tbody tr:hover { background: rgba(201, 146, 47, .04); }
 table.dt tr:last-child td { border-bottom: none; }
 
+/* ── SCROLLBAR ── */
 .scroll-y::-webkit-scrollbar { width: 6px; height: 6px; }
 .scroll-y::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
 .scroll-y::-webkit-scrollbar-track { background: transparent; }
 
+/* ── LAYOUT ── */
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; width: 100%; }
 .grid { display: grid; gap: 22px; }
 .g2 { grid-template-columns: repeat(2, 1fr); }

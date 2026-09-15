@@ -1,38 +1,90 @@
 "use client";
 
 import Link from "next/link";
-import { Logo } from "./Nav";
+import Wordmark from "./Wordmark";
 import { C } from "@/lib/theme";
 
 export default function Footer() {
   return (
-    <footer style={{ borderTop: `1px solid ${C.line}`, marginTop: 100, background: "rgba(255,255,255,.5)" }}>
-      <div className="wrap" style={{ padding: "54px 28px 34px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 40, flexWrap: "wrap", marginBottom: 36 }}>
-          <div style={{ maxWidth: 320 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
-              <Logo size={30} />
-              <span className="display" style={{ fontSize: 20 }}>Coderpace Invites</span>
+    <footer
+      style={{
+        borderTop: `1px solid ${C.line}`,
+        marginTop: 80,
+        background: "#fff",
+      }}
+    >
+      <div className="wrap" style={{ padding: "52px 28px 32px" }}>
+
+        {/* Top row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 40,
+            flexWrap: "wrap",
+            marginBottom: 40,
+          }}
+        >
+          {/* Brand */}
+          <div style={{ maxWidth: 300 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+              <Wordmark size={22} />
+              <span
+                style={{
+                  fontSize: 8,
+                  letterSpacing: ".32em",
+                  textTransform: "uppercase",
+                  color: C.muted,
+                  fontWeight: 600,
+                }}
+              >
+                Invites
+              </span>
             </div>
-            <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.7, margin: 0 }}>
-              Digital wedding invitations for Indian celebrations — from Roka to Griha Pravesh,
-              delivered to every guest on WhatsApp.
+            <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.72, margin: 0 }}>
+              Digital invitations that design themselves — weddings, birthdays,
+              naming ceremonies and more. Shared as one beautiful link.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 60, flexWrap: "wrap" }}>
-            <FootCol title="Product" links={[["Features", "/#features"], ["Pricing", "/#pricing"], ["Get started", "/signup"]]} />
-            <FootCol title="Account" links={[["Sign in", "/login"], ["Dashboard", "/dashboard"]]} />
+          {/* Link columns */}
+          <div style={{ display: "flex", gap: 56, flexWrap: "wrap" }}>
+            <FootCol
+              title="Product"
+              links={[
+                ["Events", "/#events"],
+                ["How it works", "/#how"],
+                ["Create invitation", "/create"],
+              ]}
+            />
+            <FootCol
+              title="Account"
+              links={[
+                ["Sign in", "/login"],
+                ["Dashboard", "/dashboard"],
+              ]}
+            />
           </div>
         </div>
 
-        <div className="rule-orn" style={{ marginBottom: 22 }}>
-          <span style={{ fontSize: 12 }}>❖</span>
+        {/* Ornamental rule */}
+        <div className="rule-orn" style={{ marginBottom: 20 }}>
+          <span style={{ fontSize: 12, color: C.gold }}>❖</span>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: C.muted }}>
-          <span>© {new Date().getFullYear()} Coderpace. All rights reserved.</span>
-          <span>Hindi · Tamil · Telugu · Marathi · Bengali · English</span>
+        {/* Bottom row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+            fontSize: 12.5,
+            color: C.muted,
+          }}
+        >
+          <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
+          <span>Invitations, designed for you</span>
         </div>
       </div>
     </footer>
@@ -42,12 +94,33 @@ export default function Footer() {
 function FootCol({ title, links }) {
   return (
     <div>
-      <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: C.gold, marginBottom: 14 }}>
+      <div
+        style={{
+          fontSize: 10.5,
+          fontWeight: 800,
+          letterSpacing: ".16em",
+          textTransform: "uppercase",
+          color: C.gold,
+          marginBottom: 14,
+        }}
+      >
         {title}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {links.map(([l, h]) => (
-          <Link key={l} href={h} style={{ fontSize: 13.5, color: C.muted }}>{l}</Link>
+          <Link
+            key={l}
+            href={h}
+            style={{
+              fontSize: 13.5,
+              color: C.muted,
+              transition: "color .2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = C.ink)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+          >
+            {l}
+          </Link>
         ))}
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Shield, Plus, Loader2, IndianRupee, Users, FileText } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import InvitePreview from "@/components/InvitePreview";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Reveal, Loading, Empty, Counter, StatusTag } from "@/components/ui";
@@ -274,7 +274,7 @@ function Templates() {
             <div className="card card-hover" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ height: 180, overflow: "hidden", borderBottom: `1px solid ${C.line}` }}>
                 <div style={{ transform: "scale(.6)", transformOrigin: "top center", width: "167%", marginLeft: "-33.5%" }}>
-                  <InvitePreview cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }} events={[]} compact />
+                  <TemplateRenderer cfg={{ ...t.base_config, headline: "Aarav & Diya", subheadline: "request the honour of your presence" }} events={[]} compact />
                 </div>
               </div>
               <div style={{ padding: 16 }}>

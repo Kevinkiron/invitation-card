@@ -216,6 +216,12 @@ export default function GuestPage() {
   return (
     <div style={{ background: skin.bg, minHeight: "100vh" }}>
       <style>{`
+        /* Opacity only — see the note on .inv-fade below. A transform
+           here would break every fixed layer in the template. */
+        .inv-fade{animation:inv-fade-in 1s var(--ease) both}
+        @keyframes inv-fade-in{from{opacity:0}to{opacity:1}}
+        @media (prefers-reduced-motion: reduce){.inv-fade{animation:none}}
+
         .rsvp{font-family:${skin.body}}
         .rsvp-orn{display:flex;align-items:center;justify-content:center;gap:13px;
           width:min(230px,64%);margin:0 auto 24px}
@@ -283,7 +289,22 @@ export default function GuestPage() {
       `}</style>
 
       <div style={{ maxWidth: 500, margin: "0 auto", background: p[2], minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
-        <div style={{ animation: "msgIn 1s var(--ease) both" }}>
+        {/* NO TRANSFORM ON THIS WRAPPER.
+
+            It used to fade in with `msgIn`, which animates a transform —
+            and a transformed ancestor becomes the containing block for
+            every `position: fixed` descendant inside it. The whole
+            cinematic template is built on fixed layers, so all of them
+            silently resized themselves to the invitation instead of the
+            screen: the opening overlay became 6855px tall, putting "Tap
+            to open" 3,500px down the page instead of in the middle of
+            the screen, the petal field repeated the whole way down, and
+            the progress bar scrolled away with the content.
+
+            Opacity alone gives the same fade and creates no containing
+            block. If you ever restore a transform here, the template
+            breaks again in exactly that way. */}
+        <div className="inv-fade">
           <TemplateRenderer cfg={inv?.design_config} events={events} guestName={greeting} />
         </div>
 

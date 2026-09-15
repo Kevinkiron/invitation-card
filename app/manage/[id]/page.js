@@ -298,7 +298,13 @@ export default function ManagePage() {
               {tab === "preview" && (
                 <div style={{ maxWidth: 430 }}>
                   <div style={{ borderRadius: 22, overflow: "hidden", border: `1px solid ${C.line}`, boxShadow: "var(--shadow-md)" }}>
-                    <TemplateRenderer cfg={inv.design_config} events={events} />
+                    {/* `compact` puts the cinematic template into preview
+                        mode: no "tap to open" curtain, no fixed progress
+                        bar. Without it this box rendered the full-screen
+                        opening overlay, which belongs on a guest's phone
+                        and not inside a 430px panel on the owner's
+                        dashboard. */}
+                    <TemplateRenderer cfg={inv.design_config} events={events} compact />
                   </div>
                 </div>
               )}

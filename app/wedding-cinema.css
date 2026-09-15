@@ -42,8 +42,31 @@
 /* ══════════════════════════════════════════════════════════════════════
    PETAL FIELD — floating ambient particles
    ══════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE FIXED LAYERS — AND THE ONE THING THAT BREAKS THEM
+
+   The opening curtain, the petals, the ambient glow, the progress bar and
+   the chapter chip are all `position: fixed`. That only means "relative to
+   the screen" while NO ancestor has a transform, filter, perspective,
+   backdrop-filter, will-change or contain — any one of those makes that
+   ancestor the containing block, and every fixed layer silently resizes
+   itself to the whole invitation instead of the viewport.
+
+   It happened: the guest page wrapped the invitation in a fade that
+   animated a transform, with fill-mode `both`, so the transform never went
+   away. The opening overlay became 6,855px tall, which put "Tap to open"
+   3,500px down the page instead of in the middle of the screen; the petals
+   repeated the entire way down; and the progress bar scrolled off with the
+   content.
+
+   So: never animate a transform on an ancestor of `.wc`. The explicit
+   viewport heights below do not fix that — nothing in here can — but they
+   keep the failure to one screen instead of the whole page.
+   ══════════════════════════════════════════════════════════════════════ */
 .wc-petals {
   position: fixed; inset: 0;
+  width: 100%; height: 100dvh;
   pointer-events: none; z-index: 0;
   overflow: hidden;
 }
@@ -68,6 +91,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 .wc-ambient {
   position: fixed; inset: 0;
+  width: 100%; height: 100dvh;
   pointer-events: none; z-index: 0;
   overflow: hidden;
 }
@@ -102,6 +126,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 .wc-opening {
   position: fixed; inset: 0; z-index: 200;
+  width: 100%; height: 100dvh;
   display: flex; align-items: center; justify-content: center;
   background: var(--wc-bg);
   transition: opacity .8s ease, visibility .8s;

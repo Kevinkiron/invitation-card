@@ -3,15 +3,15 @@ import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
 import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
 import {
-  buildWeddingCinemaPrompt,
   nextWeddingStep,
   ackWeddingStep,
   weddingProgress,
   weddingPublishable,
 } from "@/lib/ai/wedding-prompt";
+import { readAnswer, acknowledge, PROSE_STEPS } from "@/lib/ai/wedding-script";
 import { classifyEvent } from "@/lib/ai/classify";
 import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
-import { WEDDING_CINEMA_SCHEMA, patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
+import { patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
@@ -69,6 +69,75 @@ function dedupeReply(reply, askNext) {
   return kept;
 }
 
+
+const has = (v) => typeof v === "string" && v.trim().length > 0;
+
+/* ── Prose, and only prose ─────────────────────────────────────────────
+   The interview no longer asks the model to understand anything. This is
+   the one place it is still used, for the sentences a script cannot
+   write: the paragraph on the card, the line under a function, the two
+   sentences of a story chapter, the closing thank-you.
+
+   Every failure mode here is survivable. A bad call, a timeout, a
+   rate limit, a malformed reply — the tokens come back unchanged and the
+   invitation is still complete, because the couple's own words are
+   already in it. Nothing downstream waits on this. */
+const PROSE_SCHEMA = {
+  type: "object",
+  properties: {
+    message:     { type: "string", description: "Two warm sentences for the invitation card." },
+    description: { type: "string", description: "One warm sentence describing the most recent function." },
+    chapter:     { type: "string", description: "Two sentences retelling the couple's moment, in the third person." },
+    thankYou:    { type: "string", description: "Two sentences thanking guests." },
+  },
+};
+
+async function enrichWeddingProse({ tokens, step, said, key, info }) {
+  if (info.provider === "gemini" && !key) return tokens;
+  try {
+    const c = tokens.couple || {};
+    const ask = {
+      venue: "Write `message`: the invitation paragraph for the card.",
+      functionDetail: "Write `description`: one sentence about the function just described.",
+      story: "Write `chapter`: two sentences retelling the moment below, warmly, in the third person.",
+      thanks: "Write `thankYou`: two sentences thanking the guests.",
+    }[step.id];
+    if (!ask) return tokens;
+
+    const r = await chat({
+      system: `You write copy for wedding invitations. British English, warm, never flowery, never a list, no emoji.
+The couple are ${c.bride || "the bride"} and ${c.groom || "the groom"}${tokens.venue?.name ? `, marrying at ${tokens.venue.name}${tokens.venue.city ? `, ${tokens.venue.city}` : ""}` : ""}.
+${ask}
+Return ONLY that one field. Invent no facts — no dates, no places, no names beyond the two above.`,
+      messages: [{ role: "user", content: said || "Write it." }],
+      schema: PROSE_SCHEMA,
+      maxTokens: 400,
+      geminiKey: key,
+    });
+    if (!r.ok || !r.data) return tokens;
+    const d = r.data;
+
+    if (step.id === "venue" && has(d.message)) {
+      return patchWeddingTokens(tokens, { invitation: { message: d.message.trim() } });
+    }
+    if (step.id === "thanks" && has(d.thankYou) && !has(tokens.invitation?.thankYouNote)) {
+      return patchWeddingTokens(tokens, { invitation: { thankYouNote: d.thankYou.trim() } });
+    }
+    if (step.id === "functionDetail" && has(d.description)) {
+      const target = [...(tokens.events || [])].reverse().find((e) => has(e.time) && !has(e.description));
+      if (target) return patchWeddingTokens(tokens, { events: [{ ...target, description: d.description.trim() }] });
+    }
+    if (step.id === "story" && has(d.chapter)) {
+      const last = (tokens.story || [])[(tokens.story || []).length - 1];
+      if (last) return patchWeddingTokens(tokens, { story: [{ ...last, description: d.chapter.trim() }] });
+    }
+    return tokens;
+  } catch {
+    /* Prose is a nicety. The invitation does not wait for it. */
+    return tokens;
+  }
+}
+
 export async function POST(req) {
   const started = Date.now();
   try {
@@ -123,88 +192,92 @@ export async function POST(req) {
     const isWedding = kind === "wedding" || WEDDING_FUNCTIONS.has(kind) || isCinema(incoming);
 
     if (isWedding) {
-      /* The step we are about to put to them. Computed here, not read back
-         out of the model's answer, so the acknowledgement below records
-         what was actually asked. */
+      /* ── THE WEDDING INTERVIEW RUNS LOCALLY ────────────────────────
+         No model call to read the answer. The step plan says what was
+         asked, lib/ai/wedding-script.js reads what came back, and both
+         are deterministic — so this path cannot stall, cannot return an
+         empty question, and cannot invent a date. It also works with the
+         AI provider down.
+
+         The model is used afterwards, for prose only, and only when it
+         would add something: the invitation paragraph, the line under a
+         function, a story chapter, the closing note. That call is
+         allowed to fail; the invitation is already complete without it.
+         See enrichWeddingProse(). */
       const askedStep = nextWeddingStep(incoming);
+      const base = isCinema(incoming) ? incoming : { ...emptyWeddingTokens(), ...incoming };
 
-      const weddingSystem = buildWeddingCinemaPrompt({
-        tokens: incoming,
-        turnCount,
-        today: new Date().toISOString().slice(0, 10),
-      });
+      /* The latest thing the couple typed — the answer to askedStep. */
+      const lastUser = [...convo].reverse().find((m) => m.role === "user");
+      const said = String(lastUser?.content || "");
 
-      const wr = await chat({
-        system: weddingSystem,
-        messages: convo,
-        schema: WEDDING_CINEMA_SCHEMA,
-        maxTokens: 4000,
-        geminiKey: key,
-      });
-
-      if (!wr.ok) {
-        const rate = wr.status === 429;
-        const slow = wr.status === 504;
-        return NextResponse.json(
-          {
-            error: rate ? "The AI is rate limited right now. Wait a moment and try again."
-                  : slow ? "The AI took too long to respond. Please try again."
-                  : "Could not reach the AI service.",
-            detail: (wr.detail || "").slice(0, 400),
-            elapsedMs: Date.now() - started,
-          },
-          { status: rate ? 429 : slow ? 504 : 502 }
-        );
+      /* Nothing asked yet: open the interview. */
+      if (!askedStep) {
+        return NextResponse.json({
+          reply: "Everything is answered — your invitation is ready to publish.",
+          askNext: "", done: weddingPublishable(base), tokens: base,
+          eventKind: "wedding", progress: weddingProgress(base),
+          provider: info.provider, elapsedMs: Date.now() - started,
+        });
       }
 
-      const wp = wr.data || {};
+      /* How many times this same step has already bounced, so an
+         optional one can bow out rather than ask forever. */
+      const attempt = Number(base?._tries?.[askedStep.id] || 0);
+      const read = readAnswer(askedStep, said, base, attempt);
 
-      /* Merge: start from current cinema tokens, patch in the new data */
-      const base = isCinema(incoming) ? incoming : { ...emptyWeddingTokens(), ...incoming };
-      let next = patchWeddingTokens(base, wp);
+      /* An answer we cannot use: ask again, in place, without burning a
+         step or a model call. */
+      if (read.retry) {
+        const bumped = { ...base, _tries: { ...(base._tries || {}), [askedStep.id]: attempt + 1 } };
+        return NextResponse.json({
+          reply: read.retry,
+          askNext: askedStep.ask(base),
+          done: false,
+          tokens: bumped,
+          eventKind: "wedding",
+          progress: weddingProgress(base),
+          provider: info.provider,
+          elapsedMs: Date.now() - started,
+        });
+      }
+
+      let next = patchWeddingTokens(base, read.patch || {});
       next.eventKind = "wedding";
       next.designed = true;
 
-      /* A photograph arrives through the paperclip and a couple with no
-         parking to mention leaves the field empty for good, so those
-         questions cannot prove they were answered from the tokens alone.
-         Record that we put them; otherwise the interview asks again every
-         turn and never reaches the end. */
-      next = ackWeddingStep(next, askedStep);
+      /* Photograph and optional steps cannot prove they were answered
+         from the tokens alone; record that we put them, or the interview
+         asks again every turn and never reaches the end. */
+      if (read.skipped || askedStep.ack) next = ackWeddingStep(next, askedStep);
 
-      /* THE QUESTION IS OURS, NOT THE MODEL'S.
+      /* Seed the palette and the standing copy once, on the first turn,
+         so the preview has something to draw immediately. */
+      if (!has(next.invitation?.kicker)) {
+        next = patchWeddingTokens(next, {
+          invitation: { kicker: "Together With Their Families", headline: "A celebration of love, music and forever" },
+          palette: { primary: "#8f294e", secondary: "#7b594e", accent: "#c69a55", paper: "#fff8ea", text: "#4f392f" },
+        });
+      }
 
-         `askNext` is not something we can depend on the model to send.
-         Measured against the live endpoint, gemini-3.5-flash-lite answers
-         "It's a wedding" with a warm `reply` and an EMPTY `askNext` —
-         every time. The interview then just stops: the couple see "How
-         wonderful." and a blank box, at 0%, with nothing to answer.
+      /* Prose, from the model, best-effort. */
+      if (PROSE_STEPS.has(askedStep.id) && !read.skipped) {
+        next = await enrichWeddingProse({ tokens: next, step: askedStep, said, key, info });
+      }
 
-         We already know exactly what to ask, because the step plan
-         computed it. So ask the next unanswered step ourselves, and let
-         the model's wording win only when it actually sent some. The
-         interview can no longer stall, ask twice, or wander off the
-         template. */
       const followUp = nextWeddingStep(next);
-      const modelAsk = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
-      const askNext = followUp ? modelAsk || followUp.ask(next) : "";
-
-      const reply = dedupeReply(String(wp.reply || "").trim(), askNext);
-
-      /* The model does not get to declare victory early either. Names,
-         date, venue and at least one function have to be on the page
-         before the publish button means anything — and nothing is done
-         while a step is still unanswered. */
+      const askNext = followUp ? followUp.ask(next) : "";
       const done = !followUp && weddingPublishable(next);
 
       return NextResponse.json({
-        reply: reply || "Got it.",
+        reply: acknowledge(askedStep, read, next),
         askNext: done ? "" : askNext,
         done,
         tokens: next,
         eventKind: "wedding",
         progress: weddingProgress(next),
-        model: wr.model,
+        step: askedStep.id,
+        group: askedStep.group,
         provider: info.provider,
         elapsedMs: Date.now() - started,
       });

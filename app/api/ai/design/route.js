@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
 import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
-import { buildWeddingCinemaPrompt } from "@/lib/ai/wedding-prompt";
+import { buildWeddingCinemaPrompt, weddingProgress, weddingPublishable } from "@/lib/ai/wedding-prompt";
 import { classifyEvent } from "@/lib/ai/classify";
 import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
-import { WEDDING_CINEMA_SCHEMA, patchWeddingTokens, cinemaProgress, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
+import { WEDDING_CINEMA_SCHEMA, patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
@@ -96,10 +96,25 @@ export async function POST(req) {
 
     /* ── Wedding Cinema path ─────────────────────────────────────────
        Weddings get the cinematic template: a completely different
-       prompt, schema, and token structure. The switch is on whether
-       the event is a wedding (detected from the conversation or from
-       the incoming tokens having the `_cinema` flag). */
-    const isWedding = kind === "wedding" || guessed.family === "wedding" || isCinema(incoming);
+       prompt, schema, and token structure.
+
+       The switch is on the event KIND, not on classify's family. The
+       wedding family also contains `anniversary` — a silver jubilee is
+       not a wedding, and routing it here handed a couple married
+       twenty-five years a bride-and-groom interview, "Together With
+       Their Families", and a countdown to their own wedding day.
+
+       The wedding FUNCTIONS are the opposite case and do belong here:
+       someone who opens with "it's our haldi" is inviting people to a
+       wedding, so the haldi becomes the first entry on that wedding's
+       timeline rather than an invitation of its own. The list is written
+       out rather than derived, so adding a kind to classify.js cannot
+       quietly change this routing.
+
+       Once `_cinema` is set the path sticks, so naming a sangeet midway
+       through the interview never restarts it. */
+    const WEDDING_FUNCTIONS = new Set(["sangeet", "mehendi", "haldi"]);
+    const isWedding = kind === "wedding" || WEDDING_FUNCTIONS.has(kind) || isCinema(incoming);
 
     if (isWedding) {
       /* Wedding-specific system prompt */
@@ -140,16 +155,26 @@ export async function POST(req) {
       next.eventKind = "wedding";
       next.designed = true;
 
+      /* Remember the questions that have no data of their own to prove
+         they were asked, or the interview loops on them forever. */
+      if (/paperclip|photo/i.test(wp.askNext || "")) next._askedPhotos = true;
+      if (/parking|airport|station|getting there/i.test(wp.askNext || "")) next._askedLogistics = true;
+
       const askNext = typeof wp.askNext === "string" ? wp.askNext.trim() : "";
       const reply = dedupeReply(String(wp.reply || "").trim(), askNext);
 
+      /* The model does not get to declare victory early. Names, date,
+         venue and at least one function have to be on the page before
+         the publish button means anything. */
+      const done = Boolean(wp.done) && weddingPublishable(next);
+
       return NextResponse.json({
         reply: reply || "Got it.",
-        askNext: wp.done ? "" : askNext,
-        done: Boolean(wp.done),
+        askNext: done ? "" : askNext,
+        done,
         tokens: next,
         eventKind: "wedding",
-        progress: cinemaProgress(next),
+        progress: weddingProgress(next),
         model: wr.model,
         provider: info.provider,
         elapsedMs: Date.now() - started,

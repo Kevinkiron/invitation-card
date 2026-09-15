@@ -359,19 +359,21 @@ export default function CreatePage() {
                 <h1 className="display" style={{ fontSize: 24, margin: 0 }}>Build your invitation</h1>
               </div>
 
-              {/* progress */}
+              {/* progress — the API already returns 0–100, so multiplying
+                  by 100 again pinned the bar at 3100% and it read as full
+                  from the first answer onwards. */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ flex: 1, height: 5, borderRadius: 999, background: "rgba(140,123,112,.16)", overflow: "hidden" }}>
                   <div
                     style={{
-                      height: "100%", width: `${Math.round(progress * 100)}%`,
+                      height: "100%", width: `${Math.max(0, Math.min(100, Math.round(progress)))}%`,
                       background: `linear-gradient(90deg, ${C.gold}, ${C.marigold})`,
                       borderRadius: 999, transition: "width .6s var(--ease)",
                     }}
                   />
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: ".08em", minWidth: 78, textAlign: "right" }}>
-                  {eventType ? `${Math.round(progress * 100)}% · ${eventType.label}` : "Getting started"}
+                  {eventType ? `${Math.max(0, Math.min(100, Math.round(progress)))}% · ${eventType.label}` : "Getting started"}
                 </span>
               </div>
             </header>

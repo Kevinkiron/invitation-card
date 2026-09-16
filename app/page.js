@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import ShowcasePhone from "@/components/ShowcasePhone";
+import HeroPhone from "@/components/HeroPhone";
 import InvitationWall from "@/components/InvitationWall";
 import DemoPhone from "@/components/DemoPhone";
 import { Reveal } from "@/components/ui";
@@ -179,7 +179,7 @@ export default function Home() {
               </div>
             </div>
 
-            <ShowcasePhone />
+            <HeroPhone />
           </div>
         </header>
 

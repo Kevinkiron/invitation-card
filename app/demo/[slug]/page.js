@@ -52,7 +52,16 @@ export default function DemoPage({ params, searchParams }) {
     return (
       <div className="demo-embed">
         <DemoAutoScroll />
-        <TemplateRenderer cfg={demo.cfg} />
+        {/* `compact` is what WeddingCinema/CelebrationCinema read as
+            `preview` — it starts the invitation already open and hides
+            the chapter chip and music toggle. Real guests need "Tap to
+            open" because a browser will only allow audio-with-sound to
+            start from an actual tap; nobody can tap a phone mockup
+            sitting inside another page, so leaving that gate on here
+            just showed every embedded preview frozen on its opening
+            screen forever, DemoAutoScroll included — there was nothing
+            open yet for it to scroll through. */}
+        <TemplateRenderer cfg={demo.cfg} compact />
       </div>
     );
   }

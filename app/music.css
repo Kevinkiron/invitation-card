@@ -1,0 +1,60 @@
+/* ══════════════════════════════════════════════════════════════════════
+   The music toggle.
+
+   One shared button, one shared position (bottom-right, clear of both
+   templates' chapter chip and progress bar, which live top-side) — the
+   `.wc-music` / `.cc-music` classes each component passes in exist to
+   tint the button toward that invitation's own palette rather than to
+   move it. Both templates already set `--wc-primary` / `--cc-primary`
+   as CSS custom properties from the couple's or host's chosen colours;
+   reading those here means the toggle matches whatever theme they
+   picked instead of being the one grey chip on an otherwise themed page.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.music-toggle {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  z-index: 45;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(20, 14, 16, .55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .45);
+  transition: opacity .25s ease, transform .2s ease;
+}
+
+.music-toggle:hover { transform: translateY(-1px); }
+.music-toggle:active { transform: translateY(0); }
+.music-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Bottom-right is also where a phone's own gesture bar and any share-sheet
+   safe-area lives, so it steps up on short viewports rather than fighting
+   the OS chrome for the same few pixels. */
+@supports (bottom: env(safe-area-inset-bottom)) {
+  .music-toggle { bottom: calc(18px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-toggle { transition: none; }
+}
+
+/* Tint toward the invitation's own primary colour rather than staying a
+   flat neutral chip — a dark, slightly desaturated wash of it, so the
+   icon (always white) still reads clearly regardless of how light or
+   dark that colour is. `color-mix` degrades gracefully: a browser
+   without it just keeps the generic dark chip above, never a broken
+   background. */
+.wc-music {
+  background: color-mix(in srgb, var(--wc-primary, #8f294e) 55%, #140b0d 45%);
+}
+.cc-music {
+  background: color-mix(in srgb, var(--cc-primary, #8f294e) 55%, #140b0d 45%);
+}

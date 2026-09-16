@@ -31,15 +31,19 @@ export default function DashboardPage() {
         .order("created_at", { ascending: false });
       setInvs(data || []);
 
+      /* Counts come from the replies now, not from a guest list the couple
+         typed in. One link goes out; we learn who is coming when they
+         answer it. */
       const ids = (data || []).map((i) => i.id);
       if (!ids.length) return;
-      const { data: gs } = await supabase.from("guests").select("id").in("invitation_id", ids);
-      const { data: rs } = gs?.length
-        ? await supabase.from("rsvps").select("status").in("guest_id", gs.map((g) => g.id))
-        : { data: [] };
+      const { data: rs } = await supabase
+        .from("guest_responses").select("status, party_size").in("invitation_id", ids);
+      const rows = rs || [];
       setStats({
-        guests: gs?.length || 0,
-        accepted: (rs || []).filter((r) => r.status === "accepted").length,
+        guests: rows.length,
+        accepted: rows
+          .filter((r) => r.status === "yes")
+          .reduce((a, r) => a + (r.party_size || 1), 0),
       });
     })();
   }, [session]);
@@ -69,8 +73,8 @@ export default function DashboardPage() {
               <div className="grid g3" style={{ marginBottom: 32 }}>
                 {[
                   [Heart, "Invitations", invs.length, C.maroon],
-                  [Users, "Guests invited", stats.guests, C.peacock],
-                  [CheckCircle2, "Accepted", stats.accepted, C.green],
+                  [Users, "Replies received", stats.guests, C.peacock],
+                  [CheckCircle2, "Seats confirmed", stats.accepted, C.green],
                 ].map(([Icon, l, v, col], i) => (
                   <Reveal key={l} delay={i * 70}>
                     <div className="card" style={{ padding: "22px 24px", display: "flex", gap: 16, alignItems: "center" }}>

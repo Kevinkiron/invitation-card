@@ -1,0 +1,1375 @@
+/* ══════════════════════════════════════════════════════════════════════
+   CELEBRATION CINEMA — Template Styles
+
+   One base, three scopes: `.cc-birthday`, `.cc-naming`,
+   `.cc-housewarming`. The scopes are not three recolourings of one page.
+   They differ in the thing you notice before you read a word:
+
+     birthday       a dark, party-lit stage. Heavy, tight, uppercase
+                    display type. Numbers set large. Ornament is loud and
+                    frequent.
+     naming         a near-white page. Light serif at generous line
+                    height, wide tracking, hairline rules, a great deal of
+                    air. Ornament is small and rare.
+     housewarming   warm paper. Sturdy serif, small-caps eyebrows,
+                    architectural rules with weight to them, generous but
+                    grounded spacing.
+
+   Colour comes from the five custom properties the component sets from
+   the palette (--cc-primary … --cc-text). Nothing below hardcodes a hue
+   that the host could have chosen, so a sage-and-cream birthday gets the
+   same craft as a plum-and-amber one.
+
+   ── On fonts ──
+   This file loads nothing over the network. The invitation must render
+   the same on a phone with no signal left on the train, and an @import
+   that fails takes the whole type scale with it. The stacks below name
+   the families the app already loads for the wedding template first, so
+   we get them free when they are there, and fall back to system faces
+   chosen to keep each theme's character when they are not.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════
+   BASE TOKENS
+   ══════════════════════════════════════════════════════════════════════ */
+.cc {
+  /* Overwritten inline by the component from tokens.palette. The values
+     here are only so this file can be read and reasoned about on its own;
+     they are never what ships. */
+  --cc-primary: #5a1b3d;
+  --cc-secondary: #a8385c;
+  --cc-accent: #f0a63c;
+  --cc-paper: #fff4e2;
+  --cc-text: #3a1226;
+
+  /* Derived, per scope below. */
+  --cc-bg: #0d0709;
+  --cc-stage: #0d0709;
+  --cc-ink: var(--cc-paper);
+  --cc-muted: rgba(255, 244, 226, .56);
+  --cc-line: rgba(240, 166, 60, .22);
+  --cc-veil: rgba(255, 255, 255, .05);
+
+  --cc-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --cc-body: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cc-radius: 16px;
+  --cc-ease: cubic-bezier(.22, 1, .36, 1);
+  --cc-gutter: 16px;
+
+  position: relative;
+  font-family: var(--cc-body);
+  color: var(--cc-ink);
+  background: var(--cc-bg);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  /* A scene that overshoots by a few pixels must not give the whole
+     invitation a horizontal scrollbar — on a phone that reads as a broken
+     page long before anyone finds the content that caused it. */
+  overflow-x: hidden;
+}
+
+.cc *, .cc *::before, .cc *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.cc img { max-width: 100%; display: block; }
+.cc svg { display: block; }
+/* Addresses, hashtags and venue names arrive as free text. A single
+   unbroken 40-character string is all it takes to push a 360px screen
+   sideways, so long words break rather than overflow. */
+.cc address, .cc p, .cc h1, .cc h2, .cc h3 { overflow-wrap: anywhere; }
+.cc address { font-style: normal; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE THREE SCOPES
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Birthday: a dark room with the lights down and a cake coming in ── */
+.cc-birthday {
+  --cc-bg: #120610;
+  --cc-stage: #120610;
+  --cc-ink: var(--cc-paper);
+  --cc-muted: rgba(255, 244, 226, .58);
+  --cc-line: rgba(255, 255, 255, .12);
+  --cc-veil: rgba(255, 255, 255, .05);
+
+  --cc-display: 'Lato', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  --cc-body: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cc-gutter: 16px;
+  letter-spacing: .005em;
+}
+
+/* ── Naming: a bright, quiet room, mostly empty ── */
+.cc-naming {
+  --cc-bg: #fbf7f2;
+  --cc-stage: #1f2c37;
+  --cc-ink: var(--cc-text);
+  --cc-muted: rgba(60, 74, 87, .62);
+  --cc-line: rgba(60, 74, 87, .16);
+  --cc-veil: rgba(255, 255, 255, .6);
+
+  --cc-display: 'Cormorant Garamond', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --cc-body: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cc-gutter: 20px;
+  line-height: 1.78;
+}
+
+/* ── Housewarming: warm paper, a doorway, a lamp ── */
+.cc-housewarming {
+  --cc-bg: #faf1e3;
+  --cc-stage: #22301f;
+  --cc-ink: var(--cc-text);
+  --cc-muted: rgba(51, 41, 31, .66);
+  --cc-line: rgba(51, 41, 31, .2);
+  --cc-veil: rgba(255, 255, 255, .55);
+
+  --cc-display: 'Cormorant Garamond', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --cc-body: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cc-gutter: 18px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE FIXED LAYERS — AND THE ONE THING THAT BREAKS THEM
+
+   The opening overlay, the particles, the ambient glow, the progress bar
+   and the chapter chip are all `position: fixed`. That only means
+   "relative to the screen" while NO ancestor has a transform, filter,
+   perspective, backdrop-filter, will-change or contain — any one of those
+   makes that ancestor the containing block, and every fixed layer
+   silently resizes itself to the whole invitation instead of the viewport.
+
+   It happened on the wedding template: the guest page wrapped the
+   invitation in a fade that animated a transform, with fill-mode `both`,
+   so the transform never went away. The opening overlay became 6,855px
+   tall, which put "Tap to open" 3,500px down the page instead of in the
+   middle of the screen; the particles repeated the entire way down; and
+   the progress bar scrolled off with the content.
+
+   So: never animate a transform on an ancestor of `.cc`. Wrappers fade
+   with opacity alone. The explicit viewport heights below do not fix that
+   — nothing in here can — but they keep the failure to one screen instead
+   of the whole page.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.cc-ambient {
+  position: fixed; inset: 0;
+  width: 100%; height: 100dvh;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.cc-ambient i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: .1;
+}
+.cc-ambient i:nth-child(1) { width: 300px; height: 300px; top: 8%; left: -18%; background: var(--cc-primary); }
+.cc-ambient i:nth-child(2) { width: 260px; height: 260px; top: 44%; right: -16%; background: var(--cc-accent); }
+.cc-ambient i:nth-child(3) { width: 240px; height: 240px; bottom: 6%; left: 14%; background: var(--cc-secondary); }
+/* On the two light scopes the same orbs read as smudges on cream paper,
+   so they are pulled almost all the way back rather than removed — a
+   trace of colour behind the page is the difference between "paper" and
+   "white div". */
+.cc-naming .cc-ambient i { opacity: .16; filter: blur(110px); }
+.cc-housewarming .cc-ambient i { opacity: .14; filter: blur(100px); }
+
+/* ── Particles ──
+   Confetti tumbles, stardust drifts and twinkles, embers rise. Same DOM,
+   three different physics. */
+.cc-particles {
+  position: fixed; inset: 0;
+  width: 100%; height: 100dvh;
+  pointer-events: none; z-index: 1;
+  overflow: hidden;
+}
+.cc-particles i {
+  position: absolute;
+  opacity: 0;
+  animation: cc-fall linear infinite;
+}
+.cc-particles-confetti i {
+  top: -24px;
+  width: 7px; height: 11px;
+  border-radius: 1px;
+}
+.cc-particles-stardust i {
+  top: -24px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  animation-name: cc-drift;
+}
+/* Embers start below the fold and climb, which is why this one animation
+   runs from `bottom` rather than `top`: a falling ember is a spark from a
+   fire that is somewhere above the roof. */
+.cc-particles-embers i {
+  bottom: -24px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  animation-name: cc-rise;
+}
+
+@keyframes cc-fall {
+  0%   { opacity: 0; transform: translate3d(0, -10px, 0) rotate(0deg); }
+  8%   { opacity: .85; }
+  88%  { opacity: .5; }
+  100% { opacity: 0; transform: translate3d(var(--cc-drift, 0px), 100dvh, 0) rotate(var(--cc-spin, 360deg)); }
+}
+@keyframes cc-drift {
+  0%   { opacity: 0; transform: translate3d(0, -10px, 0) scale(.6); }
+  14%  { opacity: .9; }
+  60%  { opacity: .35; }
+  100% { opacity: 0; transform: translate3d(var(--cc-drift, 0px), 100dvh, 0) scale(1.1); }
+}
+@keyframes cc-rise {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.8); }
+  12%  { opacity: .8; }
+  70%  { opacity: .3; }
+  100% { opacity: 0; transform: translate3d(var(--cc-drift, 0px), -100dvh, 0) scale(.4); }
+}
+
+/* ── Progress bar ── */
+.cc-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  z-index: 100;
+  background: var(--cc-line);
+}
+.cc-progress-fill {
+  height: 100%;
+  background: var(--cc-accent);
+  transform-origin: left;
+  transition: transform .35s var(--cc-ease);
+}
+
+/* ── Chapter chip ──
+   A long scroll needs somewhere to tell you where you are. `backdrop-
+   filter` is on the chip itself, which is already fixed — putting it on
+   anything that WRAPS a fixed layer is the containing-block trap again. */
+.cc-chip {
+  position: fixed; top: 14px; left: 14px; z-index: 40;
+  max-width: calc(100% - 28px);
+  padding: 7px 14px; border-radius: 999px;
+  background: var(--cc-veil);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  border: 1px solid var(--cc-line);
+  font-size: 9px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--cc-ink); pointer-events: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: cc-chip-in .45s var(--cc-ease) both;
+}
+.cc-birthday .cc-chip { background: rgba(18, 6, 16, .66); }
+@keyframes cc-chip-in { from { opacity: 0 } to { opacity: 1 } }
+
+/* ══════════════════════════════════════════════════════════════════════
+   OPENING OVERLAY
+   Three doors into the same page. The panels are DESCENDANTS of the fixed
+   layer, so transforming them is safe; transforming anything above `.cc`
+   is not. See the warning block above.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-opening {
+  position: fixed; inset: 0; z-index: 200;
+  width: 100%; height: 100dvh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 22px;
+  padding: 0 24px;
+  background: var(--cc-stage);
+  transition: opacity .8s ease, visibility .8s;
+}
+.cc-opening.cc-opened { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.cc-opening-panels { position: absolute; inset: 0; display: flex; }
+.cc-opening-panels > div {
+  flex: 1;
+  background: var(--cc-stage);
+  transition: transform .85s var(--cc-ease);
+}
+
+.cc-opening-orn {
+  position: relative; z-index: 10;
+  width: min(280px, 76vw);
+  opacity: .9;
+}
+.cc-opening-title {
+  position: relative; z-index: 10;
+  font-family: var(--cc-display);
+  color: #fff;
+  text-align: center;
+  opacity: .92;
+}
+.cc-opening-trigger {
+  position: relative; z-index: 10;
+  background: none;
+  border: 1.5px solid var(--cc-accent);
+  color: var(--cc-accent);
+  padding: 14px 34px;
+  border-radius: 999px;
+  font-family: var(--cc-display);
+  font-size: 16px;
+  letter-spacing: .1em;
+  cursor: pointer;
+  transition: background-color .3s ease, color .3s ease;
+  animation: cc-pulse 2.6s ease-in-out infinite;
+}
+.cc-opening-trigger:hover { background: var(--cc-accent); color: var(--cc-stage); }
+@keyframes cc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .18); }
+  50%      { box-shadow: 0 0 0 13px rgba(255, 255, 255, 0); }
+}
+
+/* Birthday — a curtain that parts. */
+.cc-opening-curtain .cc-opening-panels > div {
+  background: linear-gradient(100deg, var(--cc-primary), var(--cc-stage) 60%);
+  border-inline: 1px solid var(--cc-line);
+}
+.cc-opening-curtain.cc-opened .cc-opening-panels > div:first-child { transform: translateX(-101%); }
+.cc-opening-curtain.cc-opened .cc-opening-panels > div:last-child  { transform: translateX(101%); }
+.cc-opening-curtain .cc-opening-title {
+  font-size: clamp(30px, 10vw, 48px);
+  font-weight: 700; letter-spacing: -.02em; text-transform: uppercase;
+}
+
+/* Naming — no curtain and no bang. The page simply lightens, the way a
+   room does when someone opens the curtains on a sleeping baby. */
+.cc-opening-veil { background: var(--cc-stage); }
+.cc-opening-veil .cc-opening-panels > div { background: var(--cc-stage); }
+.cc-opening-veil.cc-opened .cc-opening-panels > div { opacity: 0; transition: opacity .9s ease; }
+.cc-opening-veil .cc-opening-orn { width: min(200px, 54vw); }
+.cc-opening-veil .cc-opening-title {
+  font-size: clamp(28px, 8.5vw, 42px);
+  font-weight: 300; font-style: italic; letter-spacing: .06em;
+}
+
+/* Housewarming — the two halves swing back on their hinges rather than
+   sliding, so the overlay reads as a door and not a stage. */
+.cc-opening-threshold .cc-opening-panels { perspective: 1200px; }
+.cc-opening-threshold .cc-opening-panels > div {
+  background: linear-gradient(180deg, var(--cc-secondary), var(--cc-stage) 70%);
+  border: 1px solid var(--cc-line);
+}
+.cc-opening-threshold .cc-opening-panels > div:first-child { transform-origin: left center; }
+.cc-opening-threshold .cc-opening-panels > div:last-child  { transform-origin: right center; }
+.cc-opening-threshold.cc-opened .cc-opening-panels > div:first-child { transform: rotateY(-88deg); }
+.cc-opening-threshold.cc-opened .cc-opening-panels > div:last-child  { transform: rotateY(88deg); }
+.cc-opening-threshold .cc-opening-title {
+  font-size: clamp(26px, 7.6vw, 40px);
+  font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCENE — base layout
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-scene {
+  position: relative; z-index: 2;
+  padding: 64px var(--cc-gutter);
+  max-width: 900px;
+  margin: 0 auto;
+}
+.cc-naming .cc-scene { padding: 84px var(--cc-gutter); }
+.cc-housewarming .cc-scene { padding: 72px var(--cc-gutter); }
+
+.cc-center { text-align: center; }
+
+.cc-eyebrow {
+  font-family: var(--cc-body);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .26em; text-transform: uppercase;
+  color: var(--cc-accent);
+  margin-bottom: 12px;
+}
+.cc-naming .cc-eyebrow { font-weight: 400; letter-spacing: .34em; color: var(--cc-primary); opacity: .75; }
+.cc-housewarming .cc-eyebrow { letter-spacing: .3em; color: var(--cc-secondary); }
+
+.cc-scene-heading { text-align: center; margin-bottom: 34px; }
+.cc-scene-heading h2 {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(27px, 8vw, 44px);
+  line-height: 1.14;
+  margin-bottom: 10px;
+  color: var(--cc-ink);
+}
+.cc-birthday .cc-scene-heading h2 {
+  font-weight: 800; letter-spacing: -.025em; text-transform: uppercase;
+  line-height: 1.02;
+}
+.cc-naming .cc-scene-heading h2 {
+  font-weight: 300; font-style: italic; letter-spacing: .01em;
+  font-size: clamp(26px, 7.4vw, 40px);
+}
+.cc-housewarming .cc-scene-heading h2 { font-weight: 500; letter-spacing: .005em; }
+.cc-naming .cc-scene-heading { margin-bottom: 46px; }
+
+.cc-intro {
+  color: var(--cc-muted);
+  font-size: 14px;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+/* Word-by-word reveal. `.cc-word` is inline-block, which is why the space
+   between words is a text node in the JSX and not inside the span — an
+   inline-block drops its own trailing whitespace and every heading would
+   render as "Howthedayunfolds". */
+.cc-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(.7em);
+  transition: opacity .6s var(--cc-ease), filter .6s var(--cc-ease), transform .6s var(--cc-ease);
+}
+.cc-word.cc-revealed { opacity: 1; filter: blur(0); transform: none; }
+
+/* The general reveal used by cards and sections. */
+.cc-fade {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s var(--cc-ease), transform .7s var(--cc-ease);
+}
+.cc-fade.cc-visible { opacity: 1; transform: none; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   HERO
+   All three heroes are a dark plate, whatever the page below them is:
+   white type on a dimmed photograph is the one treatment that survives
+   every photograph a host might upload. The vignette closes on
+   `--cc-bg`, so the plate dissolves into the page rather than ending on
+   a hard line.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-hero {
+  position: relative; z-index: 2;
+  min-height: 100svh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  background: var(--cc-stage);
+}
+.cc-hero-media {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: brightness(.46);
+}
+.cc-hero-media-empty {
+  background:
+    radial-gradient(ellipse at 50% 20%, var(--cc-primary), transparent 62%),
+    linear-gradient(170deg, var(--cc-stage), #000);
+  filter: none;
+}
+.cc-hero-vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 42%, transparent 26%, rgba(0, 0, 0, .55) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, .5), transparent 34%, var(--cc-bg) 99%);
+}
+.cc-hero-copy {
+  position: relative; z-index: 5;
+  text-align: center;
+  padding: 72px var(--cc-gutter) 96px;
+  max-width: 640px;
+  color: #fff;
+  /* The bottom of the vignette fades to paper on the two light scopes, so
+     the lower lines of the hero can end up over cream. A shadow costs
+     nothing and stops the CTA disappearing on exactly those pages. */
+  text-shadow: 0 1px 18px rgba(0, 0, 0, .45);
+}
+.cc-hero-copy .cc-eyebrow { color: var(--cc-accent); margin-bottom: 18px; }
+
+.cc-hero-motif { margin: 0 auto 14px; display: flex; justify-content: center; }
+.cc-birthday .cc-hero-motif { width: min(150px, 42vw); }
+.cc-naming .cc-hero-motif { width: min(190px, 52vw); opacity: .95; }
+.cc-housewarming .cc-hero-motif { width: min(160px, 44vw); }
+
+.cc-hero-copy h1 {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(38px, 13vw, 78px);
+  line-height: 1.08;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.cc-hero-copy h1 em {
+  display: block;
+  font-family: var(--cc-display);
+  font-style: italic;
+  font-size: .38em;
+  color: var(--cc-accent);
+  margin: 4px 0;
+}
+.cc-birthday .cc-hero-copy h1 { font-weight: 800; letter-spacing: -.035em; text-transform: uppercase; }
+.cc-naming .cc-hero-copy h1 { font-weight: 300; letter-spacing: .04em; }
+.cc-housewarming .cc-hero-copy h1 { font-weight: 500; letter-spacing: .01em; }
+
+.cc-hero-age {
+  font-family: var(--cc-display);
+  font-size: 14px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--cc-accent);
+  margin-top: 6px;
+}
+.cc-hero-headline {
+  font-family: var(--cc-display);
+  font-size: clamp(16px, 4.6vw, 21px);
+  font-style: italic;
+  color: rgba(255, 255, 255, .88);
+  margin-top: 10px;
+}
+.cc-hero-message {
+  font-size: 14px;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, .74);
+  max-width: 440px;
+  margin: 16px auto 18px;
+}
+.cc-hero-date {
+  font-family: var(--cc-display);
+  font-size: 14px; letter-spacing: .16em;
+  color: var(--cc-accent);
+  margin-bottom: 26px;
+}
+.cc-hero-cta {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: #fff;
+  font-family: var(--cc-display);
+  font-size: 15px; letter-spacing: .06em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, .35);
+  padding-bottom: 4px;
+  transition: border-color .3s ease, color .3s ease;
+}
+.cc-hero-cta:hover { color: var(--cc-accent); border-color: var(--cc-accent); }
+
+/* Before the reveal, the hero and the card say so rather than showing the
+   date they are hiding. */
+.cc-waiting { font-style: italic; opacity: .8; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE DATE
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-date-scene { text-align: center; }
+.cc-date-halo {
+  position: absolute;
+  top: 44%; left: 50%;
+  width: min(300px, 82vw); height: min(300px, 82vw);
+  margin: calc(min(300px, 82vw) / -2) 0 0 calc(min(300px, 82vw) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cc-line), transparent 70%);
+  pointer-events: none;
+}
+
+/* The foil and the leaves sit exactly over the lockup, so the two are
+   stacked in one relatively-positioned box rather than laid out in flow.
+   `inline-block` keeps the box the width of the date itself — stretched
+   to the column, the foil would be a metre of gold over three words. */
+.cc-date-stack { position: relative; display: inline-block; max-width: 100%; }
+
+.cc-date-lockup {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 30px 26px;
+}
+.cc-date-day {
+  font-family: var(--cc-display);
+  font-size: clamp(56px, 20vw, 104px);
+  font-weight: 300; line-height: 1;
+  color: var(--cc-ink);
+}
+.cc-date-month {
+  font-family: var(--cc-display);
+  font-size: clamp(18px, 5.4vw, 28px);
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--cc-accent);
+}
+.cc-date-year {
+  font-family: var(--cc-body); font-style: normal;
+  font-size: 13px; letter-spacing: .32em;
+  color: var(--cc-muted);
+}
+.cc-birthday .cc-date-day { font-weight: 800; letter-spacing: -.04em; }
+.cc-naming .cc-date-day { font-weight: 300; }
+.cc-housewarming .cc-date-day { font-weight: 500; }
+
+.cc-date-hint {
+  font-size: 12.5px; font-style: italic;
+  color: var(--cc-muted);
+  margin-top: 16px;
+}
+.cc-date-orn {
+  display: flex; justify-content: center;
+  margin: 22px auto 0;
+  width: min(200px, 56vw);
+  opacity: .85;
+}
+
+.cc-date-skip {
+  display: block; margin: 16px auto 0;
+  background: none; border: 1px solid var(--cc-line);
+  color: var(--cc-muted); border-radius: 999px;
+  padding: 9px 20px; font-family: inherit; font-size: 10.5px;
+  letter-spacing: .2em; text-transform: uppercase; cursor: pointer;
+  transition: color .3s ease, border-color .3s ease;
+}
+.cc-date-skip:hover { color: var(--cc-accent); border-color: var(--cc-accent); }
+
+/* ── Scratch foil (birthday) ── */
+.cc-scratch {
+  position: absolute; inset: 0;
+  border-radius: 14px; overflow: hidden;
+  /* Scoped to this box only: the rest of the page still scrolls on a
+     phone, but a finger dragged across the foil rubs instead of scrolls. */
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .18);
+  animation: cc-foil-in .6s var(--cc-ease) both;
+}
+.cc-scratch:active { cursor: grabbing; }
+.cc-scratch-canvas { display: block; width: 100%; height: 100%; }
+.cc-scratch-hint {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase;
+  color: rgba(26, 12, 20, .74); pointer-events: none; white-space: nowrap;
+  animation: cc-foil-pulse 2.6s ease-in-out infinite;
+}
+@keyframes cc-foil-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes cc-foil-pulse { 0%, 100% { opacity: .55 } 50% { opacity: 1 } }
+
+/* ── Tap-to-open panels (naming unfolds, housewarming swings) ──
+   One mechanism, two performances. The leaves are absolutely positioned
+   halves of the same button, so the hit area is the whole panel however
+   far through the animation it is — a button whose target shrinks as it
+   opens is one a child taps twice and an adult taps three times. */
+.cc-tap {
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%;
+  padding: 0; border: none; background: none;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  perspective: 900px;
+  animation: cc-foil-in .6s var(--cc-ease) both;
+}
+.cc-tap-leaf {
+  position: absolute; top: 0; bottom: 0; width: 50%;
+  transition: transform .8s var(--cc-ease), opacity .8s ease;
+  backface-visibility: hidden;
+}
+.cc-tap-l { left: 0; }
+.cc-tap-r { right: 0; }
+.cc-tap-hint {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  z-index: 3;
+  font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase;
+  white-space: nowrap; pointer-events: none;
+  transition: opacity .4s ease;
+}
+.cc-tap-open .cc-tap-hint { opacity: 0; }
+
+/* Naming — two folds of soft card stock that lift away from the centre. */
+.cc-tap-unfold .cc-tap-leaf {
+  background: linear-gradient(120deg, #fff, var(--cc-paper) 55%, var(--cc-secondary));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7), 0 14px 30px -20px rgba(0, 0, 0, .45);
+}
+.cc-tap-unfold .cc-tap-l { transform-origin: left center; }
+.cc-tap-unfold .cc-tap-r { transform-origin: right center; }
+.cc-tap-unfold.cc-tap-open .cc-tap-l { transform: rotateY(-96deg); opacity: .1; }
+.cc-tap-unfold.cc-tap-open .cc-tap-r { transform: rotateY(96deg); opacity: .1; }
+.cc-tap-unfold .cc-tap-hint { color: rgba(60, 74, 87, .8); }
+
+/* Housewarming — two door leaves, with a jamb line and a brass knob each,
+   swinging inward off their hinges. */
+.cc-tap-doorway .cc-tap-leaf {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .14), transparent 30%),
+    linear-gradient(100deg, var(--cc-secondary), var(--cc-primary));
+  box-shadow: inset 0 0 0 1px var(--cc-accent), 0 16px 34px -22px rgba(0, 0, 0, .6);
+}
+.cc-tap-doorway .cc-tap-leaf::after {
+  content: ""; position: absolute;
+  top: 50%; width: 7px; height: 7px; margin-top: -3.5px;
+  border-radius: 50%; background: var(--cc-accent);
+}
+.cc-tap-doorway .cc-tap-l::after { right: 7px; }
+.cc-tap-doorway .cc-tap-r::after { left: 7px; }
+.cc-tap-doorway .cc-tap-l { transform-origin: left center; }
+.cc-tap-doorway .cc-tap-r { transform-origin: right center; }
+.cc-tap-doorway.cc-tap-open .cc-tap-l { transform: rotateY(-78deg); }
+.cc-tap-doorway.cc-tap-open .cc-tap-r { transform: rotateY(78deg); }
+.cc-tap-doorway .cc-tap-hint { color: rgba(255, 255, 255, .88); }
+
+/* ── Countdown ── */
+.cc-countdown { margin-top: 30px; }
+.cc-countdown-label {
+  font-size: 10px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--cc-muted); margin-bottom: 14px;
+}
+.cc-countdown-row {
+  display: grid;
+  /* Four fixed columns, not flex: at 360px a flex row of four units with
+     two-digit numbers wraps the seconds onto its own line and the whole
+     lockup looks like a mistake. */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 380px; margin: 0 auto;
+}
+.cc-countdown-unit {
+  border: 1px solid var(--cc-line);
+  border-radius: 12px;
+  padding: 12px 4px;
+  background: var(--cc-veil);
+}
+.cc-countdown-unit b {
+  display: block;
+  font-family: var(--cc-display);
+  font-size: clamp(20px, 6.4vw, 30px);
+  font-weight: 500; line-height: 1.1;
+  color: var(--cc-ink);
+}
+.cc-countdown-unit span {
+  display: block;
+  font-size: 8.5px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--cc-muted); margin-top: 5px;
+}
+.cc-countdown-done {
+  margin-top: 26px;
+  font-family: var(--cc-display);
+  font-size: 19px; color: var(--cc-accent);
+}
+.cc-birthday .cc-countdown-unit b { font-weight: 800; letter-spacing: -.02em; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE INVITATION CARD
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-card {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 40px 24px 36px;
+  background: var(--cc-veil);
+  border-radius: var(--cc-radius);
+  text-align: center;
+  overflow: hidden;
+}
+.cc-birthday .cc-card {
+  background: linear-gradient(170deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+  box-shadow: 0 30px 70px -40px #000;
+}
+.cc-naming .cc-card {
+  background: #fff;
+  padding: 54px 26px 44px;
+  border-radius: 180px 180px 18px 18px;
+  box-shadow: 0 30px 60px -44px rgba(60, 74, 87, .55);
+}
+.cc-housewarming .cc-card {
+  background: #fffaf0;
+  padding: 46px 24px 40px;
+  border-radius: 140px 140px 10px 10px;
+  box-shadow: 0 26px 58px -40px rgba(51, 41, 31, .6);
+}
+
+/* The drawn frame stretches to whatever the card turns out to be. It is
+   behind the words and must never intercept a tap meant for the link
+   underneath it. */
+.cc-frame {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.cc-card-inner { position: relative; z-index: 2; }
+
+/* Ornament slots. Absolute, decorative, and out of the tap path for the
+   same reason the frame is. */
+.cc-slot { position: absolute; z-index: 1; pointer-events: none; display: block; }
+.cc-slot-tl { top: 4px; left: 4px; width: 34px; }
+.cc-slot-tr { top: 4px; right: 4px; width: 34px; }
+.cc-slot-bl { bottom: 4px; left: 4px; width: 28px; }
+.cc-slot-br { bottom: 4px; right: 4px; width: 28px; }
+.cc-slot-foot { bottom: 12px; left: 50%; width: 92px; margin-left: -46px; opacity: .75; }
+.cc-slot-diya-l { bottom: 10px; left: 12px; width: 58px; }
+.cc-slot-diya-r { bottom: 10px; right: 12px; width: 58px; }
+
+.cc-card-crest { display: flex; justify-content: center; margin-bottom: 12px; }
+.cc-birthday .cc-card-crest { width: 116px; margin-inline: auto; }
+.cc-naming .cc-card-crest { width: 128px; margin-inline: auto; }
+.cc-housewarming .cc-card-crest { width: 92px; margin-inline: auto; }
+
+.cc-card-blessing {
+  font-family: var(--cc-display);
+  font-size: 13.5px; font-style: italic;
+  letter-spacing: .02em;
+  color: var(--cc-accent);
+  margin-bottom: 16px;
+}
+.cc-card-kicker {
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .26em; text-transform: uppercase;
+  color: var(--cc-muted);
+  margin-bottom: 14px;
+}
+.cc-card-name {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(30px, 10vw, 46px);
+  line-height: 1.08;
+  color: var(--cc-ink);
+}
+.cc-card-name em {
+  display: block; font-style: italic;
+  font-size: .4em; color: var(--cc-accent);
+  margin: 4px 0;
+}
+.cc-card-name span { display: block; }
+.cc-birthday .cc-card-name { font-weight: 800; text-transform: uppercase; letter-spacing: -.03em; }
+.cc-naming .cc-card-name { font-weight: 300; letter-spacing: .05em; }
+.cc-housewarming .cc-card-name { font-weight: 500; }
+
+.cc-card-role {
+  margin-top: 8px;
+  font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--cc-accent);
+}
+.cc-card-message {
+  margin-top: 16px;
+  font-size: 14px; line-height: 1.8;
+  color: var(--cc-muted);
+}
+.cc-card-rule {
+  display: flex; justify-content: center;
+  margin: 20px auto;
+  width: min(220px, 74%);
+}
+.cc-card-date-label {
+  font-size: 9.5px; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--cc-muted); margin-bottom: 5px;
+}
+.cc-card-date {
+  font-family: var(--cc-display);
+  font-size: clamp(18px, 5.6vw, 24px);
+  letter-spacing: .05em;
+  color: var(--cc-ink);
+}
+.cc-card-venue {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--cc-muted);
+}
+.cc-card-hosts {
+  margin-top: 20px;
+  font-family: var(--cc-display);
+  font-size: 13.5px; font-style: italic;
+  color: var(--cc-accent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ABOUT / PEOPLE
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-people { display: grid; gap: 40px; justify-items: center; }
+.cc-person { text-align: center; max-width: 340px; }
+.cc-person-photo {
+  width: 150px; height: 150px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+  background: var(--cc-veil);
+}
+.cc-person-photo img { width: 100%; height: 100%; object-fit: cover; }
+.cc-person-photo-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--cc-display);
+  font-size: 46px;
+  color: var(--cc-accent);
+  background: var(--cc-veil);
+}
+.cc-person-role {
+  font-size: 9.5px; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--cc-accent); margin-bottom: 6px;
+}
+.cc-person-name {
+  font-family: var(--cc-display);
+  font-size: clamp(22px, 6.6vw, 30px);
+  color: var(--cc-ink);
+}
+.cc-birthday .cc-person-name { font-weight: 700; text-transform: uppercase; letter-spacing: -.01em; }
+.cc-naming .cc-person-name { font-weight: 300; letter-spacing: .06em; }
+.cc-person-intro {
+  margin-top: 10px;
+  font-size: 14px; line-height: 1.78;
+  color: var(--cc-muted);
+}
+/* The naming portrait is an arch, not a circle — the same window shape as
+   its card, so the two scenes read as one object. */
+.cc-naming .cc-person-photo { border-radius: 999px 999px 14px 14px; height: 190px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   STORY CHAPTERS
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-chapters { display: grid; gap: 52px; }
+.cc-chapter { display: grid; gap: 16px; }
+.cc-chapter-image {
+  border-radius: var(--cc-radius);
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+}
+.cc-chapter-image img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; }
+.cc-chapter-number {
+  font-family: var(--cc-display);
+  font-size: 30px; line-height: 1;
+  color: var(--cc-accent);
+  opacity: .55;
+  margin-bottom: 6px;
+}
+.cc-chapter-copy h3 {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(20px, 5.8vw, 27px);
+  color: var(--cc-ink);
+  margin-bottom: 8px;
+}
+.cc-chapter-copy p { font-size: 14px; color: var(--cc-muted); line-height: 1.8; }
+.cc-birthday .cc-chapter-copy h3 { font-weight: 700; text-transform: uppercase; letter-spacing: -.015em; }
+.cc-naming .cc-chapter-copy h3 { font-weight: 300; font-style: italic; }
+.cc-naming .cc-chapter-image { border-radius: 140px 140px 14px 14px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PROGRAMME TIMELINE
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-timeline { position: relative; padding-left: 26px; }
+.cc-timeline-line {
+  position: absolute; top: 6px; bottom: 6px; left: 5px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--cc-line) 12%, var(--cc-line) 88%, transparent);
+}
+.cc-event { position: relative; margin-bottom: 26px; }
+.cc-event:last-child { margin-bottom: 0; }
+.cc-event-dot {
+  position: absolute; left: -26px; top: 24px;
+  width: 11px; height: 11px; border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--cc-bg);
+}
+.cc-event-card {
+  display: flex;
+  border-radius: var(--cc-radius);
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+  background: var(--cc-veil);
+}
+/* The theme colour is a band down the edge rather than a tint behind the
+   text: a "Haldi Yellow" fill would put the host's own colour behind body
+   copy at whatever contrast it happens to have, and half of them are
+   unreadable. A 6px edge is the same information and always legible. */
+.cc-event-band { flex: 0 0 6px; }
+.cc-event-copy { flex: 1 1 auto; min-width: 0; padding: 18px 16px; }
+.cc-event-number {
+  font-size: 9.5px; letter-spacing: .22em;
+  color: var(--cc-muted); margin-bottom: 8px;
+}
+.cc-event-copy h3 {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(19px, 5.4vw, 25px);
+  color: var(--cc-ink);
+  margin-bottom: 6px;
+}
+.cc-birthday .cc-event-copy h3 { font-weight: 700; text-transform: uppercase; letter-spacing: -.015em; }
+.cc-event-time {
+  font-family: var(--cc-display);
+  font-size: 14px; letter-spacing: .08em;
+  color: var(--cc-accent);
+  margin-bottom: 6px;
+}
+.cc-event-venue { font-size: 13.5px; color: var(--cc-ink); }
+.cc-event-address { font-size: 12.5px; color: var(--cc-muted); margin-top: 2px; }
+.cc-event-note { font-size: 13px; color: var(--cc-muted); margin-top: 8px; line-height: 1.7; }
+.cc-event-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.cc-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--cc-line);
+  border-radius: 999px;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cc-muted);
+}
+.cc-tag-plain { border-color: var(--cc-line); color: var(--cc-muted); }
+.cc-event-cal {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 13px;
+  font-size: 11.5px; letter-spacing: .1em;
+  color: var(--cc-accent); text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s ease;
+}
+.cc-event-cal:hover { border-bottom-color: var(--cc-accent); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   VENUE
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-venue-scene { text-align: center; }
+.cc-venue-address { font-size: 14px; color: var(--cc-muted); max-width: 420px; margin: 0 auto; }
+.cc-venue-details {
+  display: grid; gap: 14px;
+  margin: 28px auto 0;
+  max-width: 460px;
+  text-align: left;
+}
+.cc-venue-detail {
+  border: 1px solid var(--cc-line);
+  border-radius: 12px;
+  padding: 13px 15px;
+  background: var(--cc-veil);
+}
+.cc-venue-detail span {
+  display: block;
+  font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--cc-accent); margin-bottom: 5px;
+}
+.cc-venue-detail p { font-size: 13.5px; color: var(--cc-muted); line-height: 1.65; }
+.cc-venue-map {
+  margin: 28px auto 0;
+  max-width: 560px;
+  border-radius: var(--cc-radius);
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+  /* A fixed height rather than an aspect-ratio on the iframe: Google's
+     embed collapses to zero height inside a flow container on some
+     Android browsers, and an invisible map looks like a failed request. */
+  height: 260px;
+}
+.cc-venue-map iframe { width: 100%; height: 100%; border: 0; display: block; }
+.cc-venue-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 24px;
+  padding: 13px 26px;
+  border: 1px solid var(--cc-accent);
+  border-radius: 999px;
+  color: var(--cc-accent);
+  font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase;
+  text-decoration: none;
+  transition: background-color .3s ease, color .3s ease;
+}
+.cc-venue-cta:hover { background: var(--cc-accent); color: var(--cc-bg); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   RSVP AND WISHES HOOKS
+
+   The template only ever draws the lead-in. The stepper and the wall of
+   messages are rendered by the guest page directly beneath the
+   invitation, because they need the guest record and the database client
+   and the template has neither. The empty slots below are the anchors —
+   they are deliberately invisible, and the padding is what keeps the
+   guest page's own block from butting straight up against a heading.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-rsvp-hook { padding-bottom: 20px; text-align: center; }
+.cc-rsvp-note {
+  font-family: var(--cc-display);
+  font-size: 15px; font-style: italic;
+  color: var(--cc-muted);
+  max-width: 420px; margin: 0 auto;
+}
+.cc-rsvp-slot { min-height: 4px; }
+.cc-wishes-hook { padding-bottom: 12px; text-align: center; }
+.cc-wishes-slot { min-height: 4px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   GALLERY
+   A horizontal rail, not a grid: on a phone a grid of eight photographs
+   is eight screens of scrolling before the guest reaches the RSVP.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-gallery {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  /* The rail is full-bleed, so it is pulled out to the page edge and
+     given its own padding back. Without the padding the first and last
+     photographs sit flush against the screen edge and look cropped. */
+  margin-inline: calc(var(--cc-gutter) * -1);
+  padding-inline: var(--cc-gutter);
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+.cc-gallery::-webkit-scrollbar { display: none; }
+.cc-frame-photo {
+  position: relative;
+  flex: 0 0 auto;
+  width: 200px;
+  scroll-snap-align: center;
+  border-radius: var(--cc-radius);
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+}
+.cc-frame-photo img { width: 100%; height: 260px; object-fit: cover; }
+.cc-frame-photo figcaption {
+  position: absolute; left: 10px; bottom: 8px;
+  font-size: 10px; letter-spacing: .2em;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .8);
+}
+.cc-naming .cc-frame-photo { border-radius: 120px 120px 14px 14px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SHARE
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-share { text-align: center; }
+.cc-hashtag {
+  font-family: var(--cc-display);
+  font-size: clamp(26px, 8.4vw, 40px);
+  color: var(--cc-accent);
+  margin-bottom: 14px;
+  /* A 30-character hashtag is not unusual and must wrap rather than push
+     the page sideways. */
+  overflow-wrap: anywhere;
+}
+.cc-birthday .cc-hashtag { font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; }
+.cc-share-note {
+  font-size: 14px; color: var(--cc-muted);
+  max-width: 400px; margin: 0 auto 22px;
+  line-height: 1.75;
+}
+.cc-share-cta {
+  display: inline-block;
+  padding: 13px 26px;
+  border-radius: 999px;
+  border: 1px solid var(--cc-accent);
+  color: var(--cc-accent);
+  font-size: 12.5px; letter-spacing: .12em;
+  text-decoration: none;
+  transition: background-color .3s ease, color .3s ease;
+}
+.cc-share-cta:hover { background: var(--cc-accent); color: var(--cc-bg); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CLOSING
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-closing {
+  position: relative; z-index: 2;
+  text-align: center;
+  padding: 64px var(--cc-gutter) 56px;
+}
+.cc-closing-hasimage {
+  min-height: 82svh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 88px var(--cc-gutter);
+}
+.cc-closing-backdrop {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%; object-fit: cover;
+}
+.cc-closing-veil {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, .42) 22%, rgba(0, 0, 0, .74) 100%),
+    linear-gradient(180deg, var(--cc-bg), transparent 26%, rgba(0, 0, 0, .55));
+}
+.cc-closing-copy { position: relative; z-index: 2; width: 100%; }
+.cc-closing-crest {
+  display: flex; justify-content: center;
+  width: min(200px, 60%);
+  margin: 0 auto 20px;
+  opacity: .8;
+}
+.cc-closing-message {
+  font-size: 14px; line-height: 1.8;
+  color: var(--cc-muted);
+  max-width: 420px; margin: 0 auto 16px;
+}
+.cc-closing h2 {
+  font-family: var(--cc-display);
+  font-weight: 400;
+  font-size: clamp(28px, 9vw, 46px);
+  line-height: 1.12;
+  color: var(--cc-ink);
+}
+.cc-closing h2 em {
+  display: block; font-style: italic;
+  font-size: .36em; color: var(--cc-accent);
+  margin: 4px 0;
+}
+.cc-closing h2 span { display: block; }
+.cc-birthday .cc-closing h2 { font-weight: 800; text-transform: uppercase; letter-spacing: -.03em; }
+.cc-naming .cc-closing h2 { font-weight: 300; letter-spacing: .05em; }
+.cc-closing-hosts {
+  margin-top: 12px;
+  font-family: var(--cc-display);
+  font-size: 14px; font-style: italic;
+  color: var(--cc-accent);
+}
+.cc-closing small {
+  display: block;
+  margin-top: 20px;
+  font-size: 10px; letter-spacing: .18em;
+  color: var(--cc-muted);
+  opacity: .7;
+}
+/* Over a photograph the closing is always a dark plate, on every scope —
+   the type has to hold against whatever the host uploaded. */
+.cc-closing-hasimage .cc-closing-message { color: rgba(255, 255, 255, .86); }
+.cc-closing-hasimage h2 { color: #fff; }
+.cc-closing-hasimage .cc-closing-hosts { color: rgba(255, 255, 255, .8); }
+.cc-closing-hasimage small { color: rgba(255, 255, 255, .7); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ORNAMENT SIZING AND MOTION
+   The SVGs carry their own viewBox and no width, so each one is sized by
+   its slot here. Anything that moves is decoration: it animates a
+   transform on itself, never on a box that wraps a fixed layer.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc-bunting, .cc-torana, .cc-rule { width: 100%; height: auto; }
+.cc-candles, .cc-sparkler, .cc-agebadge, .cc-cradle,
+.cc-moon, .cc-feet, .cc-diya, .cc-doorway, .cc-key,
+.cc-rangoli, .cc-cornerstar { width: 100%; height: auto; }
+
+/* A candle flame that scales from its own centre detaches from the wick.
+   The origin is set inline, on the wick itself, per candle. */
+.cc-flame { animation: cc-flicker 2.4s ease-in-out infinite; }
+@keyframes cc-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  30%      { transform: scale(1.06, .94) rotate(-2.5deg); opacity: .92; }
+  65%      { transform: scale(.95, 1.07) rotate(2deg); opacity: .97; }
+}
+
+.cc-bunting-flag {
+  animation: cc-sway 4.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: top center;
+}
+@keyframes cc-sway {
+  0%, 100% { rotate: 0deg; }
+  50%      { rotate: 3.5deg; }
+}
+
+.cc-spark-ray { animation: cc-blink 2.2s ease-in-out infinite; }
+@keyframes cc-blink { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+
+.cc-twinkle { animation: cc-blink 3.4s ease-in-out infinite; }
+
+.cc-cradle { animation: cc-rock 5.5s ease-in-out infinite; transform-origin: 50% 85%; }
+@keyframes cc-rock {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50%      { transform: rotate(1.6deg); }
+}
+
+/* The doors on the hero motif are shut unless something opens them. */
+.cc-door-l, .cc-door-r { transition: transform .9s var(--cc-ease); transform-box: fill-box; }
+.cc-door-l { transform-origin: left center; }
+.cc-door-r { transform-origin: right center; }
+.cc-doorway-open .cc-door-l { transform: scaleX(.12); }
+.cc-doorway-open .cc-door-r { transform: scaleX(.12); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   WIDER SCREENS
+   Phone first. Everything above is the 360px layout; these are upgrades,
+   not corrections.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 600px) {
+  .cc { --cc-gutter: 28px; }
+  .cc-scene { padding: 96px var(--cc-gutter); }
+  .cc-naming .cc-scene { padding: 120px var(--cc-gutter); }
+  .cc-housewarming .cc-scene { padding: 104px var(--cc-gutter); }
+
+  .cc-people-two { grid-template-columns: repeat(2, 1fr); gap: 48px; align-items: start; }
+
+  /* The chapters alternate side to side once there is room for two
+     columns. Below this width they stack, because a 160px-wide photograph
+     beside three lines of text is worse than either alone. */
+  .cc-chapter { grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+  .cc-chapter:nth-child(even) .cc-chapter-image { order: 2; }
+
+  .cc-timeline { padding-left: 34px; }
+  .cc-event-dot { left: -34px; }
+  .cc-event-copy { padding: 22px 24px; }
+
+  .cc-venue-details { grid-template-columns: repeat(3, 1fr); }
+  .cc-venue-map { height: 340px; }
+
+  .cc-frame-photo { width: 260px; }
+  .cc-frame-photo img { height: 330px; }
+
+  .cc-card { padding: 54px 40px 46px; }
+  .cc-naming .cc-card { padding: 68px 44px 54px; }
+}
+
+@media (min-width: 900px) {
+  .cc-scene { padding: 118px 32px; }
+  .cc-closing { padding: 96px 32px 80px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PREVIEW MODE (inside the PhoneFrame on the create page and dashboard)
+
+   The host is looking at a thumbnail of their own invitation, not
+   receiving it: no overlay to tap through, no foil to rub, and every
+   scene compressed so more than one of them is visible at a time.
+   ══════════════════════════════════════════════════════════════════════ */
+.cc.cc-preview { font-size: 11px; }
+.cc.cc-preview .cc-opening { display: none; }
+.cc.cc-preview .cc-progress,
+.cc.cc-preview .cc-chip { display: none; }
+
+.cc.cc-preview .cc-hero { min-height: 320px; }
+.cc.cc-preview .cc-hero-copy { padding: 34px 14px 40px; }
+.cc.cc-preview .cc-hero-copy h1 { font-size: 30px; }
+.cc.cc-preview .cc-hero-motif { width: 92px; }
+.cc.cc-preview .cc-hero-message { font-size: 12px; margin: 10px auto 12px; }
+
+.cc.cc-preview .cc-scene { padding: 34px 14px; }
+.cc.cc-preview .cc-scene-heading { margin-bottom: 20px; }
+.cc.cc-preview .cc-scene-heading h2 { font-size: 22px; }
+
+.cc.cc-preview .cc-card { padding: 26px 16px 24px; max-width: 280px; }
+.cc.cc-preview .cc-card-name { font-size: 26px; }
+.cc.cc-preview .cc-card-crest { width: 74px; }
+.cc.cc-preview .cc-card-message { font-size: 12px; }
+
+.cc.cc-preview .cc-date-lockup { padding: 18px 16px; }
+.cc.cc-preview .cc-date-day { font-size: 46px; }
+.cc.cc-preview .cc-countdown-unit { padding: 8px 2px; }
+.cc.cc-preview .cc-countdown-unit b { font-size: 18px; }
+
+.cc.cc-preview .cc-people { gap: 22px; }
+.cc.cc-preview .cc-person-photo { width: 84px; height: 84px; }
+/* The scope class sits on the same element as `.cc-preview`, so this is a
+   compound selector and not a descendant one — written as a descendant it
+   matches nothing and the naming portrait stays full height inside a
+   280px phone frame. */
+.cc.cc-preview.cc-naming .cc-person-photo { height: 104px; }
+.cc.cc-preview .cc-person-photo-empty { font-size: 28px; }
+
+.cc.cc-preview .cc-chapters { gap: 26px; }
+.cc.cc-preview .cc-chapter { grid-template-columns: 1fr; gap: 12px; }
+.cc.cc-preview .cc-chapter-number { font-size: 20px; }
+
+.cc.cc-preview .cc-timeline { padding-left: 18px; }
+.cc.cc-preview .cc-event-dot { left: -18px; width: 8px; height: 8px; }
+.cc.cc-preview .cc-event-copy { padding: 12px 12px; }
+.cc.cc-preview .cc-event { margin-bottom: 16px; }
+
+.cc.cc-preview .cc-venue-map { height: 150px; }
+.cc.cc-preview .cc-venue-details { grid-template-columns: 1fr; }
+
+.cc.cc-preview .cc-frame-photo { width: 118px; }
+.cc.cc-preview .cc-frame-photo img { height: 150px; }
+
+.cc.cc-preview .cc-closing { padding: 36px 14px 32px; }
+.cc.cc-preview .cc-closing-hasimage { min-height: 260px; padding: 44px 14px; }
+.cc.cc-preview .cc-closing h2 { font-size: 24px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+
+   Everything on this page that moves is decoration — a flame, a flag, a
+   door, a reveal. Someone who has asked for less motion still gets the
+   whole invitation: the reveals resolve to their finished state rather
+   than being skipped, so no scene is left blank waiting for an animation
+   that will never run.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .cc *, .cc *::before, .cc *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* The two reveal utilities are opacity/transform transitions that start
+     hidden. With transitions off they must start visible instead, or the
+     page is a column of empty sections. */
+  .cc-word, .cc-fade { opacity: 1; filter: none; transform: none; }
+  .cc-particles { display: none; }
+  .cc-ambient i { animation: none; }
+}

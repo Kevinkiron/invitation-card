@@ -1,10 +1,10 @@
 {
-  "name": "coderpace-invites",
+  "name": "welcvm-invites",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/fetch-demo-photos.mjs && next build",
     "start": "next start",
     "lint": "next lint"
   },

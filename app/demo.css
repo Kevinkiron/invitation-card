@@ -1,0 +1,240 @@
+/* ══════════════════════════════════════════════════════════════════════
+   The demo previews, and the /demo pages that back them.
+
+   Two things live here: the phone frame the landing page shows a running
+   invitation inside (`.dp-*`), and the chrome around a full demo page
+   (`.demo-*`). Neither touches the invitation itself — the templates
+   bring their own stylesheets, and the preview keeps them at arm's
+   length inside an iframe.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── The phone ──────────────────────────────────────────────────────── */
+
+.dp {
+  --dp-accent: #b8405e;
+  --dp-h: 560px;
+  --dp-w: 260px;
+  width: var(--dp-w);
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.dp-shell {
+  position: relative;
+  width: 100%;
+  height: var(--dp-h);
+  border-radius: 30px;
+  padding: 7px;
+  background: linear-gradient(160deg, #2c2c32, #17171b 40%, #2c2c32);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .14) inset,
+    0 18px 40px -18px rgba(18, 12, 20, .55),
+    0 4px 12px -6px rgba(18, 12, 20, .35);
+}
+
+.dp-notch {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34%;
+  height: 15px;
+  border-radius: 0 0 11px 11px;
+  background: #17171b;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.dp-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+  /* The iframe is scaled with a transform from its top-left corner, so
+     it overflows this box by design; without the clip it would paint
+     across the rest of the landing page. */
+  isolation: isolate;
+}
+
+.dp-screen iframe {
+  display: block;
+  border: 0;
+  /* Not interactive in the preview. A visitor who wants to scroll it
+     themselves follows the link to the full page — trapping their finger
+     inside a 260px iframe halfway down the landing page is the wrong
+     place to hand over control of scrolling. */
+  pointer-events: none;
+}
+
+.dp-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 24px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--dp-accent) 22%, #fff) 0%, #fff 70%);
+  /* Opacity only. A transform here would make this element the
+     containing block for every `position: fixed` layer the invitation
+     inside the frame paints. */
+  transition: opacity .5s ease;
+  z-index: 2;
+}
+
+.dp-poster.dp-gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dp-poster-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dp-accent);
+}
+
+.dp-poster-names {
+  font-size: 17px;
+  font-weight: 600;
+  color: #33262c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-poster { transition: none; }
+}
+
+/* ── The full demo page ─────────────────────────────────────────────── */
+
+.demo-page { position: relative; }
+
+/* Sticky rather than fixed: the invitations paint their own fixed layers
+   and a second fixed bar competes with them for the top of the screen. */
+.demo-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: #1b1016;
+  color: #fdf6f0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-banner-in {
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.demo-banner p { margin: 0; }
+.demo-banner strong { color: #f2c98a; }
+
+.demo-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #f2c98a;
+  color: #2a1118;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.demo-banner-cta:hover { background: #f8dcae; }
+.demo-banner-cta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.demo-foot {
+  padding: 72px 16px 88px;
+  text-align: center;
+  background: #fbf6f1;
+  color: #43303a;
+}
+
+.demo-foot-kicker {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .6;
+}
+
+.demo-foot-h {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 5vw, 34px);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.demo-foot-p {
+  margin: 0 auto 26px;
+  max-width: 48ch;
+  font-size: 15.5px;
+  line-height: 1.65;
+  opacity: .8;
+}
+
+.demo-foot-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: #8f294e;
+  color: #fff;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.demo-foot-cta:hover { background: #a33059; }
+.demo-foot-cta:focus-visible { outline: 2px solid #8f294e; outline-offset: 3px; }
+
+.demo-others {
+  margin-top: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.demo-others a {
+  --demo-accent: #8f294e;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--demo-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--demo-accent) 9%, transparent);
+  color: color-mix(in srgb, var(--demo-accent) 82%, #2a1a22);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.demo-others a:hover { background: color-mix(in srgb, var(--demo-accent) 16%, transparent); }
+.demo-others a:focus-visible { outline: 2px solid var(--demo-accent); outline-offset: 2px; }
+
+/* ── The embedded variant ───────────────────────────────────────────── */
+
+/* Inside the phone frame there is no chrome, and no scrollbar: a native
+   scrollbar down the side of a 390px preview reads as a rendering fault
+   rather than as a feature. The page still scrolls — DemoAutoScroll
+   drives it — it just does not draw the bar. */
+.demo-embed {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.demo-embed::-webkit-scrollbar { display: none; }

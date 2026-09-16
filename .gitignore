@@ -4,3 +4,13 @@ node_modules
 .env
 .DS_Store
 *.log
+
+# Scratch folder used when files had to be moved aside rather than deleted
+# (the desktop bridge cannot remove files). Safe to delete by hand.
+_to_delete/
+
+# Demo photos are fetched on every build (see scripts/fetch-demo-photos.mjs);
+# background music is a manual one-time download (see MUSIC-SETUP.md). Neither
+# belongs in git.
+public/demo/
+public/music/

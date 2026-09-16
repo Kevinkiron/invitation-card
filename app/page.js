@@ -203,7 +203,7 @@ export default function Home() {
                 </h2>
                 <p className="w-lede">
                   Pick what you are celebrating. The design starts from there —
-                  a wedding and a concert do not come out looking like cousins.
+                  a wedding and a housewarming do not come out looking like cousins.
                 </p>
               </div>
             </Reveal>

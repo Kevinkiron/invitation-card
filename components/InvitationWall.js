@@ -126,8 +126,17 @@ export default function InvitationWall() {
     return () => io.disconnect();
   }, []);
 
+  /* WALL is now a short, honest list — exactly the occasions this product
+     builds, no padding. Splitting a short list into two half-empty rows
+     the way a list of twelve was split would leave each row scrolling
+     just one or two cards. Below the old split's break-even point, both
+     rows draw the full list instead (the second reversed, so the two
+     rows aren't just mirror images frame-for-frame). */
   const half = Math.ceil(WALL.length / 2);
-  const rows = [WALL.slice(0, half), WALL.slice(half)];
+  const rows =
+    WALL.length <= 6
+      ? [WALL, [...WALL].reverse()]
+      : [WALL.slice(0, half), WALL.slice(half)];
 
   return (
     <div

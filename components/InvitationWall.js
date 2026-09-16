@@ -1,107 +1,90 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { render } from "@/lib/design/renderer";
-import { WALL } from "@/lib/design/showcase";
+import { DEMOS } from "@/lib/demo/fixtures";
+import "@/app/demo.css"; // reuses .dp-poster for the loading state — see below
 
 /* ══════════════════════════════════════════════════════════════════════
    The invitation wall.
 
-   Twelve invitations drifting past in two rows, every one drawn live by
-   lib/design/renderer.js. A competitor can put a wall of screenshots on
-   their site; the difference here is that these are generated, so the
-   wall is evidence rather than decoration.
+   This used to draw twelve invented, generic designs live via
+   lib/design/renderer.js into shadow roots — a fair proof of "no
+   templates" in the abstract, but none of it was one of Welcvm's four
+   real templates, and lib/design/showcase.js's WALL has since been
+   trimmed to exactly those four anyway. Now every card is a sandboxed
+   iframe onto `/demo/<slug>?embed=1` — the same real, already-opened
+   invitation HeroPhone and the "See it built" section show, just small
+   and in motion. What passes through this wall is the product, not a
+   diagram of it.
 
-   Three things this has to get right:
+   Same reasoning as HeroPhone.js/DemoPhone.js for the iframe: the cinema
+   and celebration templates are built on `position: fixed` and `100dvh`,
+   which only behave correctly inside their own document — a
+   `transform: scale()` has to land on the iframe element, not on content
+   rendered inline.
 
-   1. ISOLATION. Each invitation gets its own shadow root. The renderer
-      scopes its CSS to `.inv-root`, so twelve of them in one document
-      would otherwise all take the last one's styling — and the page's own
-      CSS would bleed in on top.
-   2. COST. Twelve renders is real work, so nothing is drawn until the
-      wall is close to the viewport. Below the fold it is twelve empty
-      boxes.
-   3. RESTRAINT. Only each invitation's hero is shown, sized for a card
-      rather than a viewport. The renderer measures in `vw`, which is
-      correct on a real invitation page and enormous inside a 232px card.
-   ══════════════════════════════════════════════════════════════════════ */
+   Unlike HeroPhone's `.w-phone` (a fluid `clamp()` width needing a
+   ResizeObserver), `.w-wallcard-inner` is drawn at fixed CARD_W/CARD_H
+   pixel constants (see app/landing.css — no responsive override exists),
+   so the scale from the 390px iframe down to the card is a constant,
+   computed once.
+
+   Two things kept from the old version:
+
+   1. COST. Nothing loads until the wall is close to the viewport, same
+      IntersectionObserver gate as before.
+   2. The CSS's `@keyframes w-marquee` animates `translateX(-50%)`, which
+      only loops seamlessly with exactly two duplicated copies of a row's
+      card set — that structure is unchanged. What DID change: this now
+      renders a single row (one marquee track) instead of two, so a
+      four-demo wall mounts 8 iframes total rather than 16 — a full React
+      app in every card adds up fast, and one row moving is exactly what
+      "passing through" asked for. ══════════════════════════════════════════════════════════════════════ */
 
 const CARD_W = 248;
 const CARD_H = 348;
+const FRAME_WIDTH = 390;
+const FRAME_HEIGHT = Math.round(FRAME_WIDTH * (CARD_H / CARD_W));
+const SCALE = CARD_W / FRAME_WIDTH;
 
-function fitCss(frameless) {
-  /* Tuned so the tallest combination a design can produce — epigraph plus
-     framed portrait plus kicker plus two-line headline plus subhead plus
-     venue — still clears the bottom of the card. The anniversary design
-     overflowed at the first set of numbers.
-
-     Every selector here is doubled (`.inv-root.inv-root`) on purpose. The
-     renderer sizes a populated portrait with `.inv-root .hero.hasphoto
-     .frame`, which is one class more specific than a plain three-class
-     override — so the earlier `.inv-root .hero .frame{width:82px}` lost,
-     the portrait rendered at its full 300px inside a 232px card, and the
-     names were pushed clean off the bottom. Half the wall was an empty
-     gradient. Doubling the root class wins without `!important`. */
-  return `
-    .inv-root.inv-root{height:100%;overflow:hidden;border-radius:0;background:var(--bg)}
-    /* The renderer centres the invitation in a 600px sheet on a darker
-       ground. Inside a 248px card the card IS the sheet, so the sheet box
-       is dissolved — the hero's min-height:100% has to resolve against
-       .inv-root's definite height, not through an auto-height wrapper. */
-    .inv-root.inv-root .sheet{display:contents}
-    /* Same reason as the hero phone: --m must be the card, not the window. */
-    .inv-root.inv-root{--sheet:${CARD_W}px}
-    .inv-root.inv-root .hero{min-height:100%;max-height:100%;padding:16px 13px;justify-content:center}
-    .inv-root.inv-root .hero .frame,
-    .inv-root.inv-root .hero.hasphoto .frame{width:${frameless ? 0 : 88}px;margin-bottom:9px;
-      box-shadow:0 6px 16px rgba(0,0,0,.13),0 0 0 3px var(--bg),0 0 0 4px var(--accent-soft)}
-    .inv-root.inv-root .hero .epigraph{font-size:8.5px;margin-bottom:7px;max-width:165px;line-height:1.5}
-    .inv-root.inv-root .hero .epigraph .src{font-size:6px;margin-top:5px}
-    .inv-root.inv-root .hero .kicker{font-size:6.5px;letter-spacing:.24em;margin-bottom:6px}
-    .inv-root.inv-root .hero .h1{font-size:${frameless ? "clamp(24px,9vw,38px)" : "clamp(17px,5.4vw,26px)"}}
-    .inv-root.inv-root .hero .joiner{font-size:.42em}
-    .inv-root.inv-root .hero .subhead{font-size:10.5px;margin-top:8px}
-    .inv-root.inv-root .hero .place{font-size:6.5px;margin-top:5px}
-    .inv-root.inv-root .hero .orn{margin-top:9px;max-width:120px}
-    .inv-root.inv-root .hero .edge{inset:8px}
-    .inv-root.inv-root .crest{display:none}
-    .inv-root.inv-root .scrollcue{display:none}
-    .inv-root.inv-root .hero .deco{width:${frameless ? 160 : 92}px;height:${frameless ? 160 : 92}px;
-      opacity:${frameless ? 0.85 : 0.34}}
-    .inv-root.inv-root section:not(.hero), .inv-root.inv-root footer{display:none}
-  `;
-}
-
-function WallCard({ item, active }) {
-  const hostRef = useRef(null);
-
-  useEffect(() => {
-    if (!active) return;
-    const host = hostRef.current;
-    if (!host || host.dataset.drawn === "1") return;
-
-    const shadow = host.shadowRoot || host.attachShadow({ mode: "open" });
-    try {
-      render(item, shadow);
-    } catch (e) {
-      console.error("[InvitationWall] render failed for", item.key, e);
-      return;
-    }
-    const fit = document.createElement("style");
-    fit.textContent = fitCss(item.design.frame === "none");
-    shadow.appendChild(fit);
-    host.dataset.drawn = "1";
-
-    return () => {
-      const r = shadow.querySelector(".inv-root");
-      if (r?._cd) clearInterval(r._cd);
-    };
-  }, [item, active]);
+function WallCard({ demo, active }) {
+  const [loaded, setLoaded] = useState(false);
 
   return (
-    <figure className="w-wallcard" aria-label={item.label}>
-      <div className="w-wallcard-inner" ref={hostRef} />
-      <figcaption className="w-wallcap">{item.label}</figcaption>
+    <figure className="w-wallcard" aria-label={demo.label}>
+      <div className="w-wallcard-inner" style={{ position: "relative" }}>
+        {active && (
+          <iframe
+            src={`/demo/${demo.slug}?embed=1`}
+            title={`${demo.label} — a Welcvm invitation`}
+            loading="lazy"
+            tabIndex={-1}
+            aria-hidden="true"
+            /* No `allow-same-origin` — a decorative card has no business
+               touching the landing page's storage or cookies. */
+            sandbox="allow-scripts"
+            scrolling="no"
+            onLoad={() => setLoaded(true)}
+            style={{
+              width: `${FRAME_WIDTH}px`,
+              height: `${FRAME_HEIGHT}px`,
+              border: 0,
+              display: "block",
+              pointerEvents: "none",
+              transform: `scale(${SCALE})`,
+              transformOrigin: "top left",
+            }}
+          />
+        )}
+        <div
+          className={`dp-poster ${loaded ? "dp-gone" : ""}`}
+          style={{ "--dp-accent": demo.accent, position: "absolute", inset: 0 }}
+        >
+          <span className="dp-poster-label">{demo.label}</span>
+          <span className="dp-poster-names">{demo.names}</span>
+        </div>
+      </div>
+      <figcaption className="w-wallcap">{demo.label}</figcaption>
     </figure>
   );
 }
@@ -120,23 +103,11 @@ export default function InvitationWall() {
           io.disconnect();
         }
       },
-      { rootMargin: "320px 0px" } // start drawing just before it is needed
+      { rootMargin: "320px 0px" } // start loading just before it is needed
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
-
-  /* WALL is now a short, honest list — exactly the occasions this product
-     builds, no padding. Splitting a short list into two half-empty rows
-     the way a list of twelve was split would leave each row scrolling
-     just one or two cards. Below the old split's break-even point, both
-     rows draw the full list instead (the second reversed, so the two
-     rows aren't just mirror images frame-for-frame). */
-  const half = Math.ceil(WALL.length / 2);
-  const rows =
-    WALL.length <= 6
-      ? [WALL, [...WALL].reverse()]
-      : [WALL.slice(0, half), WALL.slice(half)];
 
   return (
     <div
@@ -144,21 +115,19 @@ export default function InvitationWall() {
       ref={wrapRef}
       style={{ "--card-w": `${CARD_W}px`, "--card-h": `${CARD_H}px` }}
     >
-      {rows.map((row, r) => (
-        <div className="w-wallrow" key={r}>
-          {/* Duplicated once so the marquee can loop without a seam. The
-              copy is hidden from screen readers. */}
-          <div className={`w-walltrack ${r === 1 ? "rev" : ""}`}>
-            {[0, 1].map((copy) => (
-              <div className="w-wallset" key={copy} aria-hidden={copy === 1 || undefined}>
-                {row.map((item) => (
-                  <WallCard key={`${copy}-${item.key}`} item={item} active={active} />
-                ))}
-              </div>
-            ))}
-          </div>
+      <div className="w-wallrow">
+        {/* Duplicated once so the marquee can loop without a seam — the
+            copy is hidden from screen readers. */}
+        <div className="w-walltrack">
+          {[0, 1].map((copy) => (
+            <div className="w-wallset" key={copy} aria-hidden={copy === 1 || undefined}>
+              {DEMOS.map((demo) => (
+                <WallCard key={`${copy}-${demo.slug}`} demo={demo} active={active} />
+              ))}
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }

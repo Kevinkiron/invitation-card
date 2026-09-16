@@ -23,7 +23,18 @@ import "@/app/demo.css";
    it is not a mockup.
    ══════════════════════════════════════════════════════════════════════ */
 
-export const dynamic = "force-static";
+/* NOT force-static. This page reads `searchParams.embed` to decide
+   whether to render the compact, already-open iframe view or the full
+   page with its banner and footer — and a `force-static` page is
+   rendered once at build time with no query string at all, so every
+   request to it (with or without `?embed=1`) was serving the exact same
+   pre-built full page. That's why every phone preview — the hero and the
+   "See it built" cards alike — showed the full page (banner, footer, and
+   the real "Tap to open" gate) scaled into a tiny box instead of the
+   clean, already-opened embed: `embed` was never `true` in what actually
+   got served. Dropping `force-static` lets Next.js render this route
+   per-request, the way anything that reads `searchParams` needs to.
+   `generateStaticParams` below still tells Next which slugs exist. */
 
 export function generateStaticParams() {
   return DEMOS.map((d) => ({ slug: d.slug }));

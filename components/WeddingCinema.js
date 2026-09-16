@@ -754,7 +754,10 @@ function EventCard({ event, index, total, fallbackVenue }) {
    stands in and nothing looks broken. */
 function ClosingFooter({ couple, invitation, media, mono, bride, groom }) {
   const [ref, vis] = useReveal();
-  const backdrop = media?.closingImage || couple.couplePhoto;
+  /* Falling back to the opening photograph keeps this scene from being a
+     block of flat colour when the couple skipped the last question — it
+     is the one picture the invitation is certain to have. */
+  const backdrop = media?.closingImage || couple.couplePhoto || media?.heroImageUrl;
   const note = invitation.thankYouNote || invitation.closingMessage;
   return (
     <footer

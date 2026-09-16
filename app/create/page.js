@@ -18,7 +18,7 @@ import { C, PLANS, money } from "@/lib/theme";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
-import { uploadPhotos, withPhotos, MAX_PHOTOS } from "@/lib/photos";
+import { uploadPhotos, withPhotos, countPhotos, MAX_PHOTOS } from "@/lib/photos";
 
 /* Perceived luminance — decides whether the phone status bar should be
    light or dark against whatever background the AI chose. */
@@ -128,9 +128,9 @@ export default function CreatePage() {
   const scrollRef = useRef(null);
   const autoStarted = useRef(false);
 
-  const photoCount =
-    (tokens.content?.heroPhoto ? 1 : 0) +
-    ((tokens.content?.sections || []).find((x) => x.type === "gallery")?.photos?.length || 0);
+  /* Counts both token shapes. It used to read only `content`, so on a
+     wedding it reported nought photographs however many were in. */
+  const photoCount = countPhotos(tokens);
 
   useEffect(() => {
     if (ready && !session) {
@@ -512,8 +512,12 @@ export default function CreatePage() {
                 <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
                   <Paperclip size={11} />
                   {photoCount
-                    ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added — the first is the portrait at the top.`
-                    : "You can add photos at any time. The first becomes the portrait."}
+                    ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added${
+                        cinemaMode ? " — each one goes to the scene I asked it for." : " — the first is the portrait at the top."
+                      }`
+                    : cinemaMode
+                      ? "I will ask for photographs as we go — the paperclip is here whenever you want to add more."
+                      : "You can add photos at any time. The first becomes the portrait."}
                 </div>
               </div>
             )}

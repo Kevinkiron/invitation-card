@@ -249,7 +249,7 @@ export async function POST(req) {
       /* Photograph and optional steps cannot prove they were answered
          from the tokens alone; record that we put them, or the interview
          asks again every turn and never reaches the end. */
-      if (read.skipped || askedStep.ack) next = ackWeddingStep(next, askedStep);
+      if (read.skipped || read.photos || askedStep.ack) next = ackWeddingStep(next, askedStep);
 
       /* Seed the palette and the standing copy once, on the first turn,
          so the preview has something to draw immediately. */
@@ -261,7 +261,7 @@ export async function POST(req) {
       }
 
       /* Prose, from the model, best-effort. */
-      if (PROSE_STEPS.has(askedStep.id) && !read.skipped) {
+      if (PROSE_STEPS.has(askedStep.id) && !read.skipped && !read.photos) {
         next = await enrichWeddingProse({ tokens: next, step: askedStep, said, key, info });
       }
 

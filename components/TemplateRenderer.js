@@ -4,7 +4,9 @@ import InvitationRenderer, { hasTemplate } from "@/components/InvitationRenderer
 import InvitePreview from "@/components/InvitePreview";
 import TokenInvite from "@/components/TokenInvite";
 import WeddingCinema from "@/components/WeddingCinema";
+import CelebrationCinema from "@/components/CelebrationCinema";
 import { isCinema } from "@/lib/design/wedding-tokens";
+import { isCelebration } from "@/lib/design/celebration-tokens";
 import { invitationFromRecord } from "@/lib/demo-data";
 import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
 
@@ -28,9 +30,18 @@ import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
    way through to InvitePreview, which then had nothing to draw. */
 export default function TemplateRenderer({ cfg, events = [], guestName, compact = false, mode }) {
   if (cfg?.v === 2) {
-    const cinema = isCinema(cfg.tokens) || isCinema(cfg);
-    if (cinema) {
-      return <WeddingCinema tokens={cfg.tokens || cfg} preview={compact} />;
+    const tokens = cfg.tokens || cfg;
+
+    /* Weddings first. A wedding token set carries `_cinema`; a birthday,
+       naming or housewarming carries `_premium` with its kind. They are
+       separate flags on purpose — testing one shape's flag against the
+       other's tokens is how an anniversary ended up in a bride-and-groom
+       template once already. */
+    if (isCinema(cfg.tokens) || isCinema(cfg)) {
+      return <WeddingCinema tokens={tokens} preview={compact} />;
+    }
+    if (isCelebration(cfg.tokens) || isCelebration(cfg)) {
+      return <CelebrationCinema tokens={tokens} preview={compact} />;
     }
     return <TokenInvite tokens={cfg.tokens} fit={compact ? "scroll" : "flow"} />;
   }
@@ -56,7 +67,10 @@ export default function TemplateRenderer({ cfg, events = [], guestName, compact 
    Callers pass a fallback for configs that carry no palette at all. */
 export function paletteOf(cfg, fallback) {
   if (cfg?.v === 2) {
-    if (isCinema(cfg.tokens) || isCinema(cfg)) {
+    if (
+      isCinema(cfg.tokens) || isCinema(cfg) ||
+      isCelebration(cfg.tokens) || isCelebration(cfg)
+    ) {
       const p = cfg.tokens?.palette || cfg.palette || {};
       return [
         p.primary || "#8f294e",

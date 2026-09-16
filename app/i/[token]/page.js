@@ -7,6 +7,8 @@ import TemplateRenderer, { paletteOf } from "@/components/TemplateRenderer";
 import { supabase } from "@/lib/supabase";
 import { Loading, Empty } from "@/components/ui";
 import { C } from "@/lib/theme";
+import { isCinema } from "@/lib/design/wedding-tokens";
+import { isCelebration } from "@/lib/design/celebration-tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    THE GUEST PAGE — one link, shared with everybody.
@@ -207,6 +209,7 @@ export default function GuestPage() {
   const p = paletteOf(inv?.design_config, [C.maroon, C.gold, C.ivory, C.ink, C.muted, "#fff"]);
   const skin = skinOf(inv?.design_config, p);
   const tokens = inv?.design_config?.tokens;
+  const cinematic = isCinema(tokens) || isCelebration(tokens);
   const rsvpNote =
     tokens?.rsvp?.note ||
     (tokens?.rsvp?.deadline ? `Kindly reply by ${tokens.rsvp.deadline}.` : "");
@@ -288,7 +291,13 @@ export default function GuestPage() {
         .wish-empty{text-align:center;color:${skin.muted};font-size:13.5px;line-height:1.7;padding:18px 10px}
       `}</style>
 
-      <div style={{ maxWidth: 500, margin: "0 auto", background: p[2], minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }}>
+      <div
+        style={
+          cinematic
+            ? { background: p[2], minHeight: "100vh" }
+            : { maxWidth: 500, margin: "0 auto", background: p[2], minHeight: "100vh", boxShadow: "0 0 80px rgba(27,17,22,.12)" }
+        }
+      >
         {/* NO TRANSFORM ON THIS WRAPPER.
 
             It used to fade in with `msgIn`, which animates a transform —
@@ -309,7 +318,14 @@ export default function GuestPage() {
         </div>
 
         {/* ── RSVP ── */}
-        <div className="rsvp" style={{ padding: "10px 26px 44px", background: skin.bg }}>
+        <div
+          className="rsvp"
+          style={
+            cinematic
+              ? { padding: "10px 26px 44px", background: skin.bg, maxWidth: 560, margin: "0 auto" }
+              : { padding: "10px 26px 44px", background: skin.bg }
+          }
+        >
           <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
 
           {!done ? (
@@ -462,7 +478,14 @@ export default function GuestPage() {
         </div>
 
         {/* ── BLESSINGS & WISHES ── */}
-        <div className="rsvp" style={{ padding: "6px 26px 64px", background: skin.bg }}>
+        <div
+          className="rsvp"
+          style={
+            cinematic
+              ? { padding: "6px 26px 64px", background: skin.bg, maxWidth: 560, margin: "0 auto" }
+              : { padding: "6px 26px 64px", background: skin.bg }
+          }
+        >
           <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
           <h2 className="rsvp-h">Blessings &amp; Wishes</h2>
           <p className="rsvp-sub">What everyone is saying to the couple.</p>

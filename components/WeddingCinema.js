@@ -4,6 +4,8 @@ import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "rea
 import { MapPin, Calendar, ChevronDown } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
+import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
+import MusicToggle from "@/components/MusicToggle";
 
 /* ══════════════════════════════════════════════════════════════════════
    WEDDING CINEMA — Cinematic scroll-driven wedding invitation
@@ -260,7 +262,14 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
   /* Opening state */
   const [opened, setOpened] = useState(preview);
-  const openInvitation = useCallback(() => setOpened(true), []);
+  const music = useCinemaMusic("wedding", tokens, { preview });
+  const openInvitation = useCallback(() => {
+    setOpened(true);
+    /* Same click, same tick. This is the only gesture on the whole page
+       guaranteed to be a real, fresh user interaction — the one moment
+       a browser will actually let audio start. */
+    music.startOnGesture();
+  }, [music]);
 
   /* The date stays under the foil until the guest rubs it off. In the
      create-page preview it is already revealed — the couple are editing
@@ -334,6 +343,8 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
       {!preview && chapter && (
         <div className="wc-chapter-chip" aria-hidden="true">{chapter}</div>
       )}
+
+      {!preview && <MusicToggle music={music} className="wc-music" />}
 
       {/* ── Opening overlay ── */}
       {!preview && (

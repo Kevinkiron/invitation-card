@@ -10,7 +10,9 @@ import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import TokenInvite from "@/components/TokenInvite";
 import WeddingCinema from "@/components/WeddingCinema";
+import CelebrationCinema from "@/components/CelebrationCinema";
 import { isCinema } from "@/lib/design/wedding-tokens";
+import { isCelebration } from "@/lib/design/celebration-tokens";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
@@ -80,6 +82,35 @@ function rsvpRowsFromTokens(tokens) {
     }];
   }
 
+  /* Celebration Cinema (birthday/naming/housewarming and now anything
+     else) already carries a real `events` array in the same shape as
+     the wedding one above — a programme item, not a generic "card" —
+     so it reads the same way rather than through the older `content`
+     shape below, which this schema never had. */
+  if (isCelebration(tokens)) {
+    const events = Array.isArray(tokens?.events) ? tokens.events : [];
+    if (events.length) {
+      return events.map((e) => ({
+        name: String(e.name || e.title || tokens?.invitation?.headline || "Celebration").slice(0, 80),
+        event_date: e.date || null,
+        event_time: e.time || null,
+        venue: String(e.venue || tokens?.venue?.name || "").slice(0, 160),
+        address: String(e.address || tokens?.venue?.address || "").slice(0, 160),
+      }));
+    }
+    const label =
+      tokens?.invitation?.headline ||
+      (tokens?.host?.name ? `${tokens.host.name}'s Celebration` : "") ||
+      (tokens?.eventKind ? tokens.eventKind.replace(/[-_]+/g, " ") : "Celebration");
+    return [{
+      name: label.charAt(0).toUpperCase() + label.slice(1),
+      event_date: tokens?.invitation?.countdownAt ? tokens.invitation.countdownAt.slice(0, 10) : null,
+      event_time: null,
+      venue: String(tokens?.venue?.name || "").slice(0, 160),
+      address: String(tokens?.venue?.address || "").slice(0, 160),
+    }];
+  }
+
   const sections = tokens?.content?.sections || [];
   const cards = sections.find((s) => s.type === "cards" && Array.isArray(s.items) && s.items.length);
   if (cards) {
@@ -119,7 +150,12 @@ export default function CreatePage() {
   const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
   const generative = Boolean(tokens?.designed);
   const isWedding = tokens?.eventKind === "wedding" || draft.eventType === "wedding";
-  const cinemaMode = isCinema(tokens) || isWedding;
+  const weddingMode = isCinema(tokens) || isWedding;
+  const celebrationMode = isCelebration(tokens);
+  // Both cinemas ask for photos scene by scene as the interview goes,
+  // unlike the older plain renderer's "first photo = portrait" model —
+  // this only distinguishes copy, not which component actually renders.
+  const cinemaMode = weddingMode || celebrationMode;
   const [publishing, setPublishing] = useState(false);
   const [plan, setPlan] = useState("STANDARD");
 
@@ -283,9 +319,14 @@ export default function CreatePage() {
          same lib/design/renderer used in the preview, so what they approve
          is exactly what guests see. */
       const isCin = isCinema(tokens);
+      const isCel = isCelebration(tokens);
       const cinemaTitle = tokens.couple?.bride && tokens.couple?.groom
         ? `${tokens.couple.bride} & ${tokens.couple.groom}'s Wedding`
         : "Wedding Invitation";
+      const celebrationTitle =
+        tokens.invitation?.headline ||
+        (tokens.host?.name ? `${tokens.host.name}'s Celebration` : "") ||
+        "Celebration Invitation";
       const cfg = generative
         ? { v: 2, tokens, eventKind: tokens.eventKind || (isCin ? "wedding" : null) }
         : draftToConfig(draft, templateSlug);
@@ -293,7 +334,9 @@ export default function CreatePage() {
         .from("invitations")
         .insert({
           owner_id: session.user.id,
-          title: (generative ? (isCin ? cinemaTitle : tokens.content?.headline) : cfg.headline) || "Invitation",
+          title: (generative
+            ? (isCin ? cinemaTitle : isCel ? celebrationTitle : tokens.content?.headline)
+            : cfg.headline) || "Invitation",
           design_config: cfg,
           status: "published",
           plan,
@@ -533,8 +576,10 @@ export default function CreatePage() {
                 label="Live invitation preview"
               >
                 {generative ? (
-                  cinemaMode ? (
+                  weddingMode ? (
                     <WeddingCinema tokens={tokens} preview />
+                  ) : celebrationMode ? (
+                    <CelebrationCinema tokens={tokens} preview />
                   ) : (
                     <TokenInvite tokens={tokens} />
                   )

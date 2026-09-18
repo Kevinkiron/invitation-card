@@ -380,13 +380,116 @@ const housewarming = {
   },
 };
 
-export const THEMES = { birthday, naming, housewarming };
+/* ══════════════════════════════════════════════════════════════════════
+   CELEBRATION — the shared theme for everything that isn't one of the
+   three above.
+
+   An engagement, a graduation, a retirement, a product launch, a
+   reunion — anything the chat interview classifies as a celebration but
+   that has no bespoke visual identity of its own yet. This is still the
+   full animated engine: an opening reveal, a scratch-free tap-to-open
+   card, a scrolling programme, a gallery, a closing scene — not a
+   downgrade, just not (yet) drawn specifically for one occasion.
+
+   The chrome here is deliberately tone-neutral — "You are invited"
+   rather than "It's party time" — because this theme also has to carry
+   a retirement, a memorial gathering or a company offsite without
+   sounding like it assumes confetti. The actual words on the page (the
+   message, the blessing line, the thank-you) are written by the AI for
+   the specific occasion described, so the invitation itself does read as
+   occasion-appropriate even where this shared shell stays neutral. */
+const celebration = {
+  kind: "celebration",
+  className: "cc-celebration",
+  label: "Celebration",
+
+  paletteFor: plainPalette("celebration"),
+
+  /* No curtain, no bang, no door — a soft reveal that suits a graduation
+     as easily as a farewell. */
+  opening: "veil",
+  particles: "stardust",
+  particleColors: (p) => [p.accent, p.paper, p.secondary],
+
+  /* Unfolds rather than scratches or swings — the gentlest of the three
+     mechanics, and the one with no occasion attached to it. */
+  dateReveal: "unfold",
+
+  Motif: ({ palette }) => (
+    <SparklerBurst id="cel-motif" color={palette.accent} glow={palette.paper} rays={22} />
+  ),
+
+  OpeningOrnament: ({ palette }) => (
+    <MoonStars id="cel-open" moon={palette.accent} star={palette.paper} glow={palette.secondary} />
+  ),
+
+  CardCrest: ({ palette }) => (
+    <RangoliMedallion id="cel-crest" color={palette.secondary} accent={palette.accent} petals={16} size={104} />
+  ),
+
+  CardFrame: ({ palette }) => <ArchFrame color={palette.accent} />,
+
+  CardCorners: ({ palette }) => (
+    <>
+      <span className="cc-slot cc-slot-tl"><CornerStar id="cel-tl" color={palette.accent} /></span>
+      <span className="cc-slot cc-slot-tr"><CornerStar id="cel-tr" color={palette.accent} /></span>
+    </>
+  ),
+
+  Rule: ({ palette }) => <StarRule color={palette.accent} />,
+
+  DateOrnament: ({ palette }) => <CornerStar id="cel-date" color={palette.accent} />,
+
+  scenes: [
+    "opening", "card", "date", "about", "story",
+    "programme", "venue", "rsvp", "gallery", "wishes", "share", "closing",
+  ],
+
+  headings: {
+    date: { eyebrow: "Save the date", title: "The day, when you're ready to see it" },
+    card: { eyebrow: "The invitation", title: "You are invited" },
+    about: { eyebrow: "The guest of honour", title: (c) => (c.name ? `About ${c.name}` : "About the guest of honour") },
+    story: { eyebrow: "How we got here", title: "A little of the story" },
+    programme: { eyebrow: "The plan", title: "How the day unfolds" },
+    venue: { eyebrow: "Where", title: "Find us" },
+    rsvp: { eyebrow: "One small thing", title: "Let us know you're coming" },
+    wishes: { eyebrow: "From everyone", title: "Messages" },
+    gallery: { eyebrow: "The album", title: "A few favourite frames" },
+    share: { eyebrow: "Afterwards", title: "Share the moment" },
+  },
+
+  voice: {
+    kicker: "You are invited",
+    openCue: "Tap to open",
+    scrollCue: "See more",
+    dateEyebrow: "Save the date",
+    waiting: "The date is still to come",
+    revealLabel: "Reveal the date",
+    hintBefore: "Tap to reveal",
+    hintAfter: "Add it to your calendar",
+    cardWaiting: "Reveal the date above",
+    countdownLabel: "Until we gather",
+    shareNote: "Share your photographs with us.",
+    signature: "Cinema by Welcvm",
+    role: "the guest of honour",
+  },
+
+  empty: {
+    name: "Our guest of honour",
+    hosts: "With warm wishes",
+    photo: "A photograph belongs here",
+  },
+};
+
+export const THEMES = { birthday, naming, housewarming, celebration };
 
 /* Resolve the theme for a kind, with its palette already worked out from
-   the data. An unknown kind resolves to birthday rather than throwing —
-   a stored config with a typo'd kind should still render an invitation,
-   because the alternative a guest sees is a blank page. */
+   the data. An unknown kind resolves to the shared "celebration" theme
+   rather than birthday — a graduation dressed in candles and a "happy
+   birthday" voice would be a worse failure than a slightly generic-but-
+   correct one, and the AI's own written content still carries the actual
+   occasion regardless of which shell it lands in. */
 export function themeFor(kind, tokens) {
-  const theme = THEMES[kind] || THEMES.birthday;
+  const theme = THEMES[kind] || THEMES.celebration;
   return { ...theme, palette: theme.paletteFor(tokens) };
 }

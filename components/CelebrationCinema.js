@@ -396,8 +396,10 @@ function Countdown({ iso, label }) {
 export default function CelebrationCinema({ tokens: rawTokens, preview = false }) {
   /* The kind lives on `_premium`; `eventKind` is the readable copy of it.
      Reading both means a config written by an older turn of the interview
-     still routes to the right theme. */
-  const kind = celebrationKind(rawTokens) || rawTokens?.eventKind || "birthday";
+     still routes to the right theme. Falls back to the shared
+     "celebration" theme, not birthday — this component now renders any
+     occasion, not only the three with a bespoke look. */
+  const kind = celebrationKind(rawTokens) || rawTokens?.eventKind || "celebration";
   const tokens = useMemo(() => hydrate(rawTokens, kind), [rawTokens, kind]);
   const theme = useMemo(() => themeFor(kind, tokens), [kind, tokens]);
 
@@ -734,6 +736,17 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
         </div>
       )}
 
+      {/* A small theme ornament that travels down a hairline track as the
+          guest scrolls — the same `progress` value driving the top bar,
+          read here as a position instead of a fill. */}
+      {!preview && opened && (
+        <div className="cc-scroll-rail" aria-hidden="true">
+          <div className="cc-scroll-rail-icon" style={{ top: `${Math.round(progress * 100)}%` }}>
+            <theme.Motif palette={palette} tokens={tokens} />
+          </div>
+        </div>
+      )}
+
       {/* Where the guest is in a long scroll. */}
       {!preview && chapter && <div className="cc-chip" aria-hidden="true">{chapter}</div>}
 
@@ -802,7 +815,16 @@ function HeroScene({ theme, palette, tokens, name, second, dateRevealed }) {
           {second && <em>&amp;</em>}
           {second && <span>{second}</span>}
         </h1>
-        {host.age && <p className="cc-hero-age">{host.age} birthday</p>}
+        {/* Used to always say "{age} birthday" — hardcoded, regardless of
+            theme. Correct for a birthday, wrong for anything else with an
+            age or an ordinal in it (a 25th anniversary, a 60th
+            retirement). Matches the card scene's own age+role treatment
+            below instead of assuming the occasion. */}
+        {host.age && (
+          <p className="cc-hero-age">
+            {[host.age, host.role || voice.role].filter(Boolean).join(" · ")}
+          </p>
+        )}
         {invitation.headline && <p className="cc-hero-headline">{invitation.headline}</p>}
         {invitation.message && <p className="cc-hero-message">{invitation.message}</p>}
         {invitation.displayDate && (

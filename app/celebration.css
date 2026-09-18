@@ -237,6 +237,42 @@
   transition: transform .35s var(--cc-ease);
 }
 
+/* ── Persistent scroll motif ──
+   A small theme ornament riding a hairline track down the left edge,
+   doubling as a second, more decorative read on scroll progress than
+   the thin top bar gives. Hidden on short/narrow viewports where it
+   would just collide with content margins. */
+.cc-scroll-rail {
+  position: fixed;
+  left: 10px; top: 14%; bottom: 14%;
+  width: 20px;
+  z-index: 40;
+  display: none;
+  pointer-events: none;
+}
+@media (min-width: 420px) and (min-height: 560px) {
+  .cc-scroll-rail { display: block; }
+}
+.cc-scroll-rail::before {
+  content: "";
+  position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, var(--cc-line) 12%, var(--cc-line) 88%, transparent);
+}
+.cc-scroll-rail-icon {
+  position: absolute; left: 50%; top: 0;
+  width: 22px; height: 22px;
+  transform: translate(-50%, -50%);
+  opacity: .85;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35));
+  transition: top .12s linear;
+}
+.cc-scroll-rail-icon svg { width: 100%; height: 100%; display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .cc-scroll-rail-icon { transition: none; }
+}
+
 /* ── Chapter chip ──
    A long scroll needs somewhere to tell you where you are. `backdrop-
    filter` is on the chip itself, which is already fixed — putting it on
@@ -444,19 +480,33 @@
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  filter: brightness(.46);
+  /* Photo-forward, not a dim plate: the vignette below carries all the
+     legibility work at the edges, so the filter only needs to take the
+     harshest edge off a bright upload, not flatten it. */
+  filter: brightness(.78) saturate(1.04);
+  transform: scale(1.08);
+  animation: cc-hero-kenburns 22s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-hero-media { animation: none; transform: none; }
+}
+@keyframes cc-hero-kenburns {
+  0%   { transform: scale(1.08) translate3d(0, 0, 0); }
+  100% { transform: scale(1.16) translate3d(0, -1.5%, 0); }
 }
 .cc-hero-media-empty {
   background:
     radial-gradient(ellipse at 50% 20%, var(--cc-primary), transparent 62%),
     linear-gradient(170deg, var(--cc-stage), #000);
   filter: none;
+  animation: none;
+  transform: none;
 }
 .cc-hero-vignette {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 50% 42%, transparent 26%, rgba(0, 0, 0, .55) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, .5), transparent 34%, var(--cc-bg) 99%);
+    radial-gradient(ellipse at 50% 42%, transparent 20%, rgba(0, 0, 0, .68) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, .58), transparent 30%, var(--cc-bg) 99%);
 }
 .cc-hero-copy {
   position: relative; z-index: 5;
@@ -464,10 +514,10 @@
   padding: 72px var(--cc-gutter) 96px;
   max-width: 640px;
   color: #fff;
-  /* The bottom of the vignette fades to paper on the two light scopes, so
-     the lower lines of the hero can end up over cream. A shadow costs
-     nothing and stops the CTA disappearing on exactly those pages. */
-  text-shadow: 0 1px 18px rgba(0, 0, 0, .45);
+  /* A brighter, more photo-forward plate needs more insurance under the
+     type than a dim one did — this is the trade-off for keeping the
+     upload vivid instead of flattening it. */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .55);
 }
 .cc-hero-copy .cc-eyebrow { color: var(--cc-accent); margin-bottom: 18px; }
 
@@ -1068,39 +1118,78 @@
    GALLERY
    A horizontal rail, not a grid: on a phone a grid of eight photographs
    is eight screens of scrolling before the guest reaches the RSVP.
+
+   Frames are dressed as loose Polaroid prints — a thick paper mount,
+   a soft cast shadow, and a small alternating tilt per frame — rather
+   than plain cropped rectangles, and they overlap slightly so the rail
+   reads as a handful of photos laid down on a table, not a filmstrip.
+   Each frame straightens to flat as it scrolls into view via .cc-visible
+   (the same IntersectionObserver class every other scene reveal uses).
    ══════════════════════════════════════════════════════════════════════ */
 .cc-gallery {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 0;
   overflow-x: auto;
+  overflow-y: visible;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   /* The rail is full-bleed, so it is pulled out to the page edge and
      given its own padding back. Without the padding the first and last
      photographs sit flush against the screen edge and look cropped. */
   margin-inline: calc(var(--cc-gutter) * -1);
-  padding-inline: var(--cc-gutter);
-  padding-bottom: 8px;
+  padding: 22px var(--cc-gutter) 30px;
   scrollbar-width: none;
 }
 .cc-gallery::-webkit-scrollbar { display: none; }
 .cc-frame-photo {
   position: relative;
   flex: 0 0 auto;
-  width: 200px;
+  width: 190px;
+  margin-inline: -14px;
   scroll-snap-align: center;
-  border-radius: var(--cc-radius);
-  overflow: hidden;
-  border: 1px solid var(--cc-line);
+  background: #fbf8f2;
+  padding: 10px 10px 26px;
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .28), 0 2px 6px rgba(0, 0, 0, .18);
+  transform: rotate(var(--cc-tilt, -4deg));
+  transition: transform .35s var(--cc-ease), box-shadow .35s var(--cc-ease);
 }
-.cc-frame-photo img { width: 100%; height: 260px; object-fit: cover; }
+.cc-frame-photo:hover,
+.cc-frame-photo:focus-within {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .32), 0 4px 10px rgba(0, 0, 0, .2);
+  z-index: 2;
+}
+.cc-frame-photo:nth-child(1) { --cc-tilt: -5deg; }
+.cc-frame-photo:nth-child(2) { --cc-tilt: 3.5deg; }
+.cc-frame-photo:nth-child(3) { --cc-tilt: -2.5deg; }
+.cc-frame-photo:nth-child(4) { --cc-tilt: 4.5deg; }
+.cc-frame-photo:nth-child(5) { --cc-tilt: -4deg; }
+.cc-frame-photo:nth-child(6) { --cc-tilt: 2.5deg; }
+.cc-frame-photo:nth-child(odd):nth-child(n+7) { --cc-tilt: -3.5deg; }
+.cc-frame-photo:nth-child(even):nth-child(n+7) { --cc-tilt: 3deg; }
+.cc-frame-photo:first-child { margin-inline-start: 0; }
+.cc-frame-photo:last-child { margin-inline-end: 0; }
+.cc-frame-photo img {
+  display: block;
+  width: 100%; height: 220px; object-fit: cover;
+  border-radius: 1px;
+}
 .cc-frame-photo figcaption {
-  position: absolute; left: 10px; bottom: 8px;
-  font-size: 10px; letter-spacing: .2em;
-  color: #fff;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, .8);
+  position: absolute; left: 0; right: 0; bottom: 6px;
+  text-align: center;
+  font-family: var(--cc-display);
+  font-style: italic;
+  font-size: 12px; letter-spacing: .1em;
+  color: #6b6055;
+  text-shadow: none;
 }
-.cc-naming .cc-frame-photo { border-radius: 120px 120px 14px 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .cc-frame-photo { transition: none; }
+}
+.cc-naming .cc-frame-photo { border-radius: 90px 90px 4px 4px; padding-bottom: 30px; }
+.cc-naming .cc-frame-photo img { border-radius: 78px 78px 1px 1px; }
 
 /* ══════════════════════════════════════════════════════════════════════
    SHARE

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readKey } from "@/lib/ai/gemini";
 import { chat, providerInfo } from "@/lib/ai/provider";
-import { buildSystemPrompt, seedDesignFor } from "@/lib/ai/design-prompt";
+import { buildCelebrationPrompt } from "@/lib/ai/celebration-prompt";
 import {
   nextWeddingStep,
   ackWeddingStep,
@@ -10,35 +10,37 @@ import {
 } from "@/lib/ai/wedding-prompt";
 import { readAnswer, acknowledge, PROSE_STEPS } from "@/lib/ai/wedding-script";
 import { classifyEvent } from "@/lib/ai/classify";
-import { DESIGN_SCHEMA, applyPatch, touchedDesign } from "@/lib/design/tokens";
 import { patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
+import {
+  CELEBRATION_SCHEMA,
+  emptyCelebrationTokens,
+  patchCelebrationTokens,
+  celebrationProgress,
+  isCelebration,
+} from "@/lib/design/celebration-tokens";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
 
-   Replaces the template-picking route. The model no longer chooses one
-   of five prebuilt designs — it writes the design itself, as tokens,
-   and lib/design/renderer.js draws it. Same call shape as before so the
-   client change stays small.
+   Weddings run a deterministic local script (see the wedding branch
+   below) because the questions are fixed and known in advance. Every
+   other occasion — birthday, naming, housewarming, and now anything
+   else someone describes — runs through Celebration Cinema: the AI
+   drives the conversation and writes the design as tokens, and
+   CelebrationCinema.js draws them, animated, in the same premium
+   template regardless of what's being celebrated.
+
+   This used to fork here: birthday/naming/housewarming picked from a
+   landing-page card reached CelebrationCinema, but describing the exact
+   same occasion in free-form chat ("it's a housewarming") fell through
+   to a plainer, un-themed generic renderer instead — the same words,
+   two very different results depending on how you got here. That fork
+   is gone; every non-wedding conversation now reaches the same premium
+   engine no matter how it started.
    ══════════════════════════════════════════════════════════════════════ */
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-/* Roughly how far through the interview we are. The old route computed
-   this from required slots; with a free-form event type there is no
-   fixed slot list, so completeness is judged on what a reader needs. */
-function progressOf(tokens) {
-  const c = tokens?.content || {};
-  const have = [
-    Boolean(c.headline),
-    Boolean(c.subhead),
-    Boolean(c.place),
-    Boolean(c.sections?.length),
-    Boolean(tokens?.design?.palette?.bg),
-  ].filter(Boolean).length;
-  return Math.round((have / 5) * 100);
-}
 
 /* The model often puts the question in BOTH `reply` and `askNext`, and
    the client joins the two — which is why the chat showed the same
@@ -283,10 +285,22 @@ export async function POST(req) {
       });
     }
 
-    /* ── Generic path (non-wedding events) ── */
-    const system = buildSystemPrompt({
-      tokens: incoming,
-      eventKind: knownKind,
+    /* ── Celebration Cinema path (every non-wedding event) ──
+       `knownKind` comes from classify.js, which already recognises a
+       wide range of occasions by name (birthday, naming, housewarming,
+       graduation, retirement, reunion, baptism, and more) — that engine
+       is unchanged; the only thing that changed is that we now trust it
+       for ANY kind rather than only the three with a bespoke theme. An
+       occasion classify.js does not recognise still becomes a real,
+       animated invitation under the shared "celebration" theme instead
+       of falling back to a plainer renderer. */
+    const base = isCelebration(incoming)
+      ? incoming
+      : { ...emptyCelebrationTokens(knownKind), ...incoming };
+
+    const system = buildCelebrationPrompt({
+      tokens: base,
+      kind: base._premium,
       turnCount,
       today: new Date().toISOString().slice(0, 10),
     });
@@ -294,7 +308,7 @@ export async function POST(req) {
     const r = await chat({
       system,
       messages: convo,
-      schema: DESIGN_SCHEMA,
+      schema: CELEBRATION_SCHEMA,
       maxTokens: 4000,
       geminiKey: key,
     });
@@ -315,14 +329,7 @@ export async function POST(req) {
     }
 
     const patch = r.data || {};
-    let base = incoming;
-    if (kind && !incoming.designed) {
-      base = { ...incoming, design: { ...seedDesignFor(kind, said), ...(incoming.design || {}) } };
-    }
-
-    const next = applyPatch(base, patch);
-    next.eventKind = kind || next.eventKind || null;
-    next.designed = Boolean(incoming.designed) || touchedDesign(patch.design || {}) || Boolean(kind);
+    const next = patchCelebrationTokens(base, patch);
 
     const askNext = typeof patch.askNext === "string" ? patch.askNext.trim() : "";
     const reply = dedupeReply(String(patch.reply || "").trim(), askNext);
@@ -332,8 +339,8 @@ export async function POST(req) {
       askNext: patch.done ? "" : askNext,
       done: Boolean(patch.done),
       tokens: next,
-      eventKind: next.eventKind,
-      progress: progressOf(next),
+      eventKind: next._premium,
+      progress: celebrationProgress(next),
       model: r.model,
       provider: info.provider,
       elapsedMs: Date.now() - started,

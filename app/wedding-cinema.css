@@ -121,6 +121,42 @@
   transform-origin: left;
 }
 
+/* ── Persistent scroll motif ──
+   A small ornament riding a hairline track down the left edge, doubling
+   as a second, more decorative read on scroll progress than the thin
+   top bar gives. Hidden on short/narrow viewports where it would just
+   collide with content margins. */
+.wc-scroll-rail {
+  position: fixed;
+  left: 10px; top: 14%; bottom: 14%;
+  width: 20px;
+  z-index: 40;
+  display: none;
+  pointer-events: none;
+}
+@media (min-width: 420px) and (min-height: 560px) {
+  .wc-scroll-rail { display: block; }
+}
+.wc-scroll-rail::before {
+  content: "";
+  position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, var(--wc-line) 12%, var(--wc-line) 88%, transparent);
+}
+.wc-scroll-rail-icon {
+  position: absolute; left: 50%; top: 0;
+  width: 22px; height: 22px;
+  transform: translate(-50%, -50%);
+  opacity: .85;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35));
+  transition: top .12s linear;
+}
+.wc-scroll-rail-icon svg { width: 100%; height: 100%; display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .wc-scroll-rail-icon { transition: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    OPENING — "Tap to open" overlay
    ══════════════════════════════════════════════════════════════════════ */
@@ -241,19 +277,34 @@
   position: absolute; inset: 0;
   object-fit: cover;
   width: 100%; height: 100%;
-  filter: brightness(.35);
+  /* Photo-forward, not a dim plate: the vignette below carries the
+     legibility work at the edges, so the filter only has to take the
+     harshest edge off a bright upload, not flatten the couple's photo. */
+  filter: brightness(.7) saturate(1.04);
+  transform: scale(1.08);
+  animation: wc-hero-kenburns 22s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wc-hero-media { animation: none; transform: none; }
+}
+@keyframes wc-hero-kenburns {
+  0%   { transform: scale(1.08) translate3d(0, 0, 0); }
+  100% { transform: scale(1.16) translate3d(0, -1.5%, 0); }
 }
 .wc-hero-vignette {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at center, transparent 30%, var(--wc-bg) 100%),
-    linear-gradient(180deg, transparent 60%, var(--wc-bg) 100%);
+    radial-gradient(ellipse at center, transparent 24%, var(--wc-bg) 100%),
+    linear-gradient(180deg, transparent 52%, var(--wc-bg) 100%);
 }
 .wc-hero-copy {
   position: relative; z-index: 5;
   text-align: center;
   padding: 60px 28px;
   max-width: 680px;
+  /* A brighter, more photo-forward plate needs more insurance under the
+     type than the old dim one did. */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .55);
 }
 .wc-hero-copy .wc-eyebrow { margin-bottom: 24px; }
 .wc-hero-copy h1 {
@@ -780,35 +831,72 @@
 
 /* ══════════════════════════════════════════════════════════════════════
    GALLERY — horizontal scroll
+   Frames sit on a loose ivory Polaroid mount, each at its own small
+   alternating tilt and overlapping its neighbour, so the rail reads as
+   a handful of prints laid down rather than a filmstrip. Straightens
+   flat on hover/focus.
    ══════════════════════════════════════════════════════════════════════ */
 .wc-gallery-scroll {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 0;
   overflow-x: auto;
-  padding: 0 24px 24px;
+  overflow-y: visible;
+  padding: 26px 24px 34px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 .wc-gallery-scroll::-webkit-scrollbar { display: none; }
 .wc-gallery-frame {
+  position: relative;
   flex: 0 0 auto;
-  width: min(340px, 78vw);
+  width: min(280px, 68vw);
+  margin-inline: -18px;
   scroll-snap-align: center;
+  background: var(--wc-paper);
+  padding: 12px 12px 34px;
+  border-radius: 3px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .32), 0 3px 8px rgba(0, 0, 0, .2);
+  transform: rotate(var(--wc-tilt, -4deg));
+  transition: transform .35s var(--wc-ease), box-shadow .35s var(--wc-ease);
+}
+.wc-gallery-frame:nth-child(1) { --wc-tilt: -5deg; }
+.wc-gallery-frame:nth-child(2) { --wc-tilt: 3.5deg; }
+.wc-gallery-frame:nth-child(3) { --wc-tilt: -2.5deg; }
+.wc-gallery-frame:nth-child(4) { --wc-tilt: 4.5deg; }
+.wc-gallery-frame:nth-child(5) { --wc-tilt: -4deg; }
+.wc-gallery-frame:nth-child(6) { --wc-tilt: 2.5deg; }
+.wc-gallery-frame:nth-child(odd):nth-child(n+7) { --wc-tilt: -3.5deg; }
+.wc-gallery-frame:nth-child(even):nth-child(n+7) { --wc-tilt: 3deg; }
+.wc-gallery-frame:first-child { margin-inline-start: 0; }
+.wc-gallery-frame:last-child { margin-inline-end: 0; }
+.wc-gallery-frame:hover,
+.wc-gallery-frame:focus-within {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .36), 0 5px 12px rgba(0, 0, 0, .22);
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wc-gallery-frame { transition: none; }
 }
 .wc-gallery-frame img {
+  display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
-  border-radius: 14px;
-  box-shadow: 0 8px 40px rgba(0,0,0,.3);
+  border-radius: 1px;
+  box-shadow: none;
 }
 .wc-gallery-frame figcaption {
-  font-size: 12px;
-  color: var(--wc-muted);
+  position: absolute; left: 0; right: 0; bottom: 8px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: #6b6055;
   text-align: center;
-  margin-top: 12px;
-  letter-spacing: .1em;
+  margin-top: 0;
+  letter-spacing: .06em;
 }
 
 /* ══════════════════════════════════════════════════════════════════════

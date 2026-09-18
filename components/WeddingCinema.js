@@ -338,6 +338,17 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
         </div>
       )}
 
+      {/* A small gold medallion that travels down a hairline track as the
+          guest scrolls — the same `progress` value driving the bar above,
+          read here as a position instead of a fill. */}
+      {!preview && opened && (
+        <div className="wc-scroll-rail" aria-hidden="true">
+          <div className="wc-scroll-rail-icon" style={{ top: `${Math.round(progress * 100)}%` }}>
+            <DeityMedallion gold={tokens.palette?.accent || "#c69a55"} size={22} />
+          </div>
+        </div>
+      )}
+
       {/* The chapter the guest is currently in, as a pill in the corner —
           a long scroll needs somewhere to tell you where you are. */}
       {!preview && chapter && (

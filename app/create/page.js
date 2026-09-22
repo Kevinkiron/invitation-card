@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
+import ChatDateField from "@/components/ChatDateField";
 import TokenInvite from "@/components/TokenInvite";
 import WeddingCinema from "@/components/WeddingCinema";
 import CelebrationCinema from "@/components/CelebrationCinema";
@@ -146,6 +147,11 @@ export default function CreatePage() {
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
   const [templateReason, setTemplateReason] = useState("");
+  // "text" | "date" | "datetime" — which control to show above the input
+  // row for the question currently on screen. The server decides this: a
+  // wedding step knows its own shape, and the celebration interview's own
+  // model is asked to say so via `askField` on its patch (see route.js).
+  const [askField, setAskField] = useState("text");
   // v2: the AI writes the design itself, as tokens. Empty until it does.
   const [tokens, setTokens] = useState({ design: {}, content: {}, eventKind: null });
   const generative = Boolean(tokens?.designed);
@@ -260,6 +266,7 @@ export default function CreatePage() {
     setInput("");
     setBusy(true);
     setErr("");
+    setAskField("text");
 
     try {
       const res = await fetch("/api/ai/design", {
@@ -301,6 +308,7 @@ export default function CreatePage() {
       if (data.eventKind) setDraft((d) => ({ ...d, eventType: data.eventKind }));
       setProgress(data.progress ?? 0);
       setDone(Boolean(data.done));
+      setAskField(["date", "datetime"].includes(data.askField) ? data.askField : "text");
 
       const say = [data.reply, data.askNext].filter(Boolean).join("\n\n");
       setMessages((m) => [...m, { role: "assistant", content: say || "Got it." }]);
@@ -514,6 +522,13 @@ export default function CreatePage() {
               </div>
             ) : (
               <div>
+                {!busy && !uploading && (askField === "date" || askField === "datetime") && (
+                  <ChatDateField
+                    withTime={askField === "datetime"}
+                    onConfirm={(text) => { setAskField("text"); send(text); }}
+                  />
+                )}
+
                 <div className="ai-input-row">
                   <input
                     ref={fileRef}
@@ -538,6 +553,7 @@ export default function CreatePage() {
                   <input
                     placeholder={
                       uploading ? "Uploading your photos…"
+                      : (askField === "date" || askField === "datetime") ? "Or type the date yourself…"
                       : draft.eventType ? "Type your answer…"
                       : "Tell me what you're celebrating…"
                     }

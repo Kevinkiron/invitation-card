@@ -9,6 +9,7 @@ import {
   weddingPublishable,
 } from "@/lib/ai/wedding-prompt";
 import { readAnswer, acknowledge, PROSE_STEPS } from "@/lib/ai/wedding-script";
+import { validateCelebrationPatch } from "@/lib/ai/validate-celebration";
 import { classifyEvent } from "@/lib/ai/classify";
 import { patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 import {
@@ -18,6 +19,16 @@ import {
   celebrationProgress,
   isCelebration,
 } from "@/lib/design/celebration-tokens";
+
+/* Which control the client should show for a given wedding step's
+   question — a calendar (with a time picker, for the step that asks for
+   both) rather than a plain text box. Kept here, next to the two
+   `askField` values this route actually emits, rather than inside
+   wedding-prompt.js: the step definitions describe the INTERVIEW, this
+   describes the INTERFACE, and the two have already drifted once before
+   (see the history of wedding-script.js). */
+const WEDDING_ASK_FIELD = { date: "datetime", rsvp: "date" };
+const askFieldForWeddingStep = (step) => WEDDING_ASK_FIELD[step?.id] || "text";
 
 /* ══════════════════════════════════════════════════════════════════════
    The generative interview.
@@ -235,6 +246,7 @@ export async function POST(req) {
         return NextResponse.json({
           reply: read.retry,
           askNext: askedStep.ask(base),
+          askField: askFieldForWeddingStep(askedStep),
           done: false,
           tokens: bumped,
           eventKind: "wedding",
@@ -274,6 +286,7 @@ export async function POST(req) {
       return NextResponse.json({
         reply: acknowledge(askedStep, read, next),
         askNext: done ? "" : askNext,
+        askField: done ? "text" : askFieldForWeddingStep(followUp),
         done,
         tokens: next,
         eventKind: "wedding",
@@ -328,16 +341,27 @@ export async function POST(req) {
       );
     }
 
-    const patch = r.data || {};
+    const rawPatch = r.data || {};
+
+    /* A second, deterministic check on top of the model's own judgement —
+       see validate-celebration.js. A field that doesn't survive this is
+       dropped from the patch before it ever reaches the tokens, so a
+       malformed date or a junk name never gets merged, let alone printed. */
+    const { patch, correction } = validateCelebrationPatch(rawPatch);
     const next = patchCelebrationTokens(base, patch);
 
+    const askField = ["text", "date", "datetime"].includes(patch.askField) ? patch.askField : "text";
     const askNext = typeof patch.askNext === "string" ? patch.askNext.trim() : "";
     const reply = dedupeReply(String(patch.reply || "").trim(), askNext);
 
     return NextResponse.json({
-      reply: reply || "Got it.",
-      askNext: patch.done ? "" : askNext,
-      done: Boolean(patch.done),
+      /* A correction overrides both what's asked and how — the model's own
+         reply and askField may have been written assuming the bad value
+         was accepted, since it only learns otherwise from this response. */
+      reply: correction ? "" : (reply || "Got it."),
+      askNext: correction ? correction.message : (patch.done ? "" : askNext),
+      askField: correction ? correction.field : (patch.done ? "text" : askField),
+      done: correction ? false : Boolean(patch.done),
       tokens: next,
       eventKind: next._premium,
       progress: celebrationProgress(next),

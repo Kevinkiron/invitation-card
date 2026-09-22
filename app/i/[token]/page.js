@@ -157,11 +157,18 @@ export default function GuestPage() {
   const explain = (error) => {
     const code = String(error?.code || "");
     const msg = String(error?.message || "");
+    /* "the couple" assumes a wedding — every other occasion (a birthday,
+       a housewarming, a retirement) has a host, not a couple, and this
+       used to say "couple" on all of them regardless. `tokens` is
+       declared further down this same function; by the time a guest
+       actually triggers one of these errors (submitting the form),
+       render has already run once and it is assigned. */
+    const who = hostWord;
     if (code === "42P01" || /does not exist/i.test(msg)) {
-      return "RSVPs are not switched on for this invitation yet. Please let the couple know.";
+      return `RSVPs are not switched on for this invitation yet. Please let ${who} know.`;
     }
     if (code === "42501" || /row-level security|permission denied/i.test(msg)) {
-      return "This invitation is not open for replies yet. Please let the couple know.";
+      return `This invitation is not open for replies yet. Please let ${who} know.`;
     }
     if (code === "23514") {
       return "That does not look right — please check the number of guests and try again.";
@@ -210,6 +217,11 @@ export default function GuestPage() {
   const skin = skinOf(inv?.design_config, p);
   const tokens = inv?.design_config?.tokens;
   const cinematic = isCinema(tokens) || isCelebration(tokens);
+  /* "The couple" is right for a wedding and wrong for everything else
+     this page also serves — a birthday, a housewarming, a retirement all
+     have a host, not a couple, and the RSVP and Blessings sections below
+     used to say "couple" unconditionally on every one of them. */
+  const hostWord = isCinema(tokens) ? "the couple" : "the host";
   const rsvpNote =
     tokens?.rsvp?.note ||
     (tokens?.rsvp?.deadline ? `Kindly reply by ${tokens.rsvp.deadline}.` : "");
@@ -373,7 +385,7 @@ export default function GuestPage() {
                     <input
                       id="g-name" value={form.name} autoComplete="name"
                       onChange={(e) => set("name", e.target.value)}
-                      placeholder="So the couple know who replied"
+                      placeholder={`So ${hostWord} know${isCinema(tokens) ? "" : "s"} who replied`}
                     />
                   </div>
                   <div className="rsvp-field">
@@ -465,7 +477,7 @@ export default function GuestPage() {
               <p style={{ color: skin.muted, fontSize: 15, lineHeight: 1.7, maxWidth: 330, margin: "0 auto 22px" }}>
                 {form.status === "no"
                   ? "We are sorry to miss you, and grateful you told us."
-                  : "Your reply is with the couple. They cannot wait to see you."}
+                  : `Your reply is with ${hostWord}. They cannot wait to see you.`}
               </p>
               <button
                 type="button" className="rsvp-back"
@@ -488,7 +500,7 @@ export default function GuestPage() {
         >
           <div className="rsvp-orn"><i /><b>&#10047;</b><i /></div>
           <h2 className="rsvp-h">Blessings &amp; Wishes</h2>
-          <p className="rsvp-sub">What everyone is saying to the couple.</p>
+          <p className="rsvp-sub">What everyone is saying to {hostWord}.</p>
 
           {wishes.length ? (
             <div className="wish-list">

@@ -1003,6 +1003,14 @@
    copy at whatever contrast it happens to have, and half of them are
    unreadable. A 6px edge is the same information and always legible. */
 .cc-event-band { flex: 0 0 6px; }
+/* Optional — most programme items have no photo of their own and the
+   card was designed to read fine without one (the colour band already
+   carries the theme). When a host does upload one, see withCinemaPhotos
+   in lib/photos.js, it sits as a strip rather than replacing the band,
+   so a card either has this or it doesn't; nothing sizes differently
+   either way. */
+.cc-event-image { flex: 0 0 84px; align-self: stretch; }
+.cc-event-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cc-event-copy { flex: 1 1 auto; min-width: 0; padding: 18px 16px; }
 .cc-event-number {
   font-size: 9.5px; letter-spacing: .22em;

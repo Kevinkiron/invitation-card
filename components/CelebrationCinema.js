@@ -1045,6 +1045,11 @@ function EventCard({ event, index, total, band, fallbackVenue }) {
       <span className="cc-event-dot" style={{ background: band }} aria-hidden="true" />
       <div className="cc-event-card">
         <div className="cc-event-band" style={{ background: band }} aria-hidden="true" />
+        {event.imageUrl && (
+          <div className="cc-event-image">
+            <img src={event.imageUrl} alt={event.name || ""} loading="lazy" />
+          </div>
+        )}
         <div className="cc-event-copy">
           <div className="cc-event-number">{String(index + 1).padStart(2, "0")} / {total}</div>
           {event.name && <h3>{event.name}</h3>}

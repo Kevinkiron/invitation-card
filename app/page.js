@@ -227,6 +227,7 @@ export default function Home() {
                     >
                       {/* Top media area */}
                       <div className="w-eart" style={{ background: colors.bg }}>
+                        {e.image && <div className="w-ethumb" style={{ backgroundImage: `url("${e.image}")` }} />}
                         <div className="w-emotif" style={{ backgroundImage: `url("${cardMotif(e.motif, colors.accent)}")` }} />
                         <div className="w-eveil" />
                         <div className="w-echip">

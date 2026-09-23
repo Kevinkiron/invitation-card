@@ -19,184 +19,93 @@
   --w-muted:     #7a6570;
   --w-line:      #ede5d8;
   --brand-heart: #DE6B5A;
-
-  /* The hero orbs, the wall marquee and the demo rail all overhang their
-     boxes. `clip` rather than `hidden`: `hidden` on an ancestor turns the
-     page into a scroll container and kills the sticky header. */
-  overflow-x: clip;
 }
 
 .w-wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; width: 100%; }
 
-/* Focus is never removed anywhere on this page — every interactive
-   element gets the same visible ring, including the ones that are
-   otherwise styled as plain text. */
-.w-page a:focus-visible,
-.w-page button:focus-visible {
-  outline: 2px solid var(--w-maroon);
-  outline-offset: 3px;
-  border-radius: 6px;
-}
-
 /* ══════════════════════════════════════════════════════════════════════
-   NAV — light, full width, dark text (the reference header is opaque from
-   the first pixel, not a transparent overlay that fades in)
+   NAV
    ══════════════════════════════════════════════════════════════════════ */
 .w-nav {
   position: sticky; top: 0; z-index: 100;
-  background: #fffdfb;
-  border-bottom: 1px solid var(--w-line);
-  transition: box-shadow .35s ease, background .35s ease;
+  transition: background .35s ease, border-color .35s ease, backdrop-filter .35s ease;
 }
-/* Scrolled state adds depth only. The background was already opaque, so
-   text over the hero never has to survive a translucent header. */
 .w-nav-solid {
-  background: rgba(255, 253, 251, .94);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  box-shadow: 0 6px 24px -18px rgba(59, 10, 42, .5);
+  background: rgba(254, 252, 250, .88);
+  backdrop-filter: saturate(200%) blur(20px);
+  -webkit-backdrop-filter: saturate(200%) blur(20px);
+  border-bottom: 1px solid var(--w-line);
 }
-/* Doubled up as `.w-nav .w-nav-inner` because this element also carries
-   the global `.wrap` class: at equal specificity the winner depends on
-   which stylesheet the bundler emits last, and .wrap's own 24px gutter
-   was overriding the header's vertical padding to zero. */
-.w-nav .w-nav-inner {
-  max-width: 1180px; margin: 0 auto;
+.w-nav-inner {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px; gap: 18px;
+  padding: 16px 28px; gap: 16px;
 }
-.w-nav-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.w-nav-logo { display: flex; align-items: center; gap: 10px; }
 .w-nav-logo-sub {
   font-size: 8px; letter-spacing: .32em; text-transform: uppercase;
   color: var(--w-muted); font-weight: 600;
 }
-
-/* The event-type row. `min-width: 0` lets it shrink before the logo or
-   the CTA do — without it the flex row refuses to compress and the CTA
-   is pushed off the right edge between 1024px and 1180px.
-
-   `flex-wrap: wrap` is the actual overlap guard. `min-width: 0` alone
-   only stops THIS box from resisting compression — it does nothing
-   about what happens once its own children (six nowrap links) no
-   longer fit inside it. Without wrap, `justify-content: center` on an
-   overflowing row spills content symmetrically past both edges, and
-   with nothing clipping it the links draw straight over the logo and
-   the CTA instead of being contained by their own box. A verification
-   pass measured this within single-digit pixels of triggering, so this
-   is not a defensive comment about a hypothetical — it is one real logo
-   width away from shipping broken. Wrapping to a second line grows the
-   header by one row instead; taller is recoverable, overlapping text
-   is not. */
 .w-nav-links {
-  display: flex; align-items: center; justify-content: center;
-  flex-wrap: wrap; row-gap: 6px;
-  gap: 2px; flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 4px;
 }
+/* BigDates-style nav links: icon + text pill, accent ring on hover */
 .w-nav-link {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 10px; border-radius: 999px; border: 1px solid transparent;
-  font-size: 13.5px; font-weight: 500; color: var(--w-ink);
-  background: none;
+  padding: 7px 14px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 14px; font-weight: 500; color: var(--w-muted);
   transition: color .2s, background .2s, border-color .2s;
-  white-space: nowrap; cursor: pointer;
+  white-space: nowrap;
 }
-
-/* The band just above the burger breakpoint, where six links plus a real
-   logo and CTA are tightest. Tightening here first means the wrap guard
-   above is a safety net for an unmeasured logo width, not the normal
-   state at common desktop sizes. */
-@media (max-width: 1280px) and (min-width: 1081px) {
-  .w-nav-links { gap: 0; }
-  .w-nav-link { padding: 8px 7px; font-size: 13px; }
+.w-nav-link:hover {
+  color: var(--w-ink);
+  background: var(--w-line);
 }
-.w-nav-link:hover { background: var(--gold-pale); color: var(--w-maroon); }
-
-/* Services dropdown */
-.w-nav-menu { position: relative; }
-.w-nav-menu-btn { font-family: inherit; }
-.w-nav-chev { transition: transform .22s ease; }
-.w-nav-chev.on { transform: rotate(180deg); }
-.w-nav-pop {
-  position: absolute; top: calc(100% + 10px); left: 50%;
-  transform: translateX(-50%);
-  width: 268px; padding: 8px;
-  background: #fff; border: 1px solid var(--w-line); border-radius: 14px;
-  box-shadow: 0 24px 48px -24px rgba(59, 10, 42, .38);
-  display: flex; flex-direction: column; gap: 2px;
-  animation: w-pop .18s cubic-bezier(.2, .7, .3, 1) both;
+/* Category nav links with per-event accent */
+.w-nav-link.accented {
+  background: var(--category-bg);
+  border-color: var(--category-border);
+  color: var(--accent);
 }
-@keyframes w-pop { from { opacity: 0; transform: translateX(-50%) translateY(-6px) } to { opacity: 1; transform: translateX(-50%) } }
-.w-nav-popitem {
-  display: flex; flex-direction: column; gap: 1px;
-  padding: 9px 11px; border-radius: 9px;
-  transition: background .18s ease;
+.w-nav-link.accented:hover {
+  background: var(--category-bg);
+  border-color: var(--accent);
 }
-.w-nav-popitem:hover { background: var(--gold-pale); }
-.w-nav-popitem b { font-size: 13.5px; font-weight: 700; color: var(--w-ink); }
-.w-nav-popitem span { font-size: 11.5px; color: var(--w-muted); }
-
-.w-nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.w-nav-actions {
+  display: flex; align-items: center; gap: 10px;
+}
 .w-nav-login {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 8px 14px; border-radius: 999px;
+  padding: 8px 16px; border-radius: 999px;
   font-size: 14px; font-weight: 600; color: var(--w-ink);
   transition: background .2s, color .2s;
 }
-.w-nav-login:hover { background: var(--gold-pale); }
-.w-nav-signout {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: none; border: none; cursor: pointer;
-  font-family: inherit; font-size: 14px; font-weight: 600;
-  color: var(--w-muted); padding: 8px 10px; border-radius: 999px;
+.w-nav-login:hover {
+  background: var(--w-line);
 }
-.w-nav-signout:hover { color: var(--w-maroon); background: var(--gold-pale); }
 .w-nav-burger {
-  display: none; background: none; border: none; cursor: pointer;
-  color: var(--w-ink); padding: 6px; border-radius: 10px;
+  display: none; background: none; border: none;
+  color: var(--w-ink); padding: 6px;
 }
-
-/* Mobile drawer */
+/* Mobile nav drawer */
 .w-nav-drawer {
   border-top: 1px solid var(--w-line);
-  background: #fffdfb;
-  padding: 18px 16px 22px;
-  display: flex; flex-direction: column; gap: 12px;
-  max-height: calc(100vh - 62px); overflow-y: auto;
+  background: rgba(254, 252, 250, .98);
+  padding: 18px 28px;
+  display: flex; flex-direction: column; gap: 14px;
 }
-.w-nav-drawer > a, .w-nav-drawer > button {
+.w-nav-drawer a, .w-nav-drawer button {
   font-size: 15px; font-weight: 600; color: var(--w-ink);
   background: none; border: none; text-align: left; padding: 0;
-  font-family: inherit; cursor: pointer;
 }
-.w-nav-drawer > a:hover, .w-nav-drawer > button:hover { color: var(--w-maroon); }
-.w-drawer-h {
-  font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--w-gold);
-  margin: 6px 0 2px;
-}
-/* The occasion list is long. Chips wrap into two or three rows instead of
-   pushing the account links below the fold on a small phone. */
-.w-drawer-events { display: flex; flex-wrap: wrap; gap: 8px; }
-.w-drawer-chip {
-  padding: 7px 13px; border-radius: 999px;
-  border: 1px solid var(--w-line); background: #fff;
-  font-size: 13.5px; font-weight: 600; color: var(--w-ink);
-}
-.w-drawer-chip:hover { border-color: var(--w-gold); background: var(--gold-pale); }
-.w-drawer-rule { border: none; border-top: 1px solid var(--w-line); margin: 4px 0; }
-.w-drawer-cta { align-self: flex-start; }
+.w-nav-drawer a:hover, .w-nav-drawer button:hover { color: var(--w-maroon); }
 
-/* The event row needs real width. Below this it moves into the drawer
-   wholesale rather than wrapping onto a second header line. */
-@media (max-width: 1080px) {
+@media (max-width: 860px) {
   .w-nav-links { display: none !important; }
   .w-nav-burger { display: block !important; }
 }
 @media (max-width: 560px) {
-  .w-nav .w-nav-inner { padding: 12px 16px; }
-  /* At 360px the Login pill plus the CTA plus the burger do not fit.
-     Login stays reachable from the drawer. */
-  .w-nav-login { display: none; }
+  .w-nav-inner { padding: 14px 20px; }
+  .w-nav-drawer { padding: 16px 20px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -204,7 +113,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 .w-hero {
   position: relative;
-  padding: clamp(44px, 7vw, 92px) 0 clamp(56px, 9vw, 104px);
+  padding: clamp(56px, 8vw, 100px) 0 clamp(64px, 10vw, 112px);
   overflow: hidden;
   background: var(--ivory, #fefcfa);
 }
@@ -232,7 +141,7 @@
 /* ── hero text side ── */
 .w-herotext { display: flex; flex-direction: column; }
 
-/* Hero badge — a positioning claim, not a customer count */
+/* BigDates hero badge — "Loved by X+ families" */
 .w-hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 16px 7px 12px; border-radius: 999px;
@@ -240,7 +149,7 @@
   border: 1px solid var(--w-line);
   box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 4px 16px -8px rgba(91,18,38,.2);
   font-size: 13px; font-weight: 600; color: var(--w-ink);
-  letter-spacing: -.01em; line-height: 1.35;
+  letter-spacing: -.01em;
   width: fit-content; margin-bottom: 24px;
   animation: w-rise .8s var(--ease, cubic-bezier(.19,1,.22,1)) .0s both;
 }
@@ -250,7 +159,7 @@
 .w-h1 {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-weight: 800;
-  font-size: clamp(34px, 5.8vw, 72px);
+  font-size: clamp(40px, 5.8vw, 72px);
   line-height: 1.06;
   color: var(--w-ink);
   letter-spacing: -.025em;
@@ -376,18 +285,16 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   REASSURANCE STRIP — sits under the occasion grid
+   SOCIAL PROOF STRIP — right below hero
    ══════════════════════════════════════════════════════════════════════ */
 .w-truths {
   border-top: 1px solid var(--w-line);
   border-bottom: 1px solid var(--w-line);
   background: #fff;
 }
-/* `gap: 1px` over the line colour draws the hairlines between cells. A
-   real border on each cell double-draws at every join. */
 .w-truthgrid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 1px; background: var(--w-line);
+  gap: 0; background: var(--w-line);
 }
 .w-truth {
   background: #fff;
@@ -406,32 +313,27 @@
   font-family: 'DM Sans', sans-serif; font-weight: 700;
   font-size: 16px; color: var(--w-ink); margin-bottom: 5px;
 }
-.w-truth-d { font-size: 13px; color: var(--w-muted); line-height: 1.65; max-width: 220px; margin: 0 auto; }
+.w-truth-d { font-size: 13px; color: var(--w-muted); line-height: 1.65; max-width: 200px; margin: 0 auto; }
 
 /* ══════════════════════════════════════════════════════════════════════
    SECTION SHELL — shared wrapper
    ══════════════════════════════════════════════════════════════════════ */
-.w-blk { padding: clamp(56px, 8vw, 104px) 0; }
-.w-section-top { text-align: center; margin-bottom: 44px; }
+.w-blk { padding: clamp(64px, 8vw, 104px) 0; }
+.w-section-top { text-align: center; margin-bottom: 48px; }
 
-/* The badge is wrapped in a <p> for semantics; this centres it without a
-   per-instance inline flex wrapper on every section. */
-.w-badge-row { display: flex; justify-content: center; margin: 0 0 16px; }
-.w-badge-left { justify-content: flex-start; }
-
+/* BigDates section badge with icon */
 .w-sec-badge {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 6px 14px; border-radius: 999px;
   font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
-  border: 1px solid;
+  border: 1px solid; margin-bottom: 16px;
 }
 
 .w-h2 {
   font-family: 'DM Sans', sans-serif; font-weight: 800;
-  font-size: clamp(26px, 4.2vw, 48px); color: var(--w-ink);
+  font-size: clamp(28px, 4.2vw, 48px); color: var(--w-ink);
   letter-spacing: -.025em; line-height: 1.1; margin: 0;
 }
-.w-h2-left { text-align: left; }
 /* highlight span in section h2s — coral→gold */
 .w-h2 .highlight {
   background: linear-gradient(125deg, #DE6B5A 0%, #E8912D 58%, #C4523F 100%);
@@ -443,15 +345,9 @@
   max-width: 580px; margin: 14px auto 0;
   font-size: 16px; line-height: 1.78; color: var(--w-muted);
 }
-.w-lede-left { margin-left: 0; margin-right: 0; }
 
 /* eyebrow — kept for backward compat */
 .w-eyebrow { text-align: center; font-size: 11.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--w-gold); margin-bottom: 12px; font-weight: 700; }
-
-/* Lists used purely for structure carry no markers */
-.w-egrid, .w-stepgrid, .w-demorow, .w-whygrid, .w-quotegrid, .w-contactgrid {
-  list-style: none; margin: 0; padding: 0;
-}
 
 /* ══════════════════════════════════════════════════════════════════════
    CATEGORY / EVENT CARDS — BigDates compact card style
@@ -459,46 +355,53 @@
 .w-egrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px; margin-top: 44px;
+  gap: 18px; margin-top: 48px;
 }
-/* Cards in a row must end level even when one tagline wraps to two lines,
-   so the <li> stretches and the card fills it. */
-.w-egrid > li { display: flex; }
 
 /* The card itself */
 .w-ecard {
-  position: relative; border-radius: 16px; overflow: hidden;
+  position: relative; border-radius: 20px; overflow: hidden;
   border: 1px solid var(--w-line);
-  background: #fff; flex: 1;
-  display: flex; flex-direction: column;
-  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26,15,20,.06));
+  background: #fff; display: block;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26,15,20,.08));
   transition: transform .42s cubic-bezier(.2,.7,.3,1),
               box-shadow .42s ease,
               border-color .42s ease;
 }
 .w-ecard:hover {
   transform: translateY(-6px);
-  box-shadow: 0 18px 44px -18px rgba(26,15,20,.3);
+  box-shadow: 0 20px 56px rgba(26,15,20,.14);
   border-color: var(--accent, rgba(201,146,47,.5));
 }
 
-/* Top media area — coloured background + motif */
+/* Top media area — coloured background + thumbnail */
 .w-eart {
-  position: relative; height: 140px; overflow: hidden;
+  position: relative; height: 152px; overflow: hidden;
   background: var(--bg, #f8f4ef);
 }
 .w-emotif {
   position: absolute; inset: 0;
   background-repeat: no-repeat; background-position: center;
-  background-size: auto 180%; opacity: .9;
+  background-size: auto 180%; opacity: .32;
+  mix-blend-mode: soft-light;
   transition: background-size .7s cubic-bezier(.2,.7,.3,1), opacity .4s;
 }
-.w-ecard:hover .w-emotif { background-size: auto 200%; opacity: 1; }
+.w-ecard:hover .w-emotif { background-size: auto 200%; opacity: .5; }
+
+/* Photo layer — a real placeholder image per occasion, sits under the
+   line-art motif above and the veil below. */
+.w-ethumb {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: .92; transition: opacity .4s, transform .7s cubic-bezier(.2,.7,.3,1);
+  transform: scale(1);
+}
+.w-ecard:hover .w-ethumb { opacity: 1; transform: scale(1.05); }
 
 /* Gradient veil */
 .w-eveil {
   position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 28%, rgba(0,0,0,.1) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,.12) 0%, transparent 28%, rgba(0,0,0,.22) 100%);
 }
 /* Per-card accent corner glow */
 .w-eart::after {
@@ -519,11 +422,8 @@
 }
 .w-ecard:hover .w-echip { transform: translateY(-3px) rotate(-4deg); }
 
-/* Card body — grows so the "Get Started" row sits on the bottom edge */
-.w-ebody {
-  padding: 30px 16px 16px; flex: 1;
-  display: flex; flex-direction: column; justify-content: space-between; gap: 13px;
-}
+/* Card body */
+.w-ebody { padding: 30px 16px 18px; }
 .w-ebody h3 {
   font-family: 'DM Sans', sans-serif; font-weight: 700;
   font-size: 17px; color: var(--w-ink); margin: 0 0 4px;
@@ -533,7 +433,7 @@
 
 /* Footer row — "Get Started →" */
 .w-ego {
-  padding-top: 12px;
+  margin-top: 13px; padding-top: 12px;
   border-top: 1px solid var(--w-line);
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12.5px; font-weight: 700; letter-spacing: .01em;
@@ -543,68 +443,6 @@
 .w-ecard:hover .w-ego { color: var(--accent, var(--w-maroon)); border-color: rgba(201,146,47,.35); }
 .w-ego svg { transition: transform .3s var(--ease, cubic-bezier(.19,1,.22,1)); }
 .w-ecard:hover .w-ego svg { transform: translateX(4px); }
-
-/* ══════════════════════════════════════════════════════════════════════
-   LIVE DEMOS — the running invitations
-   ══════════════════════════════════════════════════════════════════════ */
-.w-demosec { background: linear-gradient(180deg, #fff, var(--cream) 60%, #fff); }
-
-.w-demorow {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 24px; margin-top: 44px;
-}
-.w-demo { display: flex; }
-/* Reveal wraps each card in a div of its own, so the height has to be
-   handed down a level or the cards in a row stop matching. */
-.w-demo > *, .w-demo > * > .w-democard { width: 100%; height: 100%; }
-
-.w-democard {
-  position: relative;
-  display: flex; flex-direction: column;
-  background: #fff; border: 1px solid var(--w-line); border-radius: 16px;
-  padding: 18px 16px 20px;
-  box-shadow: 0 2px 10px -4px rgba(59,10,42,.12);
-  transition: transform .42s cubic-bezier(.2,.7,.3,1), box-shadow .42s ease, border-color .42s ease;
-}
-.w-democard:hover {
-  transform: translateY(-5px);
-  border-color: var(--accent, var(--w-gold));
-  box-shadow: 0 22px 48px -22px rgba(59,10,42,.4);
-}
-/* DemoPhone sizes itself from the `height` prop it is given, so the stage
-   only has to centre it. No max-width here: the demo is already
-   responsive, and clamping it a second time squashed the frame. */
-.w-demostage {
-  display: flex; justify-content: center;
-  margin-bottom: 16px;
-}
-.w-demometa { text-align: center; }
-.w-demokind {
-  margin: 0 0 4px; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--accent, var(--w-gold));
-}
-.w-demonames {
-  margin: 0; font-family: 'DM Sans', sans-serif;
-  font-size: 18px; font-weight: 700; letter-spacing: -.015em;
-  color: var(--w-ink);
-}
-/* Stretched link: the whole card is the target, but only this anchor is
-   in the tab order and only its text is the accessible name. */
-.w-demo-link { color: inherit; }
-.w-demo-link::after { content: ''; position: absolute; inset: 0; border-radius: 16px; }
-.w-democard:focus-within { border-color: var(--accent, var(--w-gold)); }
-.w-demoblurb {
-  margin: 7px 0 0; font-size: 13px; line-height: 1.6; color: var(--w-muted);
-}
-.w-demogo {
-  margin: 12px 0 0; display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12.5px; font-weight: 700; color: var(--accent, var(--w-maroon));
-}
-.w-demogo svg { transition: transform .3s var(--ease, cubic-bezier(.19,1,.22,1)); }
-.w-democard:hover .w-demogo svg { transform: translateX(4px); }
-
-.w-demo-cta { display: flex; justify-content: center; margin: 40px 0 0; }
 
 /* ══════════════════════════════════════════════════════════════════════
    INVITATION WALL — marquee
@@ -646,7 +484,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   FOUR STEPS — light background (BigDates uses light, not dark)
+   HOW IT WORKS — light background (BigDates uses light, not dark)
    ══════════════════════════════════════════════════════════════════════ */
 .w-steps {
   background: #fff;
@@ -658,6 +496,9 @@
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 70% 50% at 50% 100%, rgba(201,146,47,.06), transparent 65%);
 }
+.w-steps .w-eyebrow { color: var(--w-gold); }
+.w-steps .w-h2 { color: var(--w-ink); }
+.w-steps .w-lede { color: var(--w-muted); }
 
 .w-stepgrid {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -685,19 +526,18 @@
   color: var(--w-gold);
   box-shadow: 0 0 0 6px #fff, 0 0 0 7px rgba(201,146,47,.3);
 }
-/* Highlighted step — coral heart. This is the "designed for you" step,
-   which is the one claim the reference site cannot make. */
+/* Highlighted step — coral heart */
 .w-step.key .w-step-n {
   background: linear-gradient(140deg, var(--heart, #DE6B5A), var(--heart-deep, #C4523F));
   color: #fff; border-color: var(--heart, #DE6B5A);
   box-shadow: 0 0 0 6px #fff, 0 4px 20px rgba(222,107,90,.32);
 }
-.w-step h3 {
+.w-step h4 {
   font-family: 'DM Sans', sans-serif; font-weight: 700;
   font-size: 17px; color: var(--w-ink); margin: 0 0 8px; letter-spacing: -.01em;
 }
-.w-step p { font-size: 13.5px; line-height: 1.75; color: var(--w-muted); margin: 0 auto; max-width: 240px; }
-.w-step.key h3 { color: #DE6B5A; }
+.w-step p { font-size: 13.5px; line-height: 1.75; color: var(--w-muted); margin: 0; max-width: 240px; margin-inline: auto; }
+.w-step.key h4 { color: #DE6B5A; }
 
 /* ══════════════════════════════════════════════════════════════════════
    SHARING SECTION
@@ -718,25 +558,11 @@
 .w-check span { font-size: 13.5px; color: var(--w-muted); line-height: 1.65; }
 
 /* Chat demo card */
-.w-chatfig { margin: 0; }
 .w-chatcard {
   background: #fff; border: 1px solid var(--w-line);
-  border-radius: 18px; padding: 18px;
-  box-shadow: 0 20px 50px -24px rgba(59,10,42,.4);
+  border-radius: 20px; padding: 22px;
+  box-shadow: 0 20px 50px rgba(59,10,42,.09);
 }
-.w-chat-head {
-  display: flex; align-items: center; gap: 10px;
-  padding-bottom: 14px; margin-bottom: 14px;
-  border-bottom: 1px solid var(--w-line);
-}
-.w-chat-av {
-  width: 34px; height: 34px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--cream-2); color: var(--w-maroon);
-  font-weight: 800; font-size: 14px; flex-shrink: 0;
-}
-.w-chat-head b { display: block; font-size: 13.5px; color: var(--w-ink); }
-.w-chat-head em { font-style: normal; font-size: 11.5px; color: var(--w-muted); }
 .w-msg {
   max-width: 82%; padding: 11px 14px; border-radius: 14px;
   font-size: 13.5px; line-height: 1.6; margin-bottom: 10px;
@@ -754,163 +580,18 @@
 .w-linkprev-meta b { display: block; font-size: 12.5px; font-weight: 600; color: var(--w-ink); }
 .w-linkprev-meta span { font-size: 11px; color: var(--w-muted); }
 
-/* Both mock-ups say in words that they are mock-ups. A chat thread and a
-   printed card are exactly the two things a visitor would otherwise read
-   as evidence of real customers. */
-.w-figcap {
-  margin-top: 10px; text-align: center;
-  font-size: 11.5px; color: var(--w-muted); letter-spacing: .01em;
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   QR — printed card to phone
-   ══════════════════════════════════════════════════════════════════════ */
-.w-qrsec { background: #fff; border-top: 1px solid var(--w-line); }
-.w-qrgrid {
-  display: grid; grid-template-columns: .85fr 1fr;
-  gap: clamp(32px, 6vw, 72px); align-items: center;
-}
-.w-qrfig { margin: 0; }
-.w-qrcard {
-  max-width: 320px; margin: 0 auto;
-  background: linear-gradient(170deg, #fffdf8, var(--cream-2));
-  border: 1px solid rgba(201,146,47,.35); border-radius: 12px;
-  padding: 30px 24px 24px; text-align: center;
-  box-shadow: 0 24px 54px -28px rgba(59,10,42,.55);
-  transform: rotate(-2deg);
-}
-.w-qrcard-kick {
-  margin: 0 0 10px; font-size: 10px; letter-spacing: .24em;
-  text-transform: uppercase; color: var(--w-muted);
-}
-.w-qrcard-name {
-  margin: 0; font-family: 'Pinyon Script', cursive;
-  font-size: 34px; line-height: 1.15; color: var(--w-maroon);
-}
-.w-qrcard-date {
-  margin: 8px 0 0; font-size: 12px; letter-spacing: .2em; color: var(--w-ink);
-}
-.w-qrrule {
-  display: block; height: 1px; margin: 20px auto;
-  width: 60%; background: linear-gradient(90deg, transparent, rgba(201,146,47,.6), transparent);
-}
-.w-qrblock {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 12px; border-radius: 10px; background: #fff;
-  border: 1px solid rgba(201,146,47,.3); color: var(--w-maroon-deep);
-}
-.w-qrcard-scan {
-  margin: 12px 0 0; font-size: 10.5px; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--w-muted);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   VOICES — renders real quotes when there are some, and says so when
-   there are none. It never renders invented ones.
-   ══════════════════════════════════════════════════════════════════════ */
-.w-voices { background: linear-gradient(180deg, #fff, var(--cream)); }
-.w-quotegrid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 20px; margin-top: 40px;
-}
-.w-quote {
-  margin: 0; height: 100%;
-  background: #fff; border: 1px solid var(--w-line); border-radius: 16px;
-  padding: 24px 22px;
-  box-shadow: 0 2px 10px -4px rgba(59,10,42,.12);
-}
-.w-quote blockquote { margin: 0; }
-.w-quote blockquote p { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--w-ink); }
-.w-quote figcaption { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--w-line); }
-.w-quote figcaption b { display: block; font-size: 14px; color: var(--w-ink); }
-.w-quote figcaption span { font-size: 12px; color: var(--w-muted); }
-
-.w-quote-empty {
-  max-width: 620px; margin: 8px auto 0; text-align: center;
-  background: #fff; border: 1px dashed rgba(201,146,47,.5); border-radius: 16px;
-  padding: 30px 24px;
-}
-.w-quote-empty p { margin: 0 0 20px; font-size: 15px; line-height: 1.8; color: var(--w-muted); }
-
-/* ══════════════════════════════════════════════════════════════════════
-   WHY WELCVM — six feature cards
-   ══════════════════════════════════════════════════════════════════════ */
-.w-whysec { background: #fff; border-top: 1px solid var(--w-line); }
-.w-whygrid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 18px; margin-top: 44px;
-}
-.w-whygrid > li { display: flex; }
-.w-why {
-  flex: 1; background: #fffdfb;
-  border: 1px solid var(--w-line); border-radius: 16px;
-  padding: 24px 22px;
-  transition: transform .4s cubic-bezier(.2,.7,.3,1), box-shadow .4s ease, border-color .4s ease;
-}
-.w-why:hover {
-  transform: translateY(-4px);
-  border-color: rgba(201,146,47,.5);
-  box-shadow: 0 18px 40px -22px rgba(59,10,42,.4);
-}
-.w-why-ic {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 12px;
-  background: rgba(201,146,47,.1); color: var(--w-gold);
-  margin-bottom: 16px;
-}
-.w-why h3 {
-  margin: 0 0 7px; font-family: 'DM Sans', sans-serif;
-  font-size: 16.5px; font-weight: 700; letter-spacing: -.01em; color: var(--w-ink);
-}
-.w-why p { margin: 0; font-size: 13.5px; line-height: 1.72; color: var(--w-muted); }
-
-/* ══════════════════════════════════════════════════════════════════════
-   CONTACT
-   ══════════════════════════════════════════════════════════════════════ */
-.w-contactsec { background: linear-gradient(180deg, #fff, var(--cream)); }
-.w-contactgrid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 16px; margin-top: 40px;
-}
-.w-contact {
-  height: 100%; background: #fff; border: 1px solid var(--w-line);
-  border-radius: 16px; padding: 22px 20px; text-align: center;
-}
-.w-contact-ic {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 12px;
-  background: rgba(201,146,47,.1); color: var(--w-gold); margin-bottom: 12px;
-}
-.w-contact-l {
-  margin: 0 0 4px; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .16em; text-transform: uppercase; color: var(--w-muted);
-}
-.w-contact-v {
-  margin: 0; font-size: 15px; font-weight: 700; color: var(--w-ink);
-  overflow-wrap: anywhere;
-}
-a.w-contact-v:hover { color: var(--w-maroon); }
-.w-contact-n { margin: 4px 0 0; font-size: 12px; color: var(--w-muted); }
-
-.w-contact-empty {
-  margin: 36px 0 0; display: flex; flex-direction: column;
-  align-items: center; gap: 14px; text-align: center;
-}
-.w-contact-empty > span { font-size: 13px; color: var(--w-muted); }
-
 /* ══════════════════════════════════════════════════════════════════════
    FINAL CTA
    ══════════════════════════════════════════════════════════════════════ */
 .w-final {
   text-align: center; position: relative; overflow: hidden;
-  background: linear-gradient(180deg, var(--cream), #fff);
+  background: linear-gradient(180deg, #fff, var(--cream));
 }
 .w-final::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 60% 40% at 50% 10%, rgba(201,146,47,.12), transparent 65%);
 }
 .w-final .w-wrap { position: relative; z-index: 1; }
-.w-final-cta { margin: 32px 0 0; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .w-fine { margin-top: 14px; font-size: 12.5px; color: var(--w-muted); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -929,28 +610,9 @@ a.w-contact-v:hover { color: var(--w-maroon); }
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .w-egrid { grid-template-columns: repeat(3, 1fr); }
-  .w-whygrid { grid-template-columns: repeat(2, 1fr); }
-  .w-quotegrid { grid-template-columns: repeat(2, 1fr); }
 }
-
-/* The demo rail turns into a snapping carousel before the grid would
-   squeeze a phone-shaped demo below its legible width. The negative
-   margin lets the first and last card sit flush with the page gutter,
-   so the row reads as scrollable instead of as a cut-off grid. */
-@media (max-width: 900px) {
-  .w-demorow {
-    display: flex; gap: 16px;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 16px;
-    margin-inline: -16px; padding: 4px 16px 12px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .w-demo { flex: 0 0 min(78vw, 300px); scroll-snap-align: center; }
-}
-
 @media (max-width: 960px) {
-  .w-herogrid { grid-template-columns: 1fr; gap: 40px; }
+  .w-herogrid { grid-template-columns: 1fr; gap: 48px; }
   .w-hero-sub { max-width: none; }
   .w-phonewrap { padding-bottom: 48px; }
   .w-egrid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
@@ -958,34 +620,16 @@ a.w-contact-v:hover { color: var(--w-maroon); }
   .w-stepgrid::before { display: none; }
   .w-truthgrid { grid-template-columns: repeat(2, 1fr); }
   .w-sharegrid { grid-template-columns: 1fr; }
-  /* The card illustration belongs under the argument on a narrow screen,
-     not above it — the heading has to arrive first. */
-  .w-qrgrid { grid-template-columns: 1fr; }
-  .w-qrfig { order: 2; }
 }
-
 @media (max-width: 560px) {
-  /* 16px gutters everywhere on the landing page. Scoped to .w-page so the
-     global .wrap keeps its own padding on every other route. */
-  .w-page .wrap, .w-page .w-wrap { padding-left: 16px; padding-right: 16px; }
-
   .w-egrid { grid-template-columns: 1fr; gap: 12px; }
   .w-stepgrid { grid-template-columns: 1fr; }
-  .w-whygrid, .w-quotegrid { grid-template-columns: 1fr; }
-  .w-hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
+  .w-hero-cta { flex-direction: column; align-items: flex-start; gap: 10px; }
   .w-hero-cta .btn { width: 100%; justify-content: center; }
   .w-assure { gap: 10px; margin-top: 24px; }
   .w-as { padding: 10px 0 0; border-left: 0; border-top: 1px solid rgba(201,146,47,.24); }
   .w-as:first-child { padding-top: 10px; border-top: 1px solid rgba(201,146,47,.24); }
   .w-truth { padding: 24px 16px; }
-  .w-qrcard { transform: none; }
-  .w-demo-cta .btn { width: 100%; justify-content: center; }
-}
-
-/* At the narrowest supported width the three assurance columns cannot
-   hold a word each without overflowing the 360px viewport. */
-@media (max-width: 400px) {
-  .w-assure { grid-template-columns: 1fr; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1000,33 +644,13 @@ a.w-contact-v:hover { color: var(--w-maroon); }
 
 /* ══════════════════════════════════════════════════════════════════════
    REDUCED MOTION
-
-   Everything that moves on its own is switched off, and everything whose
-   *entrance* is animated is pinned to its finished state. The second half
-   matters more than the first: a reveal left at opacity 0 with its
-   transition removed is an invisible page, not a still one.
    ══════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .w-stage { transition-duration: .01ms; }
   .w-walltrack { animation: none; }
   .w-phonewrap { animation: none; }
   .w-h1 .highlight { animation: none; }
+  .w-hero > .w-wrap > div:first-child > * { animation: none; }
   .w-page .reveal { opacity: 1; transform: none; }
-  .w-hero-badge, .w-h1, .w-hero-sub, .w-hero-cta, .w-cta-note, .w-assure,
-  .w-float, .w-nav-pop {
-    animation: none; opacity: 1; transform: none;
-  }
-  /* The popover's entrance animation also carried its centring transform,
-     so it needs that put back by hand once the animation is gone. */
-  .w-nav-pop { transform: translateX(-50%); }
-  .w-nav-chev { transition: none; }
-  /* Hover lifts are movement too. Colour and shadow still respond. */
-  .w-ecard, .w-democard, .w-why, .w-wallcard-inner, .w-echip {
-    transition-property: box-shadow, border-color, background, color;
-  }
-  .w-ecard:hover, .w-democard:hover, .w-why:hover,
-  .w-wallcard:hover .w-wallcard-inner, .w-ecard:hover .w-echip {
-    transform: none;
-  }
-  .w-demorow { scroll-behavior: auto; }
+  .w-hero-badge, .w-h1, .w-hero-sub, .w-hero-cta, .w-cta-note, .w-assure { animation: none; opacity: 1; transform: none; }
 }

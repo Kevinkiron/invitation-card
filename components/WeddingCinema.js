@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { MapPin, Calendar, ChevronDown } from "lucide-react";
+import { MapPin, Calendar, ChevronDown, Sparkles } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
@@ -150,6 +150,8 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const stateRef = useRef({ drawing: false, done: false });
+  const [started, setStarted] = useState(false);
+  const [revealing, setRevealing] = useState(false);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -168,8 +170,9 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
     const ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
 
-    /* The foil itself: a brushed diagonal sweep so it reads as leaf
-       rather than a grey box. */
+    /* The foil itself: a brushed diagonal sweep, a faint scattered-star
+       texture and a thin engraved-looking frame, so it reads as an
+       actual scratch card rather than a flat grey box. */
     const g = ctx.createLinearGradient(0, 0, w, h);
     g.addColorStop(0, deep);
     g.addColorStop(0.42, accent);
@@ -177,6 +180,7 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
     g.addColorStop(1, deep);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
+
     ctx.globalAlpha = 0.12;
     ctx.strokeStyle = "#fff";
     for (let i = -h; i < w; i += 7) {
@@ -186,6 +190,34 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
+
+    /* A light scatter of tiny four-point stars — the same ornament
+       vocabulary as the rest of the invitation — so the foil looks
+       engraved rather than printed. */
+    ctx.fillStyle = "#fff";
+    ctx.globalAlpha = 0.16;
+    const star = (cx, cy, r) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.quadraticCurveTo(cx, cy, cx + r, cy);
+      ctx.quadraticCurveTo(cx, cy, cx, cy + r);
+      ctx.quadraticCurveTo(cx, cy, cx - r, cy);
+      ctx.quadraticCurveTo(cx, cy, cx, cy - r);
+      ctx.fill();
+    };
+    let seed = 7;
+    const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let i = 0; i < Math.max(10, Math.round((w * h) / 3200)); i++) {
+      star(rand() * w, rand() * h, 2 + rand() * 3.5);
+    }
+    ctx.globalAlpha = 1;
+
+    /* Engraved double-line frame, inset from the edge. */
+    ctx.strokeStyle = "rgba(255,255,255,.35)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(7.5, 7.5, w - 15, h - 15);
+    ctx.strokeStyle = "rgba(0,0,0,.18)";
+    ctx.strokeRect(10.5, 10.5, w - 21, h - 21);
 
     const pointAt = (e) => {
       const r = cv.getBoundingClientRect();
@@ -215,17 +247,25 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
       return total ? clear / total : 0;
     };
 
+    /* Rather than snapping straight to the revealed state, fade and lift
+       the foil away first — an abrupt unmount read as the panel
+       "breaking" rather than being scratched off. */
     const finish = () => {
       if (stateRef.current.done) return;
       stateRef.current.done = true;
-      onDone();
+      setRevealing(true);
+      window.setTimeout(onDone, 420);
     };
 
     const up = () => {
       stateRef.current.drawing = false;
       if (cleared() > 0.42) finish();
     };
-    const down = (e) => { stateRef.current.drawing = true; rub(e); };
+    const down = (e) => {
+      stateRef.current.drawing = true;
+      setStarted(true);
+      rub(e);
+    };
 
     cv.addEventListener("pointerdown", down);
     cv.addEventListener("pointermove", rub);
@@ -241,9 +281,13 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
   }, [onDone, accent, deep]);
 
   return (
-    <div className="wc-scratch" ref={wrapRef}>
+    <div className={`wc-scratch ${revealing ? "wc-scratch-out" : ""}`} ref={wrapRef}>
       <canvas ref={canvasRef} className="wc-scratch-canvas" aria-hidden="true" />
-      <span className="wc-scratch-hint">Rub to reveal</span>
+      {!started && <span className="wc-scratch-cue" aria-hidden="true" />}
+      <span className="wc-scratch-hint">
+        <Sparkles size={12} strokeWidth={2} />
+        Scratch to reveal
+      </span>
     </div>
   );
 }
@@ -576,25 +620,28 @@ function DateScene({ dated, revealed, onReveal, accent, deep }) {
       <div className="wc-date-halo" aria-hidden="true" />
       <p className="wc-eyebrow" style={{ textAlign: "center" }}>The date is written</p>
 
-      <div className="wc-date-stack">
-        <div className={`wc-date-lockup wc-fade ${vis ? "wc-visible" : ""}`}>
-          {dated.day && <b className="wc-date-day">{dated.day}</b>}
-          {dated.month && <span className="wc-date-month">{dated.month}</span>}
-          {dated.year && <i className="wc-date-year" style={{ fontStyle: "normal" }}>{dated.year}</i>}
+      <div className={`wc-date-frame ${revealed ? "" : "wc-date-frame-sealed"}`}>
+        <div className="wc-date-stack">
+          <div className={`wc-date-lockup wc-fade ${vis ? "wc-visible" : ""}`}>
+            {dated.day && <b className="wc-date-day">{dated.day}</b>}
+            {dated.month && <span className="wc-date-month">{dated.month}</span>}
+            {dated.year && <i className="wc-date-year" style={{ fontStyle: "normal" }}>{dated.year}</i>}
+          </div>
+          {!revealed && <ScratchPanel onDone={onReveal} accent={accent} deep={deep} />}
         </div>
-        {!revealed && <ScratchPanel onDone={onReveal} accent={accent} deep={deep} />}
       </div>
 
       {!revealed && (
         /* Rubbing is a pointer gesture. This is the same door for anyone
            on a keyboard, a screen reader, or simply out of patience. */
         <button type="button" className="wc-date-skip" onClick={onReveal}>
+          <Sparkles size={13} strokeWidth={2} />
           Reveal the date
         </button>
       )}
 
       <p className="wc-date-hint">
-        {revealed ? "Save it in your hearts & calendars" : "Rub the foil away"}
+        {revealed ? "Save it in your hearts & calendars" : "Scratch the gold panel, or tap the button below"}
       </p>
     </section>
   );

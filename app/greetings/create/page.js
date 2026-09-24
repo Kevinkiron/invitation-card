@@ -84,6 +84,18 @@ export default function GreetingCreatePage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  /* Same redirect app/create/page.js does for itself: without this, an
+     empty session just sat on `if (!ready || !session) return <Loading />`
+     forever with nothing to ever move it off that screen — clicking a
+     card on /greetings and landing on a stuck spinner was exactly this
+     missing effect, not a slow request. */
+  useEffect(() => {
+    if (ready && !session) {
+      const qs = typeof window !== "undefined" ? window.location.search : "";
+      router.replace(`/login?redirect=${encodeURIComponent(`/greetings/create${qs}`)}`);
+    }
+  }, [ready, session, router]);
+
   const progress = greetingProgress(tokens);
   const step = STEPS[Math.max(stepIdx, 0)];
 

@@ -401,14 +401,50 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {!preview && <MusicToggle music={music} className="wc-music" />}
 
-      {/* ── Opening overlay ── */}
+      {/* ── Opening overlay ──
+          A short entrance plays once on load — glow, then a ring drawing
+          itself around the monogram, then the monogram and the flourishes
+          either side of it, then the button — before the guest has even
+          reached for it. Tapping fires a burst of light from the centre
+          at the same moment the two panels part, so the gesture reads as
+          "unsealing" the invitation rather than a plain fade. */}
       {!preview && (
         <div className={`wc-opening ${opened ? "wc-opened" : ""}`}>
           <div className="wc-opening-panels"><div /><div /></div>
-          <div className="wc-opening-monogram">{mono}</div>
-          <button className="wc-opening-trigger" onClick={openInvitation}>
-            Tap to open
-          </button>
+          <span className="wc-opening-burst" aria-hidden="true" />
+
+          <div className="wc-opening-center">
+            <span className="wc-opening-glow" aria-hidden="true" />
+
+            <svg className="wc-opening-ring" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+              <circle className="wc-opening-ring-track" cx="80" cy="80" r="70" fill="none" strokeWidth="1" />
+              <circle className="wc-opening-ring-draw" cx="80" cy="80" r="70" fill="none" strokeWidth="1.4" />
+              {[0, 90, 180, 270].map((deg) => (
+                <circle
+                  key={deg}
+                  className="wc-opening-ring-dot"
+                  cx={80 + 70 * Math.cos((deg * Math.PI) / 180)}
+                  cy={80 + 70 * Math.sin((deg * Math.PI) / 180)}
+                  r="2.2"
+                />
+              ))}
+            </svg>
+
+            <div className="wc-opening-flourish wc-opening-flourish-top">
+              <RuleOrnament gold={tokens.palette?.accent || "#c69a55"} />
+            </div>
+
+            <div className="wc-opening-monogram">{mono}</div>
+
+            <div className="wc-opening-flourish wc-opening-flourish-bottom">
+              <RuleOrnament gold={tokens.palette?.accent || "#c69a55"} />
+            </div>
+
+            <button className="wc-opening-trigger" onClick={openInvitation}>
+              <Sparkles size={14} className="wc-opening-trigger-spark" />
+              <span>Tap to open</span>
+            </button>
+          </div>
         </div>
       )}
 

@@ -159,13 +159,19 @@
 
 /* ══════════════════════════════════════════════════════════════════════
    OPENING — "Tap to open" overlay
+
+   A short choreographed entrance (glow → ring → monogram → flourishes →
+   button, each staggered a beat behind the last) plays once on load, then
+   settles. Tapping the button fires a light burst from the centre at the
+   exact moment the two panels part — the whole thing is meant to read as
+   unsealing an invitation, not dismissing a splash screen.
    ══════════════════════════════════════════════════════════════════════ */
 .wc-opening {
   position: fixed; inset: 0; z-index: 200;
   width: 100%; height: 100dvh;
   display: flex; align-items: center; justify-content: center;
   background: var(--wc-bg);
-  transition: opacity .8s ease, visibility .8s;
+  transition: opacity .9s ease, visibility .9s;
 }
 .wc-opening.wc-opened {
   opacity: 0; visibility: hidden; pointer-events: none;
@@ -178,39 +184,189 @@
   flex: 1;
   background: linear-gradient(135deg, var(--wc-bg-warm), var(--wc-bg));
   border: 1px solid var(--wc-line);
-  transition: transform .8s var(--wc-ease);
+  transition: transform .9s cubic-bezier(.65, 0, .35, 1);
 }
 .wc-opened .wc-opening-panels > div:first-child { transform: translateX(-100%); }
 .wc-opened .wc-opening-panels > div:last-child { transform: translateX(100%); }
 
+/* A soft flash from the centre, timed with the panels parting — this is
+   what makes the tap feel like it *caused* the reveal rather than merely
+   preceding it. Zero size and opacity until `.wc-opened` is added, at
+   which point the animation runs once. */
+.wc-opening-burst {
+  position: absolute; top: 50%; left: 50%;
+  width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--wc-accent) 42%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.wc-opened .wc-opening-burst {
+  animation: wc-opening-burst-play .7s cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes wc-opening-burst-play {
+  0%   { opacity: 0; transform: scale(.2); }
+  35%  { opacity: .85; }
+  100% { opacity: 0; transform: scale(9); }
+}
+
+.wc-opening-center {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 28px;
+}
+
+/* A slow bloom of colour behind the monogram — present from the first
+   frame, so the centre of the screen has something alive on it before
+   anything else has finished animating in. */
+.wc-opening-glow {
+  position: absolute; top: 42%; left: 50%;
+  width: 260px; height: 260px; margin: -130px 0 0 -130px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, var(--wc-accent) 0%, transparent 68%);
+  opacity: 0;
+  animation: wc-opening-glow-in 2.4s ease-out .1s both, wc-opening-glow-breathe 4.5s ease-in-out 2.4s infinite;
+}
+@keyframes wc-opening-glow-in {
+  0%   { opacity: 0; transform: scale(.6); }
+  100% { opacity: .16; transform: scale(1); }
+}
+@keyframes wc-opening-glow-breathe {
+  0%, 100% { opacity: .16; transform: scale(1); }
+  50%      { opacity: .24; transform: scale(1.08); }
+}
+
+/* The ring: a faint full track is there immediately, and a brighter arc
+   draws itself on top of it clockwise from the top, like a seal being
+   traced. Four small dots mark the compass points once it completes. */
+.wc-opening-ring {
+  position: absolute; top: 42%; left: 50%;
+  width: 190px; height: 190px; margin: -95px 0 0 -95px;
+  transform: rotate(-90deg); /* stroke-dashoffset draws from 12 o'clock */
+  pointer-events: none;
+  overflow: visible;
+}
+.wc-opening-ring-track {
+  stroke: var(--wc-accent); stroke-opacity: .16;
+}
+.wc-opening-ring-draw {
+  stroke: var(--wc-accent);
+  stroke-linecap: round;
+  stroke-dasharray: 440;
+  stroke-dashoffset: 440;
+  filter: drop-shadow(0 0 5px rgba(198, 154, 85, .55));
+  animation: wc-opening-ring-draw 1.6s cubic-bezier(.4, 0, .2, 1) .3s both;
+}
+@keyframes wc-opening-ring-draw {
+  to { stroke-dashoffset: 0; }
+}
+.wc-opening-ring-dot {
+  fill: var(--wc-accent);
+  opacity: 0;
+  animation: wc-opening-fade-in .5s ease-out 1.9s both;
+}
+
+.wc-opening-flourish {
+  opacity: 0;
+  transform: translateY(6px) scale(.9);
+  animation: wc-opening-flourish-in .7s var(--wc-ease, cubic-bezier(.19, 1, .22, 1)) 2.05s both;
+}
+.wc-opening-flourish svg { width: 130px; height: auto; display: block; }
+.wc-opening-flourish-top { margin-bottom: 2px; }
+.wc-opening-flourish-bottom { margin-top: 2px; transform: translateY(-6px) scale(.9) rotate(180deg); }
+.wc-opening-flourish-bottom { animation-name: wc-opening-flourish-in-b; }
+@keyframes wc-opening-flourish-in {
+  to { opacity: .85; transform: translateY(0) scale(1); }
+}
+@keyframes wc-opening-flourish-in-b {
+  to { opacity: .85; transform: translateY(0) scale(1) rotate(180deg); }
+}
+
+.wc-opening-monogram {
+  font-family: 'Great Vibes', cursive;
+  font-size: 56px;
+  line-height: 1;
+  padding: 0 6px;
+  /* A slow gold shimmer sweeps across the letterform itself rather than
+     sitting behind it — the same trick a foil-stamped card uses when it
+     catches the light. */
+  background: linear-gradient(
+    100deg,
+    var(--wc-accent) 30%, #fff6dd 48%, var(--wc-accent) 66%
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  opacity: 0;
+  transform: translateY(8px) scale(.94);
+  filter: blur(6px);
+  animation:
+    wc-opening-monogram-in 1s var(--wc-ease, cubic-bezier(.19, 1, .22, 1)) 1.15s both,
+    wc-opening-shimmer 3.4s linear 2.2s infinite;
+}
+@keyframes wc-opening-monogram-in {
+  to { opacity: .92; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes wc-opening-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -60% 0; }
+}
+@keyframes wc-opening-fade-in {
+  to { opacity: .8; }
+}
+
 .wc-opening-trigger {
   position: relative; z-index: 10;
+  display: inline-flex; align-items: center; gap: 9px;
   background: none; border: 2px solid var(--wc-accent);
   color: var(--wc-accent);
-  padding: 16px 42px;
+  padding: 15px 38px;
   border-radius: 999px;
   font-family: 'Cormorant Garamond', serif;
   font-size: 18px; font-weight: 500;
   letter-spacing: .08em;
   cursor: pointer;
-  transition: all .35s ease;
-  animation: wc-pulse 2.5s ease-in-out infinite;
+  margin-top: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: wc-opening-trigger-in .7s var(--wc-ease, cubic-bezier(.19, 1, .22, 1)) 2.3s both,
+             wc-pulse 2.5s ease-in-out 3s infinite;
+  transition: background .35s ease, color .35s ease, transform .35s ease, box-shadow .35s ease;
+}
+@keyframes wc-opening-trigger-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.wc-opening-trigger-spark {
+  animation: wc-opening-spark-spin 5s linear infinite;
+}
+@keyframes wc-opening-spark-spin {
+  0%, 88%  { transform: rotate(0deg) scale(1); }
+  94%      { transform: rotate(180deg) scale(1.25); }
+  100%     { transform: rotate(360deg) scale(1); }
 }
 .wc-opening-trigger:hover {
   background: var(--wc-accent);
   color: var(--wc-bg);
-  transform: scale(1.05);
+  transform: translateY(0) scale(1.05);
+  box-shadow: 0 10px 30px -12px rgba(198, 154, 85, .6);
 }
 @keyframes wc-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(198,154,85,.3); }
   50% { box-shadow: 0 0 0 14px rgba(198,154,85,0); }
 }
-.wc-opening-monogram {
-  position: absolute; top: 36%; left: 50%; transform: translate(-50%, -50%);
-  font-family: 'Great Vibes', cursive;
-  font-size: 52px;
-  color: var(--wc-accent);
-  opacity: .25;
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-opening-glow, .wc-opening-ring-draw, .wc-opening-ring-dot,
+  .wc-opening-flourish, .wc-opening-monogram, .wc-opening-trigger,
+  .wc-opening-trigger-spark {
+    animation: none !important;
+    opacity: 1 !important; transform: none !important; filter: none !important;
+  }
+  /* Left out of the block above on purpose: forcing opacity to 1 here
+     would leave a permanent gold disc on screen instead of no burst at
+     all, which is the correct degraded state for a one-shot flash. */
+  .wc-opening-burst { animation: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════

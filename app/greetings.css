@@ -1,0 +1,99 @@
+/* ══════════════════════════════════════════════════════════════════════
+   GREETINGS PORTAL — landing page + create wizard chrome.
+   The card renderer itself lives in app/greeting-card.css.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Portal toggle, in the header ── */
+.w-portal-toggle {
+  display: inline-flex; align-items: center;
+  background: rgba(140, 123, 112, .1);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.w-portal-toggle a {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12.5px; font-weight: 700;
+  color: var(--w-muted, #8c7b70);
+  text-decoration: none;
+  transition: background .25s ease, color .25s ease;
+  white-space: nowrap;
+}
+.w-portal-toggle a.active {
+  background: #fff;
+  color: var(--w-ink, #1b1116);
+  box-shadow: 0 2px 8px rgba(26, 15, 20, .1);
+}
+
+/* ── Landing hero ── */
+.g-hero {
+  padding: 64px 0 40px;
+  text-align: center;
+}
+.g-hero h1 { font-size: clamp(30px, 5vw, 46px); margin: 0 0 12px; }
+.g-hero p { color: #8c7b70; max-width: 520px; margin: 0 auto; font-size: 15px; line-height: 1.7; }
+
+/* ── Occasion grid ── */
+.g-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  padding: 20px 0 70px;
+}
+@media (max-width: 980px) { .g-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .g-grid { grid-template-columns: 1fr; } }
+
+.g-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 2px 8px rgba(26,15,20,.08);
+  transition: transform .4s cubic-bezier(.2,.7,.3,1), box-shadow .4s ease;
+}
+.g-card:hover { transform: translateY(-5px); box-shadow: 0 18px 40px rgba(26,15,20,.16); }
+.g-card-art {
+  position: relative;
+  height: 130px;
+  background-size: cover; background-position: center;
+  display: flex; align-items: flex-end; padding: 12px;
+}
+.g-card-art-veil {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.35) 100%);
+}
+.g-card-name {
+  position: relative; z-index: 2;
+  color: #fff; font-weight: 800; font-size: 15px;
+  text-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.g-card-body {
+  padding: 14px 16px 16px;
+  background: #fff;
+}
+.g-card-tag { font-size: 12.5px; color: #8c7b70; margin: 0 0 10px; }
+.g-card-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 800;
+}
+
+/* ── Create wizard ── */
+.g-optional-row {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid #e9dcc9; border-radius: 14px;
+  padding: 12px 14px; margin-bottom: 10px; background: #fff;
+}
+.g-optional-row .g-opt-label { flex: 1; font-size: 12.5px; font-weight: 700; }
+.g-optional-row .g-opt-sub { font-size: 11px; color: #8c7b70; font-weight: 400; }
+
+.g-done-link {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid #e9dcc9; border-radius: 12px;
+  padding: 12px 14px; font-size: 13px; word-break: break-all;
+  background: #faf7f2; margin-bottom: 14px;
+}

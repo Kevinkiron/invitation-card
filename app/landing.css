@@ -445,6 +445,89 @@
 .w-ecard:hover .w-ego svg { transform: translateX(4px); }
 
 /* ══════════════════════════════════════════════════════════════════════
+   LIVE DEMOS — this whole section (app/page.js's "w-demo*" classes) had
+   no styling anywhere in the codebase: the phone mockup itself is styled
+   (components/DemoPhone.js's own app/demo.css), but the card wrapping it
+   — the two-column layout, the eyebrow/heading/blurb, the "Open the full
+   invitation" link, even the list's own bullets — was just falling back
+   to browser defaults. That's the stacked, bulleted, left-hung layout
+   this replaces. Styled to match the .w-ecard / .w-chatcard conventions
+   already used elsewhere on this page (white card, var(--w-line) border,
+   var(--shadow-sm), a hover lift).
+   ══════════════════════════════════════════════════════════════════════ */
+.w-demorow {
+  display: flex; flex-direction: column;
+  gap: 22px; margin-top: 48px;
+}
+.w-democard {
+  position: relative;
+  display: grid; grid-template-columns: minmax(220px, 300px) 1fr;
+  align-items: center; gap: 40px;
+  background: #fff; border: 1px solid var(--w-line);
+  border-radius: 24px; padding: 32px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26,15,20,.08));
+  transition: transform .42s cubic-bezier(.2,.7,.3,1),
+              box-shadow .42s ease, border-color .42s ease;
+}
+.w-democard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 56px rgba(26,15,20,.12);
+  border-color: var(--accent, rgba(201,146,47,.4));
+}
+.w-demostage {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px 12px;
+  border-radius: 18px;
+  background: linear-gradient(165deg,
+    color-mix(in srgb, var(--accent, #c9922f) 10%, #fff),
+    color-mix(in srgb, var(--accent, #c9922f) 3%, #fff));
+}
+.w-demometa {
+  display: flex; flex-direction: column; gap: 4px;
+  min-width: 0;
+}
+.w-demokind {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent, var(--w-gold)); margin: 0 0 6px;
+}
+.w-demonames {
+  font-family: 'DM Sans', sans-serif; font-weight: 800;
+  font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -.01em;
+  color: var(--w-ink); margin: 0 0 10px;
+}
+.w-demo-link { color: inherit; text-decoration: none; }
+/* The whole card is the click target — a stretched link over it, rather
+   than wrapping the card in <a>, because the card also hosts the demo's
+   own live, independently-scrolling iframe (see components/DemoPhone.js);
+   an outer <a> around that swallowed the iframe's scroll and dragged the
+   whole page instead. */
+.w-demo-link::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: 2;
+}
+.w-demoblurb {
+  font-size: 14.5px; line-height: 1.7; color: var(--w-muted);
+  margin: 0 0 16px; max-width: 46ch;
+}
+.w-demogo {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; color: var(--accent, var(--w-maroon));
+  margin: 0;
+}
+.w-demogo svg { transition: transform .3s var(--ease, cubic-bezier(.19,1,.22,1)); }
+.w-democard:hover .w-demogo svg { transform: translateX(4px); }
+.w-demo-cta { text-align: center; margin-top: 44px; }
+
+@media (max-width: 760px) {
+  .w-democard {
+    grid-template-columns: 1fr; gap: 20px; padding: 24px;
+    text-align: center;
+  }
+  .w-demometa { align-items: center; }
+  .w-demoblurb { max-width: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    INVITATION WALL — marquee
    ══════════════════════════════════════════════════════════════════════ */
 .w-wallsec {
@@ -579,6 +662,105 @@
 .w-linkprev-meta { padding: 10px 12px; background: #fff; }
 .w-linkprev-meta b { display: block; font-size: 12.5px; font-weight: 600; color: var(--w-ink); }
 .w-linkprev-meta span { font-size: 11px; color: var(--w-muted); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   VOICES — the testimonial grid (dormant until TESTIMONIALS in app/page.js
+   is filled in) and the honest placeholder shown in its place today.
+   Neither had any CSS; the placeholder in particular is live right now,
+   sitting under a centered .w-section-top heading but rendering as plain
+   left-aligned block text, which read as misaligned against everything
+   above it.
+   ══════════════════════════════════════════════════════════════════════ */
+.w-quote-empty {
+  max-width: 480px; margin: 8px auto 0; text-align: center;
+}
+.w-quote-empty p {
+  font-size: 15px; line-height: 1.75; color: var(--w-muted); margin: 0 0 18px;
+}
+.w-quotegrid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 20px; margin-top: 48px;
+}
+.w-quote {
+  margin: 0; background: #fff; border: 1px solid var(--w-line);
+  border-radius: 18px; padding: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.w-quote blockquote { margin: 0; }
+.w-quote blockquote p {
+  font-size: 15px; line-height: 1.7; color: var(--w-ink); margin: 0;
+  font-style: italic;
+}
+.w-quote figcaption { display: flex; flex-direction: column; gap: 2px; }
+.w-quote figcaption b { font-size: 13.5px; font-weight: 700; color: var(--w-ink); }
+.w-quote figcaption span { font-size: 12px; color: var(--w-muted); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   WHY WELCVM — six benefit cards, live on the page today with no CSS at
+   all: the icon, heading and paragraph were rendering as plain stacked
+   block content inside an unstyled <ul>/<li>, one on top of the other
+   full-width, instead of the grid the rest of the page uses for this
+   exact pattern (.w-egrid, .w-truthgrid, .w-stepgrid).
+   ══════════════════════════════════════════════════════════════════════ */
+.w-whygrid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 52px;
+}
+.w-why {
+  background: #fff; border: 1px solid var(--w-line); border-radius: 18px;
+  padding: 26px 24px; display: flex; flex-direction: column; gap: 12px;
+  transition: transform .35s cubic-bezier(.2,.7,.3,1), box-shadow .35s ease, border-color .35s ease;
+}
+.w-why:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26,15,20,.08));
+  border-color: rgba(107,142,107,.35);
+}
+.w-why-ic {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: rgba(107,142,107,.1); color: #6B8E6B;
+  display: flex; align-items: center; justify-content: center;
+}
+.w-why h3 {
+  font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 16.5px;
+  color: var(--w-ink); margin: 0; letter-spacing: -.01em;
+}
+.w-why p { font-size: 13.5px; line-height: 1.72; color: var(--w-muted); margin: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONTACT — same story as Voices: a real grid for when CONTACT in
+   app/page.js is filled in, and the placeholder that's live today,
+   which was rendering left-aligned under a centered heading.
+   ══════════════════════════════════════════════════════════════════════ */
+.w-contact-empty {
+  text-align: center; margin: 8px 0 0;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.w-contact-empty span { font-size: 13px; color: var(--w-muted); }
+.w-contactgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px; margin-top: 44px;
+}
+.w-contact {
+  background: #fff; border: 1px solid var(--w-line); border-radius: 16px;
+  padding: 22px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.w-contact-ic {
+  width: 38px; height: 38px; border-radius: 10px; margin-bottom: 6px;
+  background: rgba(201,146,47,.1); color: var(--w-gold);
+  display: flex; align-items: center; justify-content: center;
+}
+.w-contact-l { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--w-muted); margin: 0; }
+.w-contact-v { font-size: 15px; font-weight: 600; color: var(--w-ink); margin: 0; }
+.w-contact-n { font-size: 12px; color: var(--w-muted); margin: 0; }
+
+@media (max-width: 860px) {
+  .w-quotegrid, .w-whygrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .w-quotegrid, .w-whygrid { grid-template-columns: 1fr; }
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    FINAL CTA

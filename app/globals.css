@@ -65,6 +65,15 @@ html, body {
   scroll-behavior: smooth;
 }
 
+/* Several card grids across the site (the occasion cards, the demo row,
+   the quote/why/contact grids) are built as <ul> for semantics, but
+   nothing ever reset the browser's default list styling — every one of
+   them was drawing its own bullet point floating to the left of each
+   card, outside the card's own border, plus the default ~40px
+   padding-left indent. None of that was ever intentional; every grid
+   already sets its own gap/margin explicitly. */
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
 body {
   font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   font-size: 16px;

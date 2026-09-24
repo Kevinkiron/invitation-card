@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight, Send, Loader2, Sparkles, Check, RefreshCw,
-  CreditCard, ShieldCheck, AlertTriangle, Paperclip, X as XIcon,
+  CreditCard, ShieldCheck, AlertTriangle, Paperclip, Images, X as XIcon,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import ChatDateField from "@/components/ChatDateField";
+import MusicPicker from "@/components/MusicPicker";
 import TokenInvite from "@/components/TokenInvite";
 import WeddingCinema from "@/components/WeddingCinema";
 import CelebrationCinema from "@/components/CelebrationCinema";
@@ -253,6 +254,13 @@ export default function CreatePage() {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  /* The "Background music" picker (components/MusicPicker.js) writes
+     straight onto tokens.media, the same as photos — the model never
+     asks about or knows which track is playing. */
+  function chooseMusic(choice) {
+    setTokens((t) => ({ ...t, media: { ...(t.media || {}), ...choice } }));
   }
 
   async function send(text, tokensOverride) {
@@ -529,6 +537,64 @@ export default function CreatePage() {
                   />
                 )}
 
+                {/* Photos and music: available for every occasion, wedding
+                    or otherwise — this used to be a single small line of
+                    text under the input row that easily went unnoticed on
+                    a non-wedding invitation. */}
+                {cinemaMode && (
+                  <>
+                    <div
+                      style={{
+                        border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px",
+                        marginBottom: 10, background: "#fff",
+                        display: "flex", alignItems: "center", gap: 10,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                          background: `linear-gradient(140deg, ${C.heart}, ${C.heartDeep})`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Images size={13} color="#fff" />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 800, color: C.ink }}>
+                          Photos {photoCount ? `(${photoCount}/${MAX_PHOTOS + 1})` : ""}
+                        </div>
+                        <div style={{ fontSize: 11, color: C.muted }}>
+                          {photoCount
+                            ? "Each one goes to the scene I asked it for — add more any time."
+                            : "I will ask for these as we go, or add them yourself whenever you like."}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={busy || uploading}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                          border: `1.5px solid ${C.line}`, background: "#fff", borderRadius: 999,
+                          padding: "8px 14px", fontSize: 12, fontWeight: 700, color: C.heart,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >
+                        {uploading ? <Loader2 size={14} className="spin" /> : <Paperclip size={14} />}
+                        {uploading ? "Uploading…" : photoCount ? "Add more" : "Add photos"}
+                      </button>
+                    </div>
+
+                    <MusicPicker
+                      tokens={tokens}
+                      eventKind={tokens?.eventKind || draft.eventType}
+                      userId={session?.user?.id}
+                      onChoose={chooseMusic}
+                      disabled={busy || uploading}
+                    />
+                  </>
+                )}
+
                 <div className="ai-input-row">
                   <input
                     ref={fileRef}
@@ -568,16 +634,18 @@ export default function CreatePage() {
                   </button>
                 </div>
 
-                <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
-                  <Paperclip size={11} />
-                  {photoCount
-                    ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added${
-                        cinemaMode ? " — each one goes to the scene I asked it for." : " — the first is the portrait at the top."
-                      }`
-                    : cinemaMode
-                      ? "I will ask for photographs as we go — the paperclip is here whenever you want to add more."
+                {/* The card above already covers this for a cinema
+                    invitation (wedding or celebration) — this stays only
+                    for the older plain-renderer flow, which has no such
+                    card. */}
+                {!cinemaMode && (
+                  <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
+                    <Paperclip size={11} />
+                    {photoCount
+                      ? `${photoCount} photo${photoCount === 1 ? "" : "s"} added — the first is the portrait at the top.`
                       : "You can add photos at any time. The first becomes the portrait."}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </section>

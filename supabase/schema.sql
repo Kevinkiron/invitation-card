@@ -287,3 +287,45 @@ create policy "photo_owner_delete"
     bucket_id = 'invitation-photos'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ══════════════════════════════════════════════════════════════════════
+-- MUSIC STORAGE
+-- Same shape as PHOTO STORAGE above, for the "Background music" picker's
+-- "Upload your own" option (components/MusicPicker.js, lib/music/upload.js).
+-- Public read (a guest opening the invitation link is never signed in),
+-- writes restricted to the signed-in owner's own folder.
+--
+-- The bucket is `invitation-audio`. lib/music/upload.js must use exactly
+-- this name.
+-- ══════════════════════════════════════════════════════════════════════
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'invitation-audio', 'invitation-audio', true, 15728640,
+  array['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/mp4','audio/x-m4a','audio/aac','audio/ogg']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "audio_public_read" on storage.objects;
+create policy "audio_public_read"
+  on storage.objects for select
+  using (bucket_id = 'invitation-audio');
+
+drop policy if exists "audio_owner_insert" on storage.objects;
+create policy "audio_owner_insert"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'invitation-audio'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "audio_owner_delete" on storage.objects;
+create policy "audio_owner_delete"
+  on storage.objects for delete
+  using (
+    bucket_id = 'invitation-audio'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

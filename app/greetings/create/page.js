@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Send, Check, CreditCard, ShieldCheck, Loader2, Paperclip, Music,
   X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink,
@@ -49,19 +49,25 @@ function isDark(hex) {
 
 export default function GreetingCreatePage() {
   const router = useRouter();
-  const params = useSearchParams();
   const { session, ready } = useAuth();
 
-  const initialOccasion = getOccasion(params.get("occasion"));
-  const [occasion, setOccasion] = useState(initialOccasion || null);
-  const [tokens, setTokens] = useState(() => emptyGreetingTokens(initialOccasion));
-
-  const [stepIdx, setStepIdx] = useState(occasion ? 0 : -1); // -1 = still picking an occasion
-  const [messages, setMessages] = useState(() =>
-    occasion
-      ? [{ role: "assistant", content: `A ${occasion.name.toLowerCase()} card — lovely. Who is it for?` }]
-      : [{ role: "assistant", content: "Which occasion is this card for?" }]
-  );
+  /* Always start empty — occasion-picker chips, step -1 — and only look at
+     `?occasion=` after mount, in a useEffect. This mirrors app/create/
+     page.js's own `?event=`/`?template=` handling (window.location.search
+     read inside useEffect, never as an initial useState value): reading
+     the query string during render, even guarded by `typeof window`,
+     produces different HTML on the server prerender pass than on the
+     client and forces this page out of static prerendering — exactly
+     the "should be wrapped in a suspense boundary" build failure that
+     useSearchParams() hit here. This page is "use client" anyway, so
+     nothing is lost by resolving the occasion one tick after mount. */
+  const [occasion, setOccasion] = useState(null);
+  const [tokens, setTokens] = useState(() => emptyGreetingTokens(null));
+  const [stepIdx, setStepIdx] = useState(-1); // -1 = still picking an occasion
+  const [messages, setMessages] = useState(() => [
+    { role: "assistant", content: "Which occasion is this card for?" },
+  ]);
+  const autoStarted = useRef(false);
   const [input, setInput] = useState("");
   const [plan, setPlan] = useState("BASIC");
   const [publishing, setPublishing] = useState(false);
@@ -81,16 +87,27 @@ export default function GreetingCreatePage() {
   const progress = greetingProgress(tokens);
   const step = STEPS[Math.max(stepIdx, 0)];
 
-  function pickOccasion(o) {
+  function pickOccasion(o, fromChip = true) {
     setOccasion(o);
     setTokens(emptyGreetingTokens(o));
-    setMessages((m) => [
-      ...m,
-      { role: "user", content: o.name },
-      { role: "assistant", content: `A ${o.name.toLowerCase()} card — lovely. Who is it for?` },
-    ]);
+    setMessages((m) => (fromChip ? [...m, { role: "user", content: o.name }] : m).concat({
+      role: "assistant",
+      content: `A ${o.name.toLowerCase()} card — lovely. Who is it for?`,
+    }));
     setStepIdx(0);
   }
+
+  /* `?occasion=` arrives from the cards on /greetings — see comment above
+     the state declarations for why this lives in an effect rather than in
+     the initial state. */
+  useEffect(() => {
+    if (autoStarted.current || typeof window === "undefined") return;
+    autoStarted.current = true;
+    const slug = new URLSearchParams(window.location.search).get("occasion");
+    const o = getOccasion(slug);
+    if (o) pickOccasion(o, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function say(role, content) {
     setMessages((m) => [...m, { role, content }]);

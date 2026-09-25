@@ -27,6 +27,25 @@
   box-shadow: 0 2px 8px rgba(26, 15, 20, .1);
 }
 
+/* The header row used to lay out three groups (logo, nav links, actions)
+   with justify-content: space-between. Adding the portal toggle as a
+   fourth group crowded that row on tablet widths — nav links, the
+   toggle and the Create Invite button all competing for the same space,
+   with nothing to wrap onto a second line, so the row started clipping
+   or forcing a horizontal scroll on the header. Below 860px (exactly
+   where components/Nav.js already swaps the nav links for the burger
+   menu) the header toggle is hidden entirely instead of also cramming
+   in next to the logo and the burger — the same choice is already in
+   the drawer that the burger opens, so nothing is lost. */
+@media (max-width: 1100px) {
+  .w-nav-inner { gap: 10px; }
+  .w-portal-toggle-header { padding: 2px; }
+  .w-portal-toggle-header a { padding: 6px 10px; font-size: 11.5px; }
+}
+@media (max-width: 860px) {
+  .w-portal-toggle-header { display: none; }
+}
+
 /* ── Landing hero ── */
 .g-hero {
   padding: 64px 0 40px;

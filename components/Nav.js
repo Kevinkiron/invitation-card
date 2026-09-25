@@ -83,7 +83,7 @@ export default function Nav() {
         {/* Portal toggle — the whole landing + creation flow swaps between
             invitations and greeting cards; everything else (dashboard,
             login, manage) stays exactly as it was. */}
-        <div className="w-portal-toggle" aria-label="Choose invitations or greeting cards">
+        <div className="w-portal-toggle w-portal-toggle-header" aria-label="Choose invitations or greeting cards">
           <Link href="/" className={inGreetings ? "" : "active"}>Invitations</Link>
           <Link href="/greetings" className={inGreetings ? "active" : ""}>Greetings</Link>
         </div>

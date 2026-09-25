@@ -80,6 +80,9 @@ export default function GreetingCard({ tokens, preview = false }) {
 
   const motifUrl = cardMotif(tokens?.motif || "botanical", p.accent || "#c69a55");
   const Scene = getScene(tokens?.occasion);
+  // Every occasion resolves to some Scene now (a bespoke one for
+  // Christmas/Onam, GenericScene — motif + Lottie — for the rest), so the
+  // closed cover always has something animated on it, never a flat motif.
 
   return (
     <div className={`gc ${preview ? "gc-preview" : ""}`} style={style}>
@@ -104,11 +107,7 @@ export default function GreetingCard({ tokens, preview = false }) {
             {/* ── Front: the closed cover ── */}
             <div className="gc-face gc-face-front">
               <span className="gc-front-glow" aria-hidden="true" />
-              {Scene ? (
-                <Scene accent={p.accent || "#c69a55"} palette={p} />
-              ) : (
-                <div className="gc-front-motif" style={{ backgroundImage: `url("${motifUrl}")` }} aria-hidden="true" />
-              )}
+              <Scene occasion={tokens?.occasion} accent={p.accent || "#c69a55"} palette={p} />
               <div className="gc-front-frame" aria-hidden="true" />
               <div className="gc-front-body">
                 <p className="gc-front-eyebrow">A card for</p>

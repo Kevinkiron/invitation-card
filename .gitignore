@@ -9,8 +9,8 @@ node_modules
 # (the desktop bridge cannot remove files). Safe to delete by hand.
 _to_delete/
 
-# Demo photos are fetched on every build (see scripts/fetch-demo-photos.mjs);
-# background music is a manual one-time download (see MUSIC-SETUP.md). Neither
-# belongs in git.
+# Downloaded at build/dev time by scripts/fetch-demo-photos.mjs and
+# scripts/fetch-greeting-photos.mjs — other people's photographs, several
+# megabytes each, fetched fresh rather than committed as binaries.
 public/demo/
-public/music/
+public/greetings/

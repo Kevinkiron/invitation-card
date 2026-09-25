@@ -1,16 +1,21 @@
 import ChristmasScene from "./ChristmasScene";
 import OnamScene from "./OnamScene";
+import GenericScene from "./GenericScene";
 
 /* ══════════════════════════════════════════════════════════════════════
    SCENE REGISTRY — occasion slug → an animated closed-cover scene.
 
-   Most occasions still fall back to the generic parametric motif from
-   lib/design/showcase.js (cardMotif) rendered as a static, faintly
-   blended background — see components/GreetingCard.js. Only occasions
-   with a real hand-built scene here get the fuller treatment (Kevin's
-   call: build Christmas and Onam to a genuinely premium standard first,
-   then extend this map occasion by occasion rather than spreading
-   thinner effort across all of them at once).
+   Christmas and Onam have a real hand-built scene (Santa's sleigh past a
+   shining star; a blooming pookalam and a gliding boat) — built to a
+   genuinely premium standard first, per Kevin's original call, before
+   spreading thinner effort across every occasion at once.
+
+   Every other occasion now gets GenericScene — that occasion's own
+   parametric motif (lib/design/showcase.js) with its Lottie animation
+   (lib/greetings/lottie.js, via occasion.lottie) playing over it, rather
+   than the flat, unanimated motif this registry used to fall back to.
+   getScene() never returns null any more; every occasion's cover
+   animates, some with a bespoke scene and the rest with GenericScene.
    ══════════════════════════════════════════════════════════════════════ */
 export const SCENES = {
   christmas: ChristmasScene,
@@ -18,5 +23,5 @@ export const SCENES = {
 };
 
 export function getScene(slug) {
-  return SCENES[slug] || null;
+  return SCENES[slug] || GenericScene;
 }

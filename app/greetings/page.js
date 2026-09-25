@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import OccasionCardArt from "@/components/greetings/OccasionCardArt";
 import { cardMotif } from "@/lib/design/showcase";
 import { OCCASIONS } from "@/lib/greetings/occasions";
 import { C } from "@/lib/theme";
@@ -41,19 +42,7 @@ export default function GreetingsLanding() {
           <div className="g-grid">
             {OCCASIONS.map((o) => (
               <Link key={o.slug} href={`/greetings/create?occasion=${o.slug}`} className="g-card">
-                <div
-                  className="g-card-art"
-                  style={{
-                    background: `linear-gradient(150deg, ${o.palette.surface}, ${o.palette.bg})`,
-                    backgroundImage: `linear-gradient(150deg, ${o.palette.surface}, ${o.palette.bg}), url("${cardMotif(o.motif, o.palette.accent)}")`,
-                    backgroundBlendMode: "normal, soft-light",
-                    backgroundSize: "cover, 160% 160%",
-                    backgroundPosition: "center, center",
-                  }}
-                >
-                  <span className="g-card-art-veil" aria-hidden="true" />
-                  <span className="g-card-name">{o.name}</span>
-                </div>
+                <OccasionCardArt occasion={o} motifUrl={cardMotif(o.motif, o.palette.accent)} />
                 <div className="g-card-body">
                   <p className="g-card-tag">{o.tag}</p>
                   <span className="g-card-cta" style={{ color: C.heart }}>

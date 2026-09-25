@@ -99,6 +99,25 @@
   100% { left: 140%; opacity: 0; }
 }
 
+/* ── Generic (every occasion without a bespoke scene above) ── */
+.gc-scene-generic-motif {
+  position: absolute; inset: 0;
+  background-repeat: no-repeat; background-position: center; background-size: cover;
+  opacity: .5; mix-blend-mode: soft-light;
+}
+.gc-scene-generic-lottie {
+  position: absolute;
+  left: 50%; top: 46%;
+  width: 58%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .28));
+  animation: gc-generic-float 5s ease-in-out infinite;
+}
+@keyframes gc-generic-float {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50%      { transform: translate(-50%, -50%) translateY(-4%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gc-scene-star, .gc-star-rays {
     animation: none !important;
@@ -115,4 +134,5 @@
     animation: none !important;
     left: 22%; opacity: 1;
   }
+  .gc-scene-generic-lottie { animation: none !important; }
 }

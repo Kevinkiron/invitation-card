@@ -1,0 +1,175 @@
+/* ══════════════════════════════════════════════════════════════════════
+   ENVELOPE — components/greetings/Envelope.js
+
+   Sits directly on top of .gc-stage (app/greeting-card.css), in the same
+   spot, at the same width, before the card itself is ever tapped. The
+   envelope is drawn entirely in CSS — no artwork: .gc-envelope-pocket and
+   .gc-envelope-flap are clip-path polygons for the folded-paper shape,
+   .gc-envelope-seal is a radial-gradient with an inline SVG mark, and the
+   paper itself is gradients. Tapping the seal adds .gc-envelope-opening
+   to the stage, which is the only class this component ever toggles —
+   every visual change below (the flap folding back, the seal shrinking
+   away, the whole envelope lifting and fading) is that one class doing
+   three separate transitions at once, then GreetingCard's own .gc-stage
+   is what the sender actually taps next.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Shrink-wraps to .gc-stage's own width/aspect-ratio (app/greeting-card.css)
+   so .gc-envelope-stage's `inset: 0` lines up with it exactly, without
+   this file having to repeat that sizing itself. */
+.gc-envelope-wrap {
+  position: relative;
+  z-index: 5;
+}
+
+.gc-envelope-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  perspective: 1200px;
+  pointer-events: none;
+}
+.gc-envelope-stage > .gc-envelope { pointer-events: auto; }
+
+.gc-envelope {
+  position: relative;
+  width: 92%;
+  aspect-ratio: 1.5 / 1;
+  transform: rotate(-2deg);
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .35));
+  transition: transform .9s ease, opacity .6s .5s ease;
+  isolation: isolate;
+}
+
+.gc-envelope-back {
+  position: absolute; inset: 0;
+  background: #dfd2b9;
+  border: 1px solid #d8cbb3;
+  border-radius: 8px;
+}
+
+/* The front pocket: a rectangle with its top edge notched into a shallow
+   V, so the flap (drawn separately, on top) reads as folded down into it
+   rather than just floating over a plain rectangle. */
+.gc-envelope-pocket {
+  position: absolute; inset: 0;
+  z-index: 3;
+  background: linear-gradient(150deg, #fbf6ea, #e9dfcc);
+  clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.gc-envelope-pocket::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(35deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%),
+    linear-gradient(-35deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%);
+}
+
+.gc-envelope-flap {
+  position: absolute; inset: 0;
+  z-index: 4;
+  clip-path: polygon(0 0, 100% 0, 50% 58%);
+  background: linear-gradient(#f9f3e6, #e8ddc8);
+  transform-origin: center top;
+  transition: transform 1s ease, filter 1s ease;
+  filter: drop-shadow(0 2px 3px rgba(118, 104, 78, .25));
+}
+
+.gc-envelope-stamp {
+  position: absolute;
+  right: 6%; top: 8%;
+  z-index: 5;
+  width: 17%; aspect-ratio: 1;
+  min-width: 40px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--gc-accent, #c69a55) 45%, transparent);
+  color: color-mix(in srgb, var(--gc-accent, #c69a55) 70%, #7a6a4a);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transform: rotate(11deg);
+  font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+  line-height: 1.5; text-align: center;
+  padding: 4px;
+}
+.gc-envelope-stamp strong {
+  font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none;
+}
+
+.gc-envelope-label {
+  position: absolute;
+  left: 0; right: 0; bottom: 10%;
+  z-index: 5;
+  text-align: center;
+  pointer-events: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(14px, 4vw, 19px);
+  color: #6a5644;
+}
+.gc-envelope-label span { font-weight: 600; }
+.gc-envelope-label small {
+  display: block;
+  font-family: 'Lato', sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: .02em;
+  color: color-mix(in srgb, #6a5644 75%, transparent);
+  margin-top: 2px;
+}
+
+.gc-envelope-seal {
+  position: absolute;
+  left: 50%; top: 44%;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  width: 21%; aspect-ratio: 1;
+  min-width: 46px; max-width: 68px;
+  border-radius: 48% 51% 45% 50%;
+  border: none;
+  cursor: pointer;
+  background: radial-gradient(
+    circle at 32% 25%,
+    color-mix(in srgb, var(--gc-deep, #8f294e) 55%, #fff 15%),
+    var(--gc-deep, #8f294e) 55%,
+    color-mix(in srgb, var(--gc-deep, #8f294e) 80%, #000 25%)
+  );
+  box-shadow:
+    0 5px 10px rgba(0, 0, 0, .3),
+    inset 0 0 0 3px color-mix(in srgb, var(--gc-deep, #8f294e) 70%, #000 15%),
+    inset 0 0 0 5px color-mix(in srgb, var(--gc-deep, #8f294e) 55%, #fff 10%);
+  color: color-mix(in srgb, var(--gc-deep, #8f294e) 30%, #fff 55%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .3s ease, transform .4s ease;
+  animation: gc-seal-breathe 3.6s ease-in-out infinite;
+}
+.gc-envelope-seal svg { width: 44%; height: 44%; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4)); }
+.gc-envelope-seal:focus-visible { outline: 2px solid var(--gc-accent, #c69a55); outline-offset: 3px; }
+@keyframes gc-seal-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.045); }
+}
+
+/* ── Opening: the one state change this whole file exists for ── */
+.gc-envelope-opening .gc-envelope-flap {
+  transform: rotateX(180deg);
+  filter: brightness(.92);
+}
+.gc-envelope-opening .gc-envelope-seal {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.6);
+  animation: none;
+}
+.gc-envelope-opening .gc-envelope {
+  transform: translateY(-14%) rotate(0deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-envelope-seal { animation: none; }
+  .gc-envelope, .gc-envelope-flap, .gc-envelope-seal {
+    transition-duration: .01ms !important;
+  }
+}

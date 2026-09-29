@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, Volume2, VolumeX } from "lucide-react";
 import { cardMotif } from "@/lib/design/showcase";
 import ParticleField from "@/components/greetings/ParticleField";
+import Envelope from "@/components/greetings/Envelope";
 import { getScene } from "@/components/greetings/scenes";
 import "@/app/greeting-card.css";
 import "@/app/greeting-scenes.css";
+import "@/app/greeting-envelope.css";
 
 /* ══════════════════════════════════════════════════════════════════════
    GREETING CARD RENDERER
@@ -33,6 +35,13 @@ import "@/app/greeting-scenes.css";
    same convention WeddingCinema/CelebrationCinema use, and for the same
    reason: the sender is editing their own card, not being surprised by
    it.
+
+   Before any of that, the guest sees the card as a sealed envelope
+   (components/greetings/Envelope.js) addressed to them, postmarked with
+   that occasion's own stamp (lib/greetings/occasions.js). Breaking the
+   seal is its own small ceremony — the flap folds back and the envelope
+   fades away — before the card underneath is even tappable, so opening a
+   card is two small moments instead of one.
    ══════════════════════════════════════════════════════════════════════ */
 export default function GreetingCard({ tokens, preview = false }) {
   const p = tokens?.palette || {};
@@ -43,9 +52,12 @@ export default function GreetingCard({ tokens, preview = false }) {
   const musicUrl = tokens?.media?.musicUrl || null;
 
   const [opened, setOpened] = useState(preview);
+  const [envelopeOpening, setEnvelopeOpening] = useState(preview);
   const audioRef = useRef(null);
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
+
+  const openEnvelope = useCallback(() => setEnvelopeOpening(true), []);
 
   useEffect(() => {
     if (preview || !musicUrl) return;
@@ -100,41 +112,47 @@ export default function GreetingCard({ tokens, preview = false }) {
         </button>
       )}
 
-      <div className="gc-stage">
-        <div className={`gc-card ${opened ? "gc-open" : ""}`}>
-          <div className="gc-card-inner">
+      <div className="gc-envelope-wrap">
+        <div className="gc-stage">
+          <div className={`gc-card ${opened ? "gc-open" : ""}`}>
+            <div className="gc-card-inner">
 
-            {/* ── Front: the closed cover ── */}
-            <div className="gc-face gc-face-front">
-              <span className="gc-front-glow" aria-hidden="true" />
-              <Scene occasion={tokens?.occasion} accent={p.accent || "#c69a55"} palette={p} />
-              <div className="gc-front-frame" aria-hidden="true" />
-              <div className="gc-front-body">
-                <p className="gc-front-eyebrow">A card for</p>
-                <h2 className="gc-front-to">{to}</h2>
-                <p className="gc-front-occasion">{tokens?.occasionName || "A little something"}</p>
-                <button type="button" className="gc-open-btn" onClick={open}>
-                  <Sparkles size={13} className="gc-open-spark" />
-                  <span>Tap to open</span>
-                </button>
-              </div>
-            </div>
-
-            {/* ── Back: the message, revealed on flip ── */}
-            <div className="gc-face gc-face-back">
-              <div className="gc-back-motif" style={{ backgroundImage: `url("${motifUrl}")` }} aria-hidden="true" />
-              {photoUrl && (
-                <div className="gc-photo">
-                  <img src={photoUrl} alt="" />
+              {/* ── Front: the closed cover ── */}
+              <div className="gc-face gc-face-front">
+                <span className="gc-front-glow" aria-hidden="true" />
+                <Scene occasion={tokens?.occasion} accent={p.accent || "#c69a55"} palette={p} />
+                <div className="gc-front-frame" aria-hidden="true" />
+                <div className="gc-front-body">
+                  <p className="gc-front-eyebrow">A card for</p>
+                  <h2 className="gc-front-to">{to}</h2>
+                  <p className="gc-front-occasion">{tokens?.occasionName || "A little something"}</p>
+                  <button type="button" className="gc-open-btn" onClick={open}>
+                    <Sparkles size={13} className="gc-open-spark" />
+                    <span>Tap to open</span>
+                  </button>
                 </div>
-              )}
-              <p className="gc-back-eyebrow">{tokens?.occasionName || "A little something"}</p>
-              <p className="gc-back-to">To {to},</p>
-              <p className="gc-back-message">{message || "Wishing you all the good things."}</p>
-              {from && <p className="gc-back-from">— {from}</p>}
+              </div>
+
+              {/* ── Back: the message, revealed on flip ── */}
+              <div className="gc-face gc-face-back">
+                <div className="gc-back-motif" style={{ backgroundImage: `url("${motifUrl}")` }} aria-hidden="true" />
+                {photoUrl && (
+                  <div className="gc-photo">
+                    <img src={photoUrl} alt="" />
+                  </div>
+                )}
+                <p className="gc-back-eyebrow">{tokens?.occasionName || "A little something"}</p>
+                <p className="gc-back-to">To {to},</p>
+                <p className="gc-back-message">{message || "Wishing you all the good things."}</p>
+                {from && <p className="gc-back-from">— {from}</p>}
+              </div>
             </div>
           </div>
         </div>
+
+        {!preview && (
+          <Envelope to={to} from={from} stamp={tokens?.stamp} opening={envelopeOpening} onOpen={openEnvelope} />
+        )}
       </div>
     </div>
   );

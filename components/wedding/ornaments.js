@@ -105,7 +105,39 @@ export function Lantern({ gold = "#c69a55", glow = "#ffd88a", cord = 46 }) {
    Layered petals rather than line art: a flat outline reads as clip-art,
    while overlapping shapes with soft gradients read as painted. Rotated
    per corner by the caller. */
-export function FloralCorner({ bloom = "#d9738c", leaf = "#7d9a6d", deep = "#a84763", id = "a" }) {
+export function FloralCorner({ bloom = "#d9738c", leaf = "#7d9a6d", deep = "#a84763", id = "a", variant = "bloom" }) {
+  if (variant === "geo") {
+    /* A nested eight-point star rosette rather than a flower — the
+       geometric pattern Islamic decorative art favours over figurative
+       or floral motifs. Same viewBox and slot as the bloom below, so it
+       drops straight into wc-floral-bl/br with no layout changes. */
+    return (
+      <svg className="wc-floral" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id={`wc-geo-${id}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={bloom} stopOpacity=".92" />
+            <stop offset="100%" stopColor={deep} stopOpacity=".6" />
+          </linearGradient>
+        </defs>
+        {[0, 1, 2].map((ring) => (
+          <g key={ring} transform={`translate(42 42) scale(${1 - ring * 0.32}) rotate(${ring * 22.5})`}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <path
+                key={i}
+                d="M0 -34 L7 -12 L0 0 L-7 -12 Z"
+                fill={`url(#wc-geo-${id})`}
+                opacity={0.85 - ring * 0.2}
+                transform={`rotate(${i * 45})`}
+              />
+            ))}
+          </g>
+        ))}
+        <circle cx="42" cy="42" r="27" fill="none" stroke={bloom} strokeOpacity=".4" strokeWidth="1" />
+        <circle cx="42" cy="42" r="6" fill="#f2ddb0" />
+      </svg>
+    );
+  }
+
   const petals = [
     [0, 1], [52, 0.94], [104, 0.9], [156, 0.96], [208, 0.88], [260, 0.92], [312, 0.86],
   ];
@@ -202,6 +234,75 @@ export function DeityMedallion({ mark = "✦", gold = "#c69a55", size = 86 }) {
       >
         {mark}
       </text>
+    </svg>
+  );
+}
+
+/* ── The faith band ────────────────────────────────────────────────────
+   A thin strip of small repeating motifs, one tradition's worth of
+   ornament rather than the bulb-and-lantern frame everyone shares: tiny
+   diyas for a Hindu or Jain card, a crescent for a Muslim one, a cross
+   for a Christian one, a kirpan-like blade for a Sikh one, a dharma
+   wheel for a Buddhist one, and a plain diamond — the same one
+   RuleOrnament already uses — for interfaith, none, or anything the
+   interview did not recognise. This is the "other decorations" that
+   makes the card feel dressed for that couple's own wedding rather than
+   generically Indian regardless of faith. */
+function faithGlyph(key, gold) {
+  switch (key) {
+    case "hindu":
+    case "jain":
+      /* A small diya: a flame over a shallow bowl. */
+      return (
+        <g>
+          <path d="M0 -6 C1.8 -3.6 1.8 -1 0 1.4 C-1.8 -1 -1.8 -3.6 0 -6 Z" fill={gold} opacity=".9" />
+          <path d="M-5 1.4 Q0 5 5 1.4 L4 3.6 Q0 6.4 -4 3.6 Z" fill={gold} opacity=".55" />
+        </g>
+      );
+    case "muslim":
+      /* A crescent moon. */
+      return <path d="M2 -6 A6 6 0 1 0 2 6 A4.6 4.6 0 1 1 2 -6 Z" fill={gold} opacity=".9" />;
+    case "christian":
+    case "catholic":
+      return <path d="M-1 -6 h2 v4 h4 v2 h-4 v6 h-2 v-6 h-4 v-2 h4 z" fill={gold} opacity=".9" />;
+    case "sikh":
+      /* An abstract double-pointed blade, evoking a kirpan without
+         reproducing the Khanda emblem itself. */
+      return (
+        <path
+          d="M0 -7 L2.2 -1 L0 2 L-2.2 -1 Z M0 2 L1.3 7 L0 9 L-1.3 7 Z"
+          fill={gold}
+          opacity=".9"
+        />
+      );
+    case "buddhist":
+      /* A simple dharma wheel: a rim and three spokes. */
+      return (
+        <g fill="none" stroke={gold} strokeOpacity=".85" strokeWidth=".9">
+          <circle r="6" />
+          <line x1="-6" y1="0" x2="6" y2="0" />
+          <line x1="-3" y1="-5.2" x2="3" y2="5.2" />
+          <line x1="-3" y1="5.2" x2="3" y2="-5.2" />
+        </g>
+      );
+    default:
+      /* Interfaith, none, or unrecognised — the neutral diamond. */
+      return <path d="M0 -6 L5 0 L0 6 L-5 0 Z" fill={gold} opacity=".8" />;
+  }
+}
+
+export function FaithBand({ faith = "", gold = "#c69a55", count = 7 }) {
+  const key = String(faith || "").trim().toLowerCase();
+  const W = 200, H = 22, mid = H / 2;
+  const xs = Array.from({ length: count }, (_, i) => (W * (i + 0.5)) / count);
+  return (
+    <svg className="wc-faithband" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false">
+      <line x1="6" y1={mid} x2={W - 6} y2={mid} stroke={gold} strokeOpacity=".25" strokeWidth=".8" />
+      {xs.map((x, i) => (
+        <g key={i} transform={`translate(${x} ${mid})`}>
+          {faithGlyph(key, gold)}
+        </g>
+      ))}
     </svg>
   );
 }

@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { MapPin, Calendar, ChevronDown, Sparkles } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
-import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
+import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament, FaithBand } from "@/components/wedding/ornaments";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
 
@@ -720,10 +720,18 @@ function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, 
         <BulbFrame gold={gold} />
         <span className="wc-lantern-slot wc-lantern-l"><Lantern gold={gold} cord={40} /></span>
         <span className="wc-lantern-slot wc-lantern-r"><Lantern gold={gold} cord={58} /></span>
-        <span className="wc-floral-slot wc-floral-bl"><FloralCorner id="bl" bloom={bloom} deep={deepBloom} /></span>
-        <span className="wc-floral-slot wc-floral-br"><FloralCorner id="br" bloom={bloom} deep={deepBloom} /></span>
+        {/* The corner ornament follows the tradition too: a geometric
+            rosette for a Muslim wedding, the painted bloom for everyone
+            else — see the `variant` branch in FloralCorner. */}
+        <span className="wc-floral-slot wc-floral-bl">
+          <FloralCorner id="bl" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
+        </span>
+        <span className="wc-floral-slot wc-floral-br">
+          <FloralCorner id="br" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
+        </span>
 
         <div className="wc-inv-inner">
+          <FaithBand faith={faith} gold={gold} />
           <DeityMedallion mark={mark} gold={gold} />
           {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
 

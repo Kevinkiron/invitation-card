@@ -753,6 +753,7 @@
 .wc-floral-br { right: -8px; bottom: -10px; transform: rotate(8deg) scaleX(-1); }
 
 .wc-medallion { display: block; margin: 0 auto 14px; }
+.wc-faithband { display: block; width: min(200px, 62%); height: auto; margin: 0 auto 10px; opacity: .85; }
 .wc-ruleorn { display: block; width: min(220px, 70%); height: auto; margin: 22px auto; }
 .wc-inv-parents {
   font-family: 'Cormorant Garamond', serif;

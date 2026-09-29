@@ -14,9 +14,12 @@
    is what the sender actually taps next.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Shrink-wraps to .gc-stage's own width/aspect-ratio (app/greeting-card.css)
-   so .gc-envelope-stage's `inset: 0` lines up with it exactly, without
-   this file having to repeat that sizing itself. */
+/* Fills .gc-stage exactly (app/greeting-card.css) — same box, same 3/4.3
+   portrait shape — so the envelope is the ONLY thing visible before the
+   seal is tapped. It used to be a smaller landscape rectangle floating
+   over the stage, which left the card's own top and bottom peeking out
+   around it; now it's inset:0 at the stage's own aspect ratio, a full
+   opaque cover, and the card underneath is invisible until it opens. */
 .gc-envelope-wrap {
   position: relative;
   z-index: 5;
@@ -33,10 +36,8 @@
 .gc-envelope-stage > .gc-envelope { pointer-events: auto; }
 
 .gc-envelope {
-  position: relative;
-  width: 92%;
-  aspect-ratio: 1.5 / 1;
-  transform: rotate(-2deg);
+  position: absolute;
+  inset: 0;
   filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .35));
   transition: transform .9s ease, opacity .6s .5s ease;
   isolation: isolate;
@@ -46,32 +47,34 @@
   position: absolute; inset: 0;
   background: #dfd2b9;
   border: 1px solid #d8cbb3;
-  border-radius: 8px;
+  border-radius: 20px;
 }
 
 /* The front pocket: a rectangle with its top edge notched into a shallow
    V, so the flap (drawn separately, on top) reads as folded down into it
-   rather than just floating over a plain rectangle. */
+   rather than just floating over a plain rectangle. The notch sits lower
+   (28% of the *height*) now that the envelope is a tall portrait shape
+   rather than a wide landscape one, so the fold still looks proportional. */
 .gc-envelope-pocket {
   position: absolute; inset: 0;
   z-index: 3;
-  background: linear-gradient(150deg, #fbf6ea, #e9dfcc);
-  clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%);
-  border-radius: 7px;
+  background: linear-gradient(165deg, #fbf6ea, #e9dfcc);
+  clip-path: polygon(0 0, 50% 28%, 100% 0, 100% 100%, 0 100%);
+  border-radius: 20px;
   overflow: hidden;
 }
 .gc-envelope-pocket::after {
   content: '';
   position: absolute; inset: 0;
   background:
-    linear-gradient(35deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%),
-    linear-gradient(-35deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%);
+    linear-gradient(70deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%),
+    linear-gradient(-70deg, transparent 49.5%, rgba(204, 191, 166, .35) 50%, transparent 50.5%);
 }
 
 .gc-envelope-flap {
   position: absolute; inset: 0;
   z-index: 4;
-  clip-path: polygon(0 0, 100% 0, 50% 58%);
+  clip-path: polygon(0 0, 100% 0, 50% 34%);
   background: linear-gradient(#f9f3e6, #e8ddc8);
   transform-origin: center top;
   transition: transform 1s ease, filter 1s ease;
@@ -121,7 +124,7 @@
 
 .gc-envelope-seal {
   position: absolute;
-  left: 50%; top: 44%;
+  left: 50%; top: 34%;
   z-index: 6;
   transform: translate(-50%, -50%);
   width: 21%; aspect-ratio: 1;

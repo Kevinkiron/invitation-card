@@ -23,6 +23,11 @@
 .gc-envelope-wrap {
   position: relative;
   z-index: 5;
+  /* Gives .gc-stage's pointer-tilt transform (set inline by
+     GreetingCard.js, see app/greeting-card.css) somewhere 3D to rotate
+     into — the envelope itself never tilts, only the card once it's
+     revealed. */
+  perspective: 1400px;
 }
 
 .gc-envelope-stage {

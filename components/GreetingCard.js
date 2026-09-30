@@ -81,6 +81,47 @@ export default function GreetingCard({ tokens, preview = false }) {
     }
   }, [preview, started]);
 
+  /* ── The tilt — a fine-pointer flourish, never the whole story ──
+     The card leans toward the cursor and a soft glare tracks it, the same
+     "catching the light" trick real foil stationery has. It never runs in
+     the sender's own preview (nothing to tilt toward while they're
+     editing), on a touch device (no hover to ask for it), or with reduced
+     motion requested — the foil sweep and shimmer already carry the
+     premium feel with no pointer at all. */
+  const wrapRef = useRef(null);
+  const stageRef = useRef(null);
+  useEffect(() => {
+    if (preview) return;
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const wrap = wrapRef.current, stage = stageRef.current;
+    if (!wrap || !stage) return;
+
+    const onMove = (e) => {
+      const r = stage.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const rx = (0.5 - py) * 12;
+      const ry = (px - 0.5) * 16;
+      stage.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+      stage.style.setProperty("--gc-gx", `${px * 100}%`);
+      stage.style.setProperty("--gc-gy", `${py * 100}%`);
+      stage.classList.add("gc-tilting");
+    };
+    const onLeave = () => {
+      stage.style.transform = "";
+      stage.classList.remove("gc-tilting");
+    };
+
+    wrap.addEventListener("pointermove", onMove);
+    wrap.addEventListener("pointerleave", onLeave);
+    return () => {
+      wrap.removeEventListener("pointermove", onMove);
+      wrap.removeEventListener("pointerleave", onLeave);
+    };
+  }, [preview]);
+
   const style = {
     "--gc-bg": p.bg || "#1c1420",
     "--gc-surface": p.surface || "#241a2b",
@@ -112,14 +153,15 @@ export default function GreetingCard({ tokens, preview = false }) {
         </button>
       )}
 
-      <div className="gc-envelope-wrap">
-        <div className="gc-stage">
+      <div className="gc-envelope-wrap" ref={wrapRef}>
+        <div className="gc-stage" ref={stageRef}>
           <div className={`gc-card ${opened ? "gc-open" : ""}`}>
             <div className="gc-card-inner">
 
               {/* ── Front: the closed cover ── */}
               <div className="gc-face gc-face-front">
                 <span className="gc-front-glow" aria-hidden="true" />
+                <span className="gc-glare" aria-hidden="true" />
                 <Scene occasion={tokens?.occasion} accent={p.accent || "#c69a55"} palette={p} />
                 <div className="gc-front-frame" aria-hidden="true" />
                 <div className="gc-front-body">
@@ -136,6 +178,7 @@ export default function GreetingCard({ tokens, preview = false }) {
               {/* ── Back: the message, revealed on flip ── */}
               <div className="gc-face gc-face-back">
                 <div className="gc-back-motif" style={{ backgroundImage: `url("${motifUrl}")` }} aria-hidden="true" />
+                <span className="gc-glare" aria-hidden="true" />
                 {photoUrl && (
                   <div className="gc-photo">
                     <img src={photoUrl} alt="" />

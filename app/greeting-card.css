@@ -225,8 +225,8 @@
    Christmas. */
 .gc-back-wreath {
   position: relative; z-index: 2;
-  width: 182px; height: 182px;
-  margin: 0 auto 8px;
+  width: 216px; height: 216px;
+  margin: 0 auto 4px;
   display: flex; align-items: center; justify-content: center;
 }
 .gc-wreath-ring {
@@ -236,13 +236,16 @@
 }
 .gc-back-title {
   position: relative;
-  max-width: 108px;
+  max-width: 124px;
   font-family: 'Great Vibes', cursive;
-  font-size: clamp(26px, 7vw, 34px);
-  line-height: 1.05;
+  font-size: clamp(21px, 5.6vw, 25px);
+  line-height: 1.12;
   font-weight: 400;
   margin: 0;
   text-align: center;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
   background: linear-gradient(100deg, var(--gc-accent) 25%, #fff6dd 46%, var(--gc-accent) 72%);
   background-size: 220% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -250,8 +253,8 @@
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35));
 }
 .gc-back-badge {
-  position: absolute; right: -6px; bottom: 6px;
-  width: 52px; height: 52px;
+  position: absolute;
+  width: 46px; height: 46px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--gc-surface) 85%, #000 8%);
   border: 2px solid color-mix(in srgb, var(--gc-accent) 60%, transparent);
@@ -260,6 +263,8 @@
   display: flex; align-items: center; justify-content: center;
 }
 .gc-back-badge .gc-lottie { width: 84%; height: 84%; }
+.gc-back-badge-a { right: -12px; bottom: 10px; }
+.gc-back-badge-b { left: -10px; top: 14px; width: 40px; height: 40px; }
 
 .gc-back-to {
   position: relative; z-index: 2;

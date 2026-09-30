@@ -97,6 +97,16 @@ export default function GreetingCard({ tokens, preview = false }) {
   const motifUrl = cardMotif(tokens?.motif || "botanical", p.accent || "#c69a55");
   const Scene = getScene(tokens?.occasion);
   const badgeAnim = getLottie(getOccasion(tokens?.occasion)?.lottie);
+
+  // The wreath ring is a fixed size, but occasion names range from
+  // "Onam" to "Congratulations" — scale the title down for the longer
+  // ones so it stays inside the ring instead of overflowing it.
+  const occasionName = tokens?.occasionName || "A little something";
+  const titleFontSize =
+    occasionName.length >= 18 ? "16px" :
+    occasionName.length >= 14 ? "18px" :
+    occasionName.length >= 11 ? "21px" :
+    undefined;
   // Every occasion resolves to some Scene now (a bespoke one for
   // Christmas/Onam, GenericScene — motif + Lottie — for the rest), so the
   // closed cover always has something animated on it, never a flat motif.
@@ -154,7 +164,7 @@ export default function GreetingCard({ tokens, preview = false }) {
                     Christmas and left there. */}
                 <div className="gc-back-wreath">
                   <WreathRing accent={p.accent || "#c69a55"} deep={p.deep || "#8f294e"} id={tokens?.occasion || "x"} />
-                  <h2 className="gc-back-title">{tokens?.occasionName || "A little something"}</h2>
+                  <h2 className="gc-back-title" style={titleFontSize ? { fontSize: titleFontSize } : undefined}>{occasionName}</h2>
                   {badgeAnim && (
                     <div className="gc-back-badge">
                       <GreetingLottie src={badgeAnim.src} />

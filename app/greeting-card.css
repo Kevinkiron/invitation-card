@@ -79,8 +79,16 @@
   transform-style: preserve-3d;
   transition: transform .5s cubic-bezier(.2, .8, .2, 1);
 }
+/* In the create-page phone, the card keeps its real 3 : 4.3 shape and
+   sits centred in the screen. The wrapper needs an explicit width: since
+   the envelope was added, .gc-stage sits inside .gc-envelope-wrap, which
+   has no size of its own, so a percentage width here used to resolve
+   against nothing and the whole card collapsed to a 56 x 28px sliver —
+   the "preview not coming" bug. */
+.gc-preview .gc-envelope-wrap { width: 100%; }
 .gc-preview .gc-stage {
-  width: 100%; height: 100%; aspect-ratio: auto;
+  width: 100%; height: auto; aspect-ratio: 3 / 4.3;
+  box-sizing: border-box;
   padding: 14px;
 }
 .gc-card {

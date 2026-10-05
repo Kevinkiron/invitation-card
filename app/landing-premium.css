@@ -4,10 +4,11 @@
    The base landing styles were built to a SaaS-template brief: a pill
    badge with an icon above every section, a coral gradient word in every
    heading, rainbow icon cards. Together that reads as generated rather
-   than designed. This layer re-dresses the same markup as what Welcvm
-   actually sells — stationery: ivory paper, maroon ink, a little gold
-   foil, an editorial serif for the headlines (Cormorant Garamond, already
-   loaded in app/layout.js) and DM Sans kept for reading text.
+   than designed. This layer re-dresses the same markup in a more
+   editorial way — ivory paper, an editorial serif for the headlines
+   (Cormorant Garamond, already loaded in app/layout.js), DM Sans kept for
+   reading text — while keeping the brand's own coral -> orange gradient
+   (--w-grad) for every accent, as Kevin asked.
 
    The interactive pieces (spotlight, depth, tilt, magnetic buttons,
    progress line) are driven by components/landing/LandingFX.js; this
@@ -18,13 +19,18 @@
   --w-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   --w-paper: #fbf7f0;
   --w-wine: #6b1638;
+  /* the brand's own coral -> orange, kept from the original landing */
+  --w-coral: #DE6B5A;
+  --w-orange: #E8912D;
+  --w-coral-deep: #C4523F;
+  --w-grad: linear-gradient(125deg, #DE6B5A 0%, #E8912D 55%, #C4523F 100%);
 }
 
 /* ── reading progress ── */
 .w-progress {
   position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 300;
   transform-origin: 0 50%; transform: scaleX(0);
-  background: linear-gradient(90deg, #c9922f, #f3d79a, #c9922f);
+  background: linear-gradient(90deg, #DE6B5A, #E8912D, #C4523F);
   pointer-events: none;
 }
 
@@ -61,12 +67,12 @@
   display: inline-flex; align-items: center; gap: 12px;
   margin: 0 0 22px;
   font: 700 11.5px/1 'DM Sans', sans-serif; letter-spacing: .26em; text-transform: uppercase;
-  color: #a67a2a;
+  color: var(--w-coral-deep);
   animation: w-rise .8s var(--ease, cubic-bezier(.19, 1, .22, 1)) both;
 }
 .w-hero-eyebrow::before {
   content: ""; width: 34px; height: 1px;
-  background: linear-gradient(90deg, transparent, #c9922f);
+  background: linear-gradient(90deg, transparent, var(--w-coral));
 }
 
 .w-page .w-h1 {
@@ -91,7 +97,13 @@
 /* the occasion that changes */
 .w-h1 em {
   font-style: italic; font-weight: 500;
-  color: var(--w-wine);
+  color: var(--w-coral);
+}
+.w-rot-w {
+  background: var(--w-grad); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  padding-right: .06em;
 }
 .w-rot { display: inline-grid; vertical-align: bottom; position: relative; }
 .w-rot-w {
@@ -105,7 +117,7 @@
 .w-rot-w { position: relative; }
 .w-rot-w::after {
   content: ""; position: absolute; left: 0; right: 2%; bottom: .02em; height: .14em;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'><path d='M2 9 C 50 2, 120 2, 198 7' fill='none' stroke='%23c9922f' stroke-width='3' stroke-linecap='round'/></svg>") no-repeat left center / 100% 100%;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'><path d='M2 9 C 50 2, 120 2, 198 7' fill='none' stroke='%23E8912D' stroke-width='3' stroke-linecap='round'/></svg>") no-repeat left center / 100% 100%;
   transform: scaleX(0); transform-origin: 0 50%;
   transition: transform .9s cubic-bezier(.65, 0, .35, 1) .25s;
 }
@@ -115,16 +127,9 @@
 .w-page .w-hero-sub { font-size: clamp(16px, 1.6vw, 18.5px); color: #6f5a63; }
 
 /* ── buttons: maroon ink with a gold hairline, not coral ── */
-.w-page .btn-primary {
-  background: linear-gradient(135deg, #7a1d43 0%, #4a0d2e 100%);
-  box-shadow: 0 10px 30px -10px rgba(74, 13, 46, .55), inset 0 0 0 1px rgba(243, 215, 154, .35);
-}
-.w-page .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #8a2350 0%, #5a1238 100%);
-  box-shadow: 0 16px 40px -12px rgba(74, 13, 46, .6), inset 0 0 0 1px rgba(243, 215, 154, .55);
-}
+
 .w-page .btn-ghost { border-color: rgba(26, 15, 20, .18); color: var(--w-ink); background: rgba(255, 255, 255, .55); backdrop-filter: blur(6px); }
-.w-page .btn-ghost:hover { border-color: var(--w-wine); color: var(--w-wine); }
+.w-page .btn-ghost:hover { border-color: var(--w-coral); color: var(--w-coral-deep); }
 .w-page [data-magnetic] { transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .3s, background .25s; will-change: transform; }
 
 .w-page .w-as b { font-family: var(--w-serif); font-size: 19px; font-weight: 600; }
@@ -134,18 +139,18 @@
 .w-herovis [data-depth] { transition: transform .5s cubic-bezier(.2, .8, .2, 1); will-change: transform; }
 .w-orbit {
   position: absolute; left: 50%; top: 42%; z-index: 0; pointer-events: none;
-  border-radius: 50%; border: 1px solid rgba(201, 146, 47, .28);
+  border-radius: 50%; border: 1px solid rgba(232, 145, 45, .3);
   transform: translate(-50%, -50%);
 }
 .w-orbit-1 { width: min(560px, 120%); aspect-ratio: 1; }
-.w-orbit-2 { width: min(430px, 92%); aspect-ratio: 1; border-style: dashed; border-color: rgba(201, 146, 47, .22); }
+.w-orbit-2 { width: min(430px, 92%); aspect-ratio: 1; border-style: dashed; border-color: rgba(222, 107, 90, .25); }
 .w-orbit i { /* a small gold bead travelling the outer ring */
   position: absolute; inset: 0; border-radius: 50%;
   animation: w-orbit-spin 22s linear infinite;
 }
 .w-orbit i::before {
   content: ""; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px;
-  border-radius: 50%; background: #e4c77e; box-shadow: 0 0 12px 2px rgba(228, 199, 126, .8);
+  border-radius: 50%; background: #E8912D; box-shadow: 0 0 12px 2px rgba(232, 145, 45, .7);
 }
 .w-orbit-2 i { animation-duration: 15s; animation-direction: reverse; }
 @keyframes w-orbit-spin { to { transform: rotate(360deg); } }
@@ -160,14 +165,14 @@
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, .9);
-  box-shadow: 0 18px 40px -18px rgba(59, 10, 42, .35), 0 0 0 1px rgba(201, 146, 47, .12);
+  box-shadow: 0 18px 40px -18px rgba(196, 82, 63, .35), 0 0 0 1px rgba(222, 107, 90, .12);
   animation: w-chip-bob 6s ease-in-out infinite, w-chip-in .9s cubic-bezier(.19, 1, .22, 1) both;
   white-space: nowrap;
 }
 .w-chip i {
   display: grid; place-items: center; flex-shrink: 0;
   width: 30px; height: 30px; border-radius: 10px;
-  background: linear-gradient(135deg, #7a1d43, #4a0d2e); color: #f3d79a;
+  background: var(--w-grad); color: #fff;
 }
 .w-chip b { display: block; font: 700 12.5px/1.2 'DM Sans', sans-serif; color: var(--w-ink); }
 .w-chip small { display: block; font: 500 11px/1.3 'DM Sans', sans-serif; color: var(--w-muted); }
@@ -187,9 +192,9 @@
    ══════════════════════════════════════════════════════════════════════ */
 .w-marquee {
   position: relative; overflow: hidden;
-  background: #3b0a2a;
-  color: #f6e7c8;
-  border-block: 1px solid rgba(228, 199, 126, .35);
+  background: var(--w-grad);
+  color: #fff;
+  border-block: 1px solid rgba(255, 255, 255, .25);
   padding: 20px 0;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
           mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
@@ -204,7 +209,7 @@
   font: italic 500 clamp(26px, 3.2vw, 40px)/1 var(--w-serif);
   white-space: nowrap;
 }
-.w-marquee-track span::after { content: "✦"; font-style: normal; font-size: .45em; color: #e4c77e; }
+.w-marquee-track span::after { content: "✦"; font-style: normal; font-size: .45em; color: #fff3e3; opacity: .85; }
 @keyframes w-marquee { to { transform: translateX(-50%); } }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -212,7 +217,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 .w-page .w-sec-badge {
   background: none !important; border: 0 !important; padding: 0 !important;
-  color: #a67a2a !important;
+  color: var(--w-coral-deep) !important;
   font: 700 11.5px/1 'DM Sans', sans-serif; letter-spacing: .26em; text-transform: uppercase;
   gap: 12px;
 }
@@ -231,11 +236,11 @@
 }
 .w-page .w-h1 .highlight,
 .w-page .w-h2 .highlight {
-  background: none;
-  -webkit-text-fill-color: currentColor;
-  color: var(--w-wine);
+  background: var(--w-grad);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
   font-style: italic;
-  animation: none;
+  padding-right: .06em;
 }
 .w-page .w-lede { color: #6f5a63; }
 
@@ -250,7 +255,7 @@
   background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .45), transparent 60%);
   opacity: 0; transition: opacity .3s ease; mix-blend-mode: soft-light;
 }
-.w-page .w-ecard.is-tilting { box-shadow: 0 30px 60px -28px rgba(59, 10, 42, .45); }
+.w-page .w-ecard.is-tilting { box-shadow: 0 30px 60px -28px rgba(196, 82, 63, .4); }
 .w-page .w-ecard.is-tilting::after { opacity: 1; }
 .w-page .w-ecard h3 { font-family: var(--w-serif); font-size: 23px; font-weight: 600; letter-spacing: -.005em; }
 
@@ -261,14 +266,14 @@
 .w-page .w-truth::before {
   content: "0" counter(truth);
   display: block; margin-bottom: 14px;
-  font: italic 500 30px/1 var(--w-serif); color: #c9922f;
+  font: italic 500 30px/1 var(--w-serif); color: var(--w-coral);
 }
 .w-page .w-truth-t { font-family: var(--w-serif); font-size: 22px; font-weight: 600; }
 .w-page .w-truth-d { margin: 0; max-width: none; }
 
 /* feature + step cards share the serif */
 .w-page .w-why h3, .w-page .w-step h3 { font-family: var(--w-serif); font-size: 22px; font-weight: 600; }
-.w-page .w-why-ic { background: none; border: 1px solid rgba(201, 146, 47, .4); color: #a67a2a; }
+.w-page .w-why-ic { background: rgba(222, 107, 90, .08); border: 1px solid rgba(222, 107, 90, .3); color: var(--w-coral-deep); }
 
 /* ══════════════════════════════════════════════════════════════════════
    SHARING + "PAPER MEETS PHONE" — these sections' styles lived only in

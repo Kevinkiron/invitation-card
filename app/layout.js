@@ -3,8 +3,13 @@ import "./responsive.css";
 import "./invitation.css";
 import "./wedding-cinema.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { SITE_URL } from "@/lib/share";
 
 export const metadata = {
+  /* Turns the relative preview-image paths into the absolute URLs
+     WhatsApp needs (see lib/share.js). */
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Welcvm",
   title: "Welcvm Invites | Digital Wedding Invitations for Indian Celebrations",
   description:
     "Create beautiful digital wedding invitations for Indian weddings — Haldi, Mehendi, Sangeet, Vivaah and Reception. Personalised guest links, live RSVP tracking and WhatsApp delivery.",
@@ -16,11 +21,14 @@ export const metadata = {
     "online wedding invitation india",
   ],
   openGraph: {
-    title: "Welcvm Invites | Digital Wedding Invitations",
+    title: "Welcvm — Invitations made with love 💌",
     description:
-      "Design by chatting with AI. Send every guest their own link. Track RSVPs live.",
+      "Beautiful digital invitations for weddings, birthdays and housewarmings, plus animated greeting cards. One link on WhatsApp, RSVPs tracked live.",
     type: "website",
+    siteName: "Welcvm",
+    url: SITE_URL,
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport = {

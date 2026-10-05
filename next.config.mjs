@@ -31,5 +31,16 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+
+  /* The link-preview pictures (lib/og.js) read their fonts from
+     assets/fonts at runtime; make sure those files travel with the
+     serverless functions that draw them. */
+  experimental: {
+    outputFileTracingIncludes: {
+      "/opengraph-image": ["./assets/fonts/**"],
+      "/i/[token]/opengraph-image": ["./assets/fonts/**"],
+      "/g/[token]/opengraph-image": ["./assets/fonts/**"],
+    },
+  },
 };
 export default nextConfig;

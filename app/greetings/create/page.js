@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Send, Check, CreditCard, ShieldCheck, Loader2, Paperclip, Music,
-  X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink,
+  X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink, MessageCircle,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
@@ -17,6 +17,7 @@ import { OCCASIONS, getOccasion } from "@/lib/greetings/occasions";
 import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/lib/design/greeting-tokens";
 import { uploadPhoto, describeFile } from "@/lib/photos";
 import { uploadAudio, describeAudioFile } from "@/lib/music/upload";
+import { whatsappHref, SITE_URL } from "@/lib/share";
 import "@/app/greetings.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -246,7 +247,11 @@ export default function GreetingCreatePage() {
   if (!ready || !session) return <Loading />;
 
   const p = tokens.palette || {};
-  const shareUrl = result ? `https://www.welcvm.com/g/${result.slug}` : "";
+  const shareUrl = result ? `${SITE_URL}/g/${result.slug}` : "";
+  /* The same message the card's link preview is written to sit under. */
+  const waLink = result
+    ? whatsappHref({ design_config: { kind: "greeting", tokens } }, shareUrl)
+    : "";
 
   return (
     <>
@@ -335,6 +340,10 @@ export default function GreetingCreatePage() {
                     <Copy size={13} /> {copied ? "Copied" : "Copy"}
                   </button>
                 </div>
+
+<a href={waLink} target="_blank" rel="noreferrer" className="btn btn-lg" style={{ width: "100%", justifyContent: "center", textDecoration: "none", background: "#25D366", color: "#fff", border: "none", marginBottom: 8 }}>
+                  <MessageCircle size={16} /> Send on WhatsApp
+                </a>
 
                 <a href={shareUrl} target="_blank" rel="noreferrer" className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}>
                   <ExternalLink size={16} /> Open the card

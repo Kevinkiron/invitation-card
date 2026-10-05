@@ -1,5 +1,6 @@
 "use client";
 
+import { whatsappHref } from "@/lib/share";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -99,7 +100,7 @@ export default function ManagePage() {
 
   /* One address, the same for everybody. */
   const link = `${origin}/i/${inv.slug}`;
-  const waText = encodeURIComponent(`${inv.title}\n\nYou are invited. Open the invitation and let us know if you can come:\n${link}`);
+  const waHref = whatsappHref(inv, link);
   const published = inv.status === "published";
 
   return (
@@ -167,7 +168,7 @@ export default function ManagePage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <a className="btn btn-gold" href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer">
+                      <a className="btn btn-gold" href={waHref} target="_blank" rel="noreferrer">
                         <Send size={14} /> Share on WhatsApp
                       </a>
                       <a className="btn btn-ghost" href={link} target="_blank" rel="noreferrer">

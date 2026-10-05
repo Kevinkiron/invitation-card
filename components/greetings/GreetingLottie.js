@@ -46,35 +46,37 @@ function loadDotLottie() {
 
 export default function GreetingLottie({ src, className = "", style, loop = true, speed = 1 }) {
   const ref = useRef(null);
-  /* Starts true so the server-rendered markup and the client's first
-     render match (avoiding a hydration mismatch) — the reduced-motion
-     check itself needs `window` and only runs after mount, in the effect
-     below. Every other animated scene in this product turns itself off
-     under prefers-reduced-motion (see app/greeting-scenes.css); a canvas
-     animation looping forever is exactly the kind of motion that setting
-     asks a site to skip. The card still has its motif/gradient
-     background without this component rendering at all. */
-  const [enabled, setEnabled] = useState(true);
+  /* `animate` starts true so the server-rendered markup and the client's
+     first render match (no hydration mismatch); the reduced-motion check
+     needs `window`, so it runs after mount, in the effect below. Under
+     prefers-reduced-motion the animation still renders, but holds still
+     on its first frame instead of looping — the characters on the inside
+     of the card (components/greetings/IllustratedCard.js) are the
+     picture, so hiding them outright would leave an empty corner. */
+  const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
     loadDotLottie();
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setEnabled(!mq.matches);
-    const onChange = () => setEnabled(!mq.matches);
+    setAnimate(!mq.matches);
+    const onChange = () => setAnimate(!mq.matches);
     mq.addEventListener?.("change", onChange);
     return () => mq.removeEventListener?.("change", onChange);
   }, []);
 
-  if (!src || !enabled) return null;
+  if (!src) return null;
 
   return (
     <dotlottie-wc
       ref={ref}
       src={src}
-      autoplay="true"
-      loop={loop ? "true" : "false"}
+      autoplay={animate ? "true" : undefined}
+      loop={animate && loop ? "true" : undefined}
       speed={String(speed)}
-      className={`gc-lottie ${className}`}
+      // `class`, not `className`: React 18 passes props to custom
+      // elements as literal attribute names, so className would land as
+      // an attribute called "className" and no CSS class would apply.
+      class={`gc-lottie ${className}`.trim()}
       style={{ display: "block", pointerEvents: "none", ...style }}
       aria-hidden="true"
     />

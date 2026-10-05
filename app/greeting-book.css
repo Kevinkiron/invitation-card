@@ -34,6 +34,31 @@
   border-radius: 10px;
 }
 .cb-back { transform: rotateY(180deg); }
+
+/* ── Card stock: each leaf is a real sheet with thickness ──
+   The two faces sit 1.5px either side of the leaf's middle, and
+   .cb-edge is the gilded edge between them, standing at right angles to
+   the page — invisible face-on, a bright gold sliver while a page is
+   mid-turn, exactly as a gilt-edged card catches the light. */
+.cb-leaf > .cb-front { transform: translateZ(1.5px); }
+.cb-leaf > .cb-back  { transform: rotateY(180deg) translateZ(1.5px); }
+.cb-edge {
+  position: absolute; top: 0; bottom: 0; right: -1.5px; width: 3px;
+  transform: rotateY(90deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(90, 60, 20, .35) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, #b8862f, #f6e2a0 30%, #c18c36 55%, #fff1c4 75%, #a8752a);
+}
+
+/* gilded edges round every face: a thin foil line, drawn as a ring
+   (gradient clipped to the border) so it follows the rounded corners */
+.cb-face::after, .cb-right::before {
+  content: ""; position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  border-radius: inherit; padding: 2px;
+  background: linear-gradient(135deg, #a8752a, #f6e2a0 25%, #c08b34 45%, #fff2c8 62%, #b27d2b 80%, #ecd08a);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
 .cb-paperback { background: color-mix(in srgb, var(--cb-paper) 90%, #8a6a48); }
 
 /* ── Phones: one page at a time ── */
@@ -41,15 +66,26 @@
   position: absolute; inset: 0;
   transform-style: preserve-3d;
   transform-origin: 0 50%;
+  transform: translateZ(calc(var(--k, 0) * -4px));
   transition: transform var(--cb-turn) var(--cb-ease), visibility 0s linear 0s;
 }
 .cb-stack .cb-leaf .cb-front { box-shadow: 0 26px 50px -22px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .25); }
 .cb-stack .cb-leaf.is-turned {
-  transform: rotateY(-178deg);
+  transform: translateZ(calc(var(--k, 0) * -4px)) rotateY(-178deg);
   visibility: hidden;
   transition: transform var(--cb-turn) var(--cb-ease), visibility 0s linear var(--cb-turn);
 }
 .cb-instant .cb-leaf { transition: none !important; }
+/* the gilt edges of the sheets still underneath, peeking out at the
+   right and bottom of the page you are on */
+.cb-stack.has-under .cb-book::before {
+  content: ""; position: absolute; inset: 0; border-radius: 10px;
+  transform: translateZ(-14px);
+  box-shadow:
+    2px 2px 0 #f3e8cf, 3px 3px 0 #c99a3e,
+    5px 5px 0 #efe2c4, 6px 6px 0 #b8862f,
+    8px 12px 22px rgba(0, 0, 0, .35);
+}
 
 /* ── Wide screens: the opening card ── */
 .cb-spread .cb-book {
@@ -118,23 +154,50 @@
     radial-gradient(120% 80% at 50% 50%, transparent 40%, rgba(0, 0, 0, .45) 100%),
     linear-gradient(180deg, rgba(12, 9, 7, .72) 0%, rgba(12, 9, 7, .2) 36%, rgba(12, 9, 7, .08) 58%, rgba(12, 9, 7, .78) 100%);
 }
-.cb-cover-frame {
-  position: absolute; inset: 3.4cqw; border-radius: 1.2cqw; pointer-events: none;
-  border: 1px solid rgba(240, 214, 150, .8);
-  box-shadow: inset 0 0 0 1.1cqw transparent, inset 0 0 0 calc(1.1cqw + 1px) rgba(240, 214, 150, .4);
+.cb-foil-frame {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .55));
 }
+/* a printed photograph on linen card: fine weave over the picture */
+.cb-cover::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .035) 0 1px, transparent 1px 4px);
+  mix-blend-mode: overlay;
+}
+/* light catching the foil: a soft band of light that sweeps the cover */
+.cb-cover::after {
+  content: ""; position: absolute; inset: -20%; z-index: 3; pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 244, 210, .28) 50%, transparent 58%);
+  transform: translateX(-60%);
+  animation: cb-glint 7s ease-in-out infinite 1.2s;
+  mix-blend-mode: screen;
+}
+@keyframes cb-glint { 0%, 55% { transform: translateX(-60%); } 85%, 100% { transform: translateX(60%); } }
+.cb-cover > * { z-index: 2; }
+.cb-cover-photo, .cb-cover-shade { z-index: 0; }
 .cb-cover-title { position: absolute; top: 9%; left: 8%; right: 8%; text-align: center; }
 .cb-cover-title h2 {
   margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 500;
   line-height: .98; letter-spacing: -.01em;
-  background: linear-gradient(180deg, #fff6d6 0%, #f1d27e 48%, #c99a3a 100%);
+  /* hot-foil gold: a metallic gradient wider than the word, drifting
+     slowly so the highlight moves across the letters */
+  background: linear-gradient(105deg, #a8752a 0%, #f7e3a1 16%, #c9963a 30%, #fff5d2 44%, #b07b25 58%, #f2d68a 74%, #a87425 88%, #f7e3a1 100%);
+  background-size: 260% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 .5cqw 1cqw rgba(0, 0, 0, .55));
+  filter: drop-shadow(0 .25cqw 0 rgba(70, 40, 10, .55)) drop-shadow(0 .8cqw 1.4cqw rgba(0, 0, 0, .5));
+  animation: cb-foil 9s ease-in-out infinite alternate;
 }
+@keyframes cb-foil { from { background-position: 100% 0; } to { background-position: 0 0; } }
 .cb-cover-title p {
   margin: 2.6cqw 0 0; font: 700 2.7cqw/1.3 'Lato', sans-serif;
   letter-spacing: .32em; text-transform: uppercase; color: #f3e2b3;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+}
+.cb-cover-title p::before, .cb-cover-title p::after {
+  content: ""; display: inline-block; width: 5cqw; height: 1px; vertical-align: middle;
+  margin: 0 2cqw .4cqw; background: linear-gradient(90deg, transparent, #e9c977, transparent);
 }
 .cb-cover-cta {
   position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%);
@@ -159,8 +222,12 @@
 .cb-page { position: absolute; inset: 0; background: var(--cb-paper); color: var(--cb-text); text-align: center; }
 .cb-page::before {
   content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .2  0 0 0 .5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  opacity: .16; mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(130% 90% at 50% 40%, transparent 55%, rgba(120, 80, 40, .14) 100%),
+    repeating-linear-gradient(0deg, rgba(110, 80, 50, .07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(110, 80, 50, .06) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .2  0 0 0 .5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: .55; mix-blend-mode: multiply;
 }
 .cb-frame {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;

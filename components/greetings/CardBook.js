@@ -59,12 +59,35 @@ function useWide(disabled) {
   return wide;
 }
 
+/* A small foil flourish for each inside corner of the cover frame,
+   drawn for the top-left and mirrored for the other three. */
+const FLOURISH =
+  "M16 40 C16 26 26 16 40 16 M22 52 C22 34 34 22 52 22 M26 26 C34 30 38 36 38 44 C38 50 33 53 29 51 C25 49 26 44 30 44 " +
+  "M26 26 C30 34 36 38 44 38 C50 38 53 33 51 29 C49 25 44 26 44 30 M58 22 L70 22 M22 58 L22 70";
+
 function Cover({ words, photo, alt, onOpen, label }) {
   return (
     <div className="cb-cover">
       {photo && <img className="cb-cover-photo" src={photo} alt={alt} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
       <span className="cb-cover-shade" aria-hidden="true" />
-      <span className="cb-cover-frame" aria-hidden="true" />
+      <svg className="cb-foil-frame" viewBox="0 0 300 430" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="cb-foil" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#a8752a" /><stop offset=".22" stopColor="#f6e2a0" /><stop offset=".4" stopColor="#c08b34" />
+            <stop offset=".58" stopColor="#fff2c8" /><stop offset=".78" stopColor="#b27d2b" /><stop offset="1" stopColor="#ecd08a" />
+          </linearGradient>
+        </defs>
+        <rect x="11" y="11" width="278" height="408" rx="4" fill="none" stroke="url(#cb-foil)" strokeWidth="1.6" />
+        <rect x="16" y="16" width="268" height="398" rx="2.5" fill="none" stroke="url(#cb-foil)" strokeWidth=".7" />
+        {[[0, 0, 1, 1], [300, 0, -1, 1], [300, 430, -1, -1], [0, 430, 1, -1]].map(([x, y, sx, sy], i) => (
+          <path
+            key={i}
+            transform={`translate(${x} ${y}) scale(${sx} ${sy})`}
+            d={FLOURISH}
+            fill="none" stroke="url(#cb-foil)" strokeWidth="1.3" strokeLinecap="round"
+          />
+        ))}
+      </svg>
       {[[14, 22, 0], [82, 30, 1.1], [24, 64, 2], [76, 58, .5], [50, 40, 1.6], [88, 78, 2.6], [12, 84, .9]].map(([x, y, d], i) => (
         <i key={i} className="cb-spark" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${d}s` }} aria-hidden="true" />
       ))}
@@ -197,6 +220,7 @@ export default function CardBook({
           <div className={`cb-right ${page ? "is-shown" : ""}`}>{wishEl}</div>
           <div className="cb-leaf cb-spine-leaf">
             <div className="cb-face cb-front">{coverEl}</div>
+            <i className="cb-edge" aria-hidden="true" />
             <div className={`cb-face cb-back ${page ? "is-shown" : ""}`}>{verseEl}</div>
           </div>
         </div>
@@ -207,16 +231,17 @@ export default function CardBook({
 
   const pages = [coverEl, verseEl, wishEl];
   return (
-    <div className={`cb cb-stack ${ready ? "is-ready" : ""} ${preview ? "cb-instant" : ""}`} style={style}>
+    <div className={`cb cb-stack ${ready ? "is-ready" : ""} ${preview ? "cb-instant" : ""} ${page < 2 ? "has-under" : ""}`} style={style}>
       <div className="cb-book" onPointerDown={onDown} onPointerUp={onUp}>
         {pages.map((el, k) => (
           <div
             key={k}
             className={`cb-leaf ${k < page ? "is-turned" : ""} ${k === page ? "is-shown" : ""}`}
-            style={{ zIndex: 10 - k }}
+            style={{ zIndex: 10 - k, "--k": k }}
             aria-hidden={k === page ? undefined : "true"}
           >
             <div className="cb-face cb-front">{el}</div>
+            <i className="cb-edge" aria-hidden="true" />
             <div className="cb-face cb-back cb-paperback" />
           </div>
         ))}

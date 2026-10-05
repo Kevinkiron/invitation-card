@@ -6,6 +6,8 @@ import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament, FaithBand } from "@/components/wedding/ornaments";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
+import GreetingLottie from "@/components/greetings/GreetingLottie";
+import { getLottie } from "@/lib/greetings/lottie";
 
 /* ══════════════════════════════════════════════════════════════════════
    WEDDING CINEMA — Cinematic scroll-driven wedding invitation
@@ -701,6 +703,35 @@ const FAITH_MARK = {
   none: "✦",
 };
 
+/* Animated decoration on the invitation card, by tradition, in place of
+   the drawn flowers: a Ganesha above the names and a kalash and diya in
+   the corners for a Hindu wedding, a dove and a bride and groom for a
+   Christian one, a mosque in each corner and real hanging lanterns for a
+   Muslim one. Each key is a free LottieFiles animation in
+   lib/greetings/lottie.js. A tradition with nothing suitable on
+   LottieFiles yet (Sikh, Buddhist) or no answer at all keeps the drawn
+   blooms and medallion — better a good drawing than a wrong animation.
+   `mirror` flips the right-hand corner when both corners are the same
+   animation; never set it on anything carrying a sacred mark (the
+   kalash's swastika must not be reversed). */
+const FAITH_DECOR = {
+  hindu:     { medallion: "ganesha", corners: ["kalash", "hangingLamp"] },
+  jain:      { corners: ["kalash", "hangingLamp"] },
+  christian: { corners: ["dove", "weddingCouple"] },
+  catholic:  { corners: ["dove", "weddingCouple"] },
+  muslim:    { corners: ["mosque", "mosque"], mirror: true, lanterns: "ramadanLanterns" },
+};
+
+function DecorLottie({ name, className }) {
+  const anim = getLottie(name);
+  if (!anim) return null;
+  return (
+    <span className={className} aria-hidden="true">
+      <GreetingLottie src={anim.src} />
+    </span>
+  );
+}
+
 function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, dateRevealed, palette }) {
   const [ref, vis] = useReveal();
   const faith = String(invitation.religion || "").trim().toLowerCase();
@@ -711,28 +742,49 @@ function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, 
      reads as a maroon blob. Lift the palette's own primary towards pink
      for the face of the petal and keep the original for its shadow. */
   const bloom = lighten(deepBloom, 0.42);
+  const decor = FAITH_DECOR[faith] || null;
 
   return (
     <section ref={ref} className="wc-scene" id="families" data-chapter="The families">
-      <div className={`wc-inv-card wc-fade ${vis ? "wc-visible" : ""}`}>
+      <div className={`wc-inv-card wc-fade ${vis ? "wc-visible" : ""} ${decor?.corners ? "wc-inv-animated" : ""}`}>
         {/* The frame: festoon bulbs all the way round, lanterns hung
             inside them, blooms in two corners. All drawn, no assets. */}
         <BulbFrame gold={gold} />
-        <span className="wc-lantern-slot wc-lantern-l"><Lantern gold={gold} cord={40} /></span>
-        <span className="wc-lantern-slot wc-lantern-r"><Lantern gold={gold} cord={58} /></span>
-        {/* The corner ornament follows the tradition too: a geometric
-            rosette for a Muslim wedding, the painted bloom for everyone
-            else — see the `variant` branch in FloralCorner. */}
-        <span className="wc-floral-slot wc-floral-bl">
-          <FloralCorner id="bl" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
-        </span>
-        <span className="wc-floral-slot wc-floral-br">
-          <FloralCorner id="br" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
-        </span>
+        {decor?.lanterns ? (
+          <>
+            <DecorLottie name={decor.lanterns} className="wc-anim-lantern wc-anim-lantern-l" />
+            <DecorLottie name={decor.lanterns} className="wc-anim-lantern wc-anim-lantern-r" />
+          </>
+        ) : (
+          <>
+            <span className="wc-lantern-slot wc-lantern-l"><Lantern gold={gold} cord={40} /></span>
+            <span className="wc-lantern-slot wc-lantern-r"><Lantern gold={gold} cord={58} /></span>
+          </>
+        )}
+        {/* The corners follow the tradition: animated decoration from
+            FAITH_DECOR where there is one, otherwise the drawn blooms
+            (a geometric rosette variant for a Muslim card). */}
+        {decor?.corners ? (
+          <>
+            <DecorLottie name={decor.corners[0]} className="wc-anim-corner wc-anim-bl" />
+            <DecorLottie name={decor.corners[1]} className={`wc-anim-corner wc-anim-br ${decor.mirror ? "wc-anim-mirror" : ""}`} />
+          </>
+        ) : (
+          <>
+            <span className="wc-floral-slot wc-floral-bl">
+              <FloralCorner id="bl" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
+            </span>
+            <span className="wc-floral-slot wc-floral-br">
+              <FloralCorner id="br" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
+            </span>
+          </>
+        )}
 
         <div className="wc-inv-inner">
           <FaithBand faith={faith} gold={gold} />
-          <DeityMedallion mark={mark} gold={gold} />
+          {decor?.medallion
+            ? <DecorLottie name={decor.medallion} className="wc-anim-medallion" />
+            : <DeityMedallion mark={mark} gold={gold} />}
           {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
 
           {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}

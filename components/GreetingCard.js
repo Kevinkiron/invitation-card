@@ -199,7 +199,16 @@ export default function GreetingCard({ tokens, preview = false }) {
         </div>
 
         {!preview && (
-          <Envelope to={to} from={from} stamp={tokens?.stamp} opening={envelopeOpening} onOpen={openEnvelope} />
+          <Envelope
+            to={to}
+            from={from}
+            stamp={tokens?.stamp}
+            occasion={tokens?.occasion}
+            occasionName={tokens?.occasionName}
+            palette={p}
+            opening={envelopeOpening}
+            onOpen={openEnvelope}
+          />
         )}
       </div>
     </div>

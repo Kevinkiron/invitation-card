@@ -9,8 +9,8 @@ import { photo, photoAlt } from "@/lib/greetings/photos";
    Used to be a flat colour gradient with a parametric SVG motif blended
    over it (lib/design/showcase.js's cardMotif) — no actual photo of
    Christmas, Diwali, a birthday, anything. This renders that occasion's
-   real photograph (lib/greetings/photos.js, downloaded at build time by
-   scripts/fetch-greeting-photos.mjs) instead, and falls back to exactly
+   real photograph (lib/greetings/photos.js, served from Unsplash's image
+   CDN) instead, and falls back to exactly
    that old gradient+motif background if the photo is missing or fails to
    load — a client component only because that fallback needs state.
    ══════════════════════════════════════════════════════════════════════ */

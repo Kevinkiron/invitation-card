@@ -167,3 +167,36 @@
 }
 /* Same drawer link rule also flattened the drawer's Create Invite button. */
 .w-nav-drawer > a.btn { padding: 11px 22px; color: #fff; font-size: 14px; }
+
+/* ── Background picker (chat step on /greetings/create) ── */
+.g-bg-picker { display: flex; flex-direction: column; gap: 12px; }
+.g-bg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.g-bg-swatch {
+  position: relative; aspect-ratio: 1 / 1.15; border-radius: 14px; cursor: pointer;
+  border: 2px solid transparent; padding: 0; overflow: hidden;
+  box-shadow: 0 6px 14px -8px rgba(40, 20, 10, .5), inset 0 0 0 1px rgba(255, 255, 255, .08);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  display: flex; align-items: flex-end; justify-content: center;
+  font-family: inherit;
+}
+.g-bg-swatch:hover { transform: translateY(-2px); }
+.g-bg-swatch span {
+  width: 100%; padding: 14px 4px 6px; font-size: 10.5px; font-weight: 700; line-height: 1.15;
+  color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .28));
+}
+.g-bg-swatch.is-light span { color: #3b2c26; text-shadow: none; background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .45)); }
+.g-bg-swatch.is-on { border-color: #DE6B5A; box-shadow: 0 0 0 3px rgba(222, 107, 90, .25), 0 8px 18px -8px rgba(40, 20, 10, .55); }
+.g-bg-swatch.is-on::after {
+  content: "✓"; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%;
+  background: #DE6B5A; color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
+}
+.g-bg-custom {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px;
+  background: #fff; border: 1px solid rgba(60, 40, 20, .1);
+}
+.g-bg-custom-label { flex: 1; font-size: 12.5px; font-weight: 700; }
+.g-bg-dot { position: relative; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+.g-bg-dot input { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); border: 0; padding: 0; cursor: pointer; }
+.g-bg-arrow { color: #8c7b70; font-size: 13px; }
+.g-bg-preview { width: 44px; height: 30px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }

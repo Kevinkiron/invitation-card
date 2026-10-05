@@ -5,6 +5,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import ParticleField from "@/components/greetings/ParticleField";
 import Envelope from "@/components/greetings/Envelope";
 import CardBook from "@/components/greetings/CardBook";
+import { backgroundCss, backgroundIsLight } from "@/lib/greetings/backgrounds";
 import "@/app/greeting-card.css";
 import "@/app/greeting-envelope.css";
 
@@ -77,7 +78,11 @@ export default function GreetingCard({ tokens, preview = false }) {
     timers.current.push(setTimeout(() => setOpened(true), quick ? 0 : 1500));
   }, [envelopeOpening, started]);
 
+  /* The sender's chosen gradient (lib/greetings/backgrounds.js), or the
+     occasion's own colour when they kept the default. */
+  const light = backgroundIsLight(tokens?.background, p.bg);
   const style = {
+    background: backgroundCss(tokens?.background, p.bg || "#1c1420"),
     "--gc-bg": p.bg || "#1c1420",
     "--gc-surface": p.surface || "#241a2b",
     "--gc-accent": p.accent || "#c69a55",
@@ -88,7 +93,7 @@ export default function GreetingCard({ tokens, preview = false }) {
 
 
   return (
-    <div className={`gc ${preview ? "gc-preview" : ""}`} style={style}>
+    <div className={`gc ${preview ? "gc-preview" : ""} ${light ? "gc-light" : ""}`} style={style}>
       {opened && <ParticleField kind={tokens?.particle || "petals"} count={preview ? 8 : 18} />}
 
       {!preview && musicUrl && opened && (

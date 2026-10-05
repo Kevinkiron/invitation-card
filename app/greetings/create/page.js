@@ -18,6 +18,7 @@ import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/li
 import { uploadPhoto, describeFile } from "@/lib/photos";
 import { uploadAudio, describeAudioFile } from "@/lib/music/upload";
 import { whatsappHref, SITE_URL } from "@/lib/share";
+import { BACKGROUNDS, backgroundCss, backgroundIsLight } from "@/lib/greetings/backgrounds";
 import "@/app/greetings.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -39,7 +40,8 @@ import "@/app/greetings.css";
    answer #4 scoped this feature to creation only, not the dashboard.
    ══════════════════════════════════════════════════════════════════════ */
 
-const STEPS = ["to", "from", "message", "extras", "done"];
+const STEPS = ["to", "from", "message", "background", "extras", "done"];
+const STEP = (name) => STEPS.indexOf(name);
 
 function isDark(hex) {
   const h = String(hex || "").replace("#", "");
@@ -143,8 +145,8 @@ export default function GreetingCreatePage() {
     } else if (step === "message") {
       setTokens((t) => ({ ...t, message: text.slice(0, 600) }));
       say("user", text);
-      say("assistant", "You can add a photo or a little music if you'd like, or just publish it as is.");
-      setStepIdx(3);
+      say("assistant", "Lovely. Now pick a background for the card — tap a colour to see it on the preview.");
+      setStepIdx(STEP("background"));
     }
     setInput("");
   }
@@ -153,8 +155,8 @@ export default function GreetingCreatePage() {
     const text = occasion?.greeting || tokens.message || "";
     setTokens((t) => ({ ...t, message: text }));
     say("user", "Use that as it is.");
-    say("assistant", "You can add a photo or a little music if you'd like, or just publish it as is.");
-    setStepIdx(3);
+    say("assistant", "Lovely. Now pick a background for the card — tap a colour to see it on the preview.");
+    setStepIdx(STEP("background"));
   }
 
   async function addPhoto(fileList) {
@@ -199,9 +201,21 @@ export default function GreetingCreatePage() {
     setTokens((t) => ({ ...t, media: { ...t.media, [key]: null, ...(key === "musicUrl" ? { musicTrackId: null, musicLabel: null } : {}) } }));
   }
 
+  /* ── Background: the gradient behind the card ── */
+  function pickBackground(bg) {
+    setTokens((t) => ({ ...t, background: bg ? { id: bg.id, from: bg.from, to: bg.to } : null }));
+  }
+  function confirmBackground() {
+    const bg = tokens.background;
+    const name = !bg ? "Keep the occasion colour" : bg.id === "custom" ? "My own colours" : (BACKGROUNDS.find((b) => b.id === bg.id)?.name || "That one");
+    say("user", name);
+    say("assistant", "You can add a photo or a little music if you'd like, or just publish it as is.");
+    setStepIdx(STEP("extras"));
+  }
+
   function goToReview() {
     say("assistant", "Your card is ready — pick a plan and publish it.");
-    setStepIdx(4);
+    setStepIdx(STEP("done"));
   }
 
   async function publish() {
@@ -384,10 +398,60 @@ export default function GreetingCreatePage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
-                  onClick={() => setStepIdx(3)}
+                  onClick={() => setStepIdx(STEP("extras"))}
                   disabled={publishing}
                 >
                   <RefreshCw size={13} /> Back
+                </button>
+              </div>
+            ) : step === "background" ? (
+              <div className="g-bg-picker">
+                <div className="g-bg-grid" role="radiogroup" aria-label="Card background">
+                  <button
+                    type="button" role="radio" aria-checked={!tokens.background}
+                    className={`g-bg-swatch ${!tokens.background ? "is-on" : ""}`}
+                    style={{ background: backgroundCss(null, p.bg || "#1c1420") }}
+                    onClick={() => pickBackground(null)}
+                  >
+                    <span>Occasion</span>
+                  </button>
+                  {BACKGROUNDS.map((b) => (
+                    <button
+                      key={b.id} type="button" role="radio" aria-checked={tokens.background?.id === b.id}
+                      className={`g-bg-swatch ${tokens.background?.id === b.id ? "is-on" : ""} ${backgroundIsLight(b) ? "is-light" : ""}`}
+                      style={{ background: backgroundCss(b) }}
+                      onClick={() => pickBackground(b)}
+                      title={b.name}
+                    >
+                      <span>{b.name}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="g-bg-custom">
+                  <span className="g-bg-custom-label">Or mix your own</span>
+                  <label className="g-bg-dot" title="Top colour">
+                    <input
+                      type="color"
+                      value={tokens.background?.id === "custom" ? tokens.background.from : "#2a1236"}
+                      onChange={(e) => pickBackground({ id: "custom", from: e.target.value, to: tokens.background?.id === "custom" ? tokens.background.to : "#c4776a" })}
+                    />
+                  </label>
+                  <span className="g-bg-arrow" aria-hidden="true">→</span>
+                  <label className="g-bg-dot" title="Bottom colour">
+                    <input
+                      type="color"
+                      value={tokens.background?.id === "custom" ? tokens.background.to : "#c4776a"}
+                      onChange={(e) => pickBackground({ id: "custom", from: tokens.background?.id === "custom" ? tokens.background.from : "#2a1236", to: e.target.value })}
+                    />
+                  </label>
+                  {tokens.background?.id === "custom" && (
+                    <span className="g-bg-preview" style={{ background: backgroundCss(tokens.background) }} aria-hidden="true" />
+                  )}
+                </div>
+
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmBackground}>
+                  Use this background <Send size={14} />
                 </button>
               </div>
             ) : step === "extras" ? (
@@ -450,7 +514,7 @@ export default function GreetingCreatePage() {
               </div>
             ) : null}
 
-            {step === "message" && stepIdx === 2 && (
+            {step === "message" && (
               <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={useSuggestedMessage}>
                 <Sparkles size={13} /> Use the suggested message
               </button>
@@ -460,7 +524,7 @@ export default function GreetingCreatePage() {
           {/* ── Live preview ── */}
           <section className="ai-preview-col">
             <PhoneFrame
-              statusColor={isDark(p.bg) ? "#fdf6ea" : "#1b1116"}
+              statusColor={backgroundIsLight(tokens.background, p.bg) ? "#1b1116" : "#fdf6ea"}
               statusBg="transparent"
               label="Card preview"
             >

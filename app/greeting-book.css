@@ -323,3 +323,7 @@
   .cb *, .cb *::before, .cb *::after { animation: none !important; }
   .cb-leaf, .cb-book, .cb-spine-leaf { transition-duration: .01ms !important; }
 }
+
+/* ── Light backgrounds (lib/greetings/backgrounds.js) ── */
+.gc-light .gc-particles-snow i { box-shadow: 0 0 2px rgba(80, 60, 50, .55); }
+.gc-light .gc-mute { color: #3b2c26; background: rgba(255, 255, 255, .6); }

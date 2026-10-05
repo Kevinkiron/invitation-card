@@ -142,6 +142,7 @@ export default function Nav() {
           ) : (
             <button
               onClick={out}
+              className="w-nav-logout"
               style={{ background: "none", border: "none", color: C.muted, display: "flex", gap: 7, alignItems: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
             >
               <LogOut size={15} /> Log out

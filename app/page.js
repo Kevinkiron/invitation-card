@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight, Check, Church, Gem, Cake, House, Star, Mic, Code,
   MessageCircle, Sparkles, QrCode, Images, Link2, Pencil, ShieldCheck, Clock,
+  MapPin, Music,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -9,9 +10,12 @@ import HeroPhone from "@/components/HeroPhone";
 import InvitationWall from "@/components/InvitationWall";
 import DemoPhone from "@/components/DemoPhone";
 import { Reveal } from "@/components/ui";
+import RotatingWord from "@/components/landing/RotatingWord";
+import LandingFX from "@/components/landing/LandingFX";
 import { EVENTS, cardMotif } from "@/lib/design/showcase";
 import { DEMOS } from "@/lib/demo/fixtures";
 import "./landing.css";
+import "./landing-premium.css";
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -65,6 +69,18 @@ const TRUTHS = [
   { icon: <Star size={20} strokeWidth={2} />,     title: "Built for Indian celebrations", desc: "Weddings, naming ceremonies, griha pravesh, birthdays, concerts." },
   { icon: <Link2 size={20} strokeWidth={2} />,    title: "One link, nothing to install", desc: "Guests tap it and it opens. No app, no sign-up, no account." },
   { icon: <Clock size={20} strokeWidth={2} />,    title: "Ready the same evening", desc: "A sentence in, a finished invitation out, while the tea is still hot." },
+];
+
+/* The occasion in the hero headline, rolling through (RotatingWord). */
+const HERO_OCCASIONS = [
+  "your wedding.", "a griha pravesh.", "her first birthday.",
+  "the naming day.", "your engagement.", "the big concert.",
+];
+
+/* The slow ribbon of occasions under the hero. */
+const RIBBON = [
+  "Weddings", "Engagements", "Griha Pravesh", "Naming Ceremonies", "Birthdays",
+  "Baby Showers", "Baptisms", "Anniversaries", "Concerts", "Conferences",
 ];
 
 const ASSURE = [
@@ -129,6 +145,7 @@ export default function Home() {
 
   return (
     <div className="w-page">
+      <LandingFX />
       <Nav />
 
       <main id="main">
@@ -137,19 +154,14 @@ export default function Home() {
           <div className="wrap w-herogrid">
             <div className="w-herotext">
 
-              {/* Hero badge. The reference puts a customer count here; we
-                  put a positioning claim, because we do not have a count
-                  we can honestly print. */}
-              <div className="w-hero-badge">
-                <Sparkles size={15} strokeWidth={2.2} />
-                Designed by AI for your event — never a template
-              </div>
+              <p className="w-hero-eyebrow">Invitation websites · Indian celebrations</p>
 
               <h1 className="w-h1">
-                Beautiful{" "}
-                <span className="highlight">Invitation&nbsp;Websites</span>
-                <br />
-                for Every&nbsp;Event
+                <span className="w-line"><span>Invitations</span></span>
+                <span className="w-line"><span>made for</span></span>
+                <span className="w-line">
+                  <span><em><RotatingWord words={HERO_OCCASIONS} /></em></span>
+                </span>
               </h1>
 
               <p className="w-hero-sub">
@@ -158,7 +170,7 @@ export default function Home() {
               </p>
 
               <div className="w-hero-cta">
-                <Link href="/create" className="btn btn-primary">
+                <Link href="/create" className="btn btn-primary" data-magnetic>
                   <span>Create Invite</span>
                   <span className="btn-arrow">
                     <ArrowRight size={16} />
@@ -179,9 +191,38 @@ export default function Home() {
               </div>
             </div>
 
-            <HeroPhone />
+            {/* The phone, two gold orbits behind it, and four chips naming
+                what a guest can do on the invitation. The chips describe
+                features, not invented guests or numbers. Each [data-depth]
+                layer drifts with the cursor (LandingFX). */}
+            <div className="w-herovis">
+              <span className="w-orbit w-orbit-1" data-depth="0.25" aria-hidden="true"><i /></span>
+              <span className="w-orbit w-orbit-2" data-depth="0.45" aria-hidden="true"><i /></span>
+              <div data-depth="0.6" style={{ position: "relative", zIndex: 1 }}>
+                <HeroPhone />
+              </div>
+              <span className="w-chip w-chip-1" data-depth="1.2" aria-hidden="true">
+                <span><i><Check size={15} strokeWidth={2.6} /></i><span><b>RSVP in one tap</b><small>Guests reply right on it</small></span></span>
+              </span>
+              <span className="w-chip w-chip-2" data-depth="1.6" aria-hidden="true">
+                <span><i><MapPin size={15} /></i><span><b>Directions</b><small>Opens straight in Maps</small></span></span>
+              </span>
+              <span className="w-chip w-chip-3" data-depth="1.0" aria-hidden="true">
+                <span><i><Images size={15} /></i><span><b>Shared album</b><small>Everyone adds their photos</small></span></span>
+              </span>
+              <span className="w-chip w-chip-4" data-depth="1.4" aria-hidden="true">
+                <span><i><Music size={15} /></i><span><b>Music on open</b><small>Your song, your choice</small></span></span>
+              </span>
+            </div>
           </div>
         </header>
+
+        {/* ── Occasion ribbon ── */}
+        <div className="w-marquee" aria-hidden="true">
+          <div className="w-marquee-track">
+            {[...RIBBON, ...RIBBON].map((r, i) => <span key={i}>{r}</span>)}
+          </div>
+        </div>
 
         {/* ── 2. ALL OCCASIONS ─────────────────────────────────────── */}
         <section className="w-blk" id="events" aria-labelledby="events-h">

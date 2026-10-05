@@ -1,0 +1,381 @@
+/* ══════════════════════════════════════════════════════════════════════
+   LANDING — PREMIUM LAYER (loaded after app/landing.css)
+
+   The base landing styles were built to a SaaS-template brief: a pill
+   badge with an icon above every section, a coral gradient word in every
+   heading, rainbow icon cards. Together that reads as generated rather
+   than designed. This layer re-dresses the same markup as what Welcvm
+   actually sells — stationery: ivory paper, maroon ink, a little gold
+   foil, an editorial serif for the headlines (Cormorant Garamond, already
+   loaded in app/layout.js) and DM Sans kept for reading text.
+
+   The interactive pieces (spotlight, depth, tilt, magnetic buttons,
+   progress line) are driven by components/landing/LandingFX.js; this
+   file only describes how they look.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.w-page {
+  --w-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --w-paper: #fbf7f0;
+  --w-wine: #6b1638;
+}
+
+/* ── reading progress ── */
+.w-progress {
+  position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 300;
+  transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, #c9922f, #f3d79a, #c9922f);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   HERO
+   ══════════════════════════════════════════════════════════════════════ */
+.w-page .w-hero {
+  --mx: 70%; --my: 40%;
+  background: var(--w-paper);
+  isolation: isolate;
+}
+/* slow drifting colour, and a soft light that follows the cursor */
+.w-page .w-hero::before {
+  background:
+    radial-gradient(520px circle at var(--mx) var(--my), rgba(255, 255, 255, .9), transparent 60%),
+    radial-gradient(38% 46% at 12% 8%, rgba(201, 146, 47, .16), transparent 70%),
+    radial-gradient(34% 40% at 88% 72%, rgba(107, 22, 56, .12), transparent 70%),
+    radial-gradient(30% 34% at 60% 105%, rgba(222, 107, 90, .10), transparent 70%);
+  animation: w-aurora 18s ease-in-out infinite alternate;
+  background-size: 100% 100%, 130% 130%, 130% 130%, 130% 130%;
+}
+@keyframes w-aurora {
+  0%   { background-position: 0 0, 0% 0%, 100% 100%, 50% 100%; }
+  100% { background-position: 0 0, 30% 20%, 70% 80%, 40% 70%; }
+}
+/* paper grain */
+.w-page .w-hero .w-herogrid::before {
+  content: ""; position: absolute; inset: -200px -50vw; z-index: -1; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .15  0 0 0 .45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: .09; mix-blend-mode: multiply;
+}
+
+.w-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin: 0 0 22px;
+  font: 700 11.5px/1 'DM Sans', sans-serif; letter-spacing: .26em; text-transform: uppercase;
+  color: #a67a2a;
+  animation: w-rise .8s var(--ease, cubic-bezier(.19, 1, .22, 1)) both;
+}
+.w-hero-eyebrow::before {
+  content: ""; width: 34px; height: 1px;
+  background: linear-gradient(90deg, transparent, #c9922f);
+}
+
+.w-page .w-h1 {
+  font-family: var(--w-serif);
+  font-weight: 500;
+  font-size: clamp(46px, 6.6vw, 92px);
+  line-height: .98;
+  letter-spacing: -.015em;
+  color: var(--w-ink);
+  animation: none;
+}
+/* each line slides up out of its own mask */
+.w-h1 .w-line { display: block; overflow: hidden; padding-bottom: .08em; }
+.w-h1 .w-line > span {
+  display: inline-block;
+  animation: w-line-up 1.1s cubic-bezier(.19, 1, .22, 1) both;
+}
+.w-h1 .w-line:nth-child(2) > span { animation-delay: .12s; }
+.w-h1 .w-line:nth-child(3) > span { animation-delay: .24s; }
+@keyframes w-line-up { from { transform: translateY(105%); } to { transform: none; } }
+
+/* the occasion that changes */
+.w-h1 em {
+  font-style: italic; font-weight: 500;
+  color: var(--w-wine);
+}
+.w-rot { display: inline-grid; vertical-align: bottom; position: relative; }
+.w-rot-w {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  opacity: 0; transform: translateY(60%); filter: blur(6px);
+  transition: transform .7s cubic-bezier(.19, 1, .22, 1), opacity .5s ease, filter .6s ease;
+}
+.w-rot-w.is-in  { opacity: 1; transform: none; filter: none; }
+/* a hand-drawn gold underline that draws itself under each new word */
+.w-rot-w { position: relative; }
+.w-rot-w::after {
+  content: ""; position: absolute; left: 0; right: 2%; bottom: .02em; height: .14em;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'><path d='M2 9 C 50 2, 120 2, 198 7' fill='none' stroke='%23c9922f' stroke-width='3' stroke-linecap='round'/></svg>") no-repeat left center / 100% 100%;
+  transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform .9s cubic-bezier(.65, 0, .35, 1) .25s;
+}
+.w-rot-w.is-in::after { transform: scaleX(1); }
+.w-rot-w.is-out { opacity: 0; transform: translateY(-60%); filter: blur(6px); }
+
+.w-page .w-hero-sub { font-size: clamp(16px, 1.6vw, 18.5px); color: #6f5a63; }
+
+/* ── buttons: maroon ink with a gold hairline, not coral ── */
+.w-page .btn-primary {
+  background: linear-gradient(135deg, #7a1d43 0%, #4a0d2e 100%);
+  box-shadow: 0 10px 30px -10px rgba(74, 13, 46, .55), inset 0 0 0 1px rgba(243, 215, 154, .35);
+}
+.w-page .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8a2350 0%, #5a1238 100%);
+  box-shadow: 0 16px 40px -12px rgba(74, 13, 46, .6), inset 0 0 0 1px rgba(243, 215, 154, .55);
+}
+.w-page .btn-ghost { border-color: rgba(26, 15, 20, .18); color: var(--w-ink); background: rgba(255, 255, 255, .55); backdrop-filter: blur(6px); }
+.w-page .btn-ghost:hover { border-color: var(--w-wine); color: var(--w-wine); }
+.w-page [data-magnetic] { transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .3s, background .25s; will-change: transform; }
+
+.w-page .w-as b { font-family: var(--w-serif); font-size: 19px; font-weight: 600; }
+
+/* ── hero visual: phone, gold orbits, feature chips ── */
+.w-herovis { position: relative; display: flex; justify-content: center; }
+.w-herovis [data-depth] { transition: transform .5s cubic-bezier(.2, .8, .2, 1); will-change: transform; }
+.w-orbit {
+  position: absolute; left: 50%; top: 42%; z-index: 0; pointer-events: none;
+  border-radius: 50%; border: 1px solid rgba(201, 146, 47, .28);
+  transform: translate(-50%, -50%);
+}
+.w-orbit-1 { width: min(560px, 120%); aspect-ratio: 1; }
+.w-orbit-2 { width: min(430px, 92%); aspect-ratio: 1; border-style: dashed; border-color: rgba(201, 146, 47, .22); }
+.w-orbit i { /* a small gold bead travelling the outer ring */
+  position: absolute; inset: 0; border-radius: 50%;
+  animation: w-orbit-spin 22s linear infinite;
+}
+.w-orbit i::before {
+  content: ""; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px;
+  border-radius: 50%; background: #e4c77e; box-shadow: 0 0 12px 2px rgba(228, 199, 126, .8);
+}
+.w-orbit-2 i { animation-duration: 15s; animation-direction: reverse; }
+@keyframes w-orbit-spin { to { transform: rotate(360deg); } }
+
+.w-chip {
+  position: absolute; z-index: 3; pointer-events: none;
+}
+.w-chip > span {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px 10px 10px; border-radius: 16px;
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, .9);
+  box-shadow: 0 18px 40px -18px rgba(59, 10, 42, .35), 0 0 0 1px rgba(201, 146, 47, .12);
+  animation: w-chip-bob 6s ease-in-out infinite, w-chip-in .9s cubic-bezier(.19, 1, .22, 1) both;
+  white-space: nowrap;
+}
+.w-chip i {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 10px;
+  background: linear-gradient(135deg, #7a1d43, #4a0d2e); color: #f3d79a;
+}
+.w-chip b { display: block; font: 700 12.5px/1.2 'DM Sans', sans-serif; color: var(--w-ink); }
+.w-chip small { display: block; font: 500 11px/1.3 'DM Sans', sans-serif; color: var(--w-muted); }
+.w-chip-1 { left: -2%;  top: 14%; }
+.w-chip-2 { right: -4%; top: 38%; }
+.w-chip-3 { left: 2%;   bottom: 24%; }
+.w-chip-4 { right: 2%;  bottom: 10%; }
+.w-chip-1 > span { animation-delay: 0s, .7s; }
+.w-chip-2 > span { animation-delay: -1.5s, .85s; }
+.w-chip-3 > span { animation-delay: -3s, 1s; }
+.w-chip-4 > span { animation-delay: -4.5s, 1.15s; }
+@keyframes w-chip-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes w-chip-in  { from { opacity: 0; transform: translateY(16px) scale(.92); } to { opacity: 1; } }
+
+/* ══════════════════════════════════════════════════════════════════════
+   OCCASION RIBBON — a slow marquee of what people celebrate
+   ══════════════════════════════════════════════════════════════════════ */
+.w-marquee {
+  position: relative; overflow: hidden;
+  background: #3b0a2a;
+  color: #f6e7c8;
+  border-block: 1px solid rgba(228, 199, 126, .35);
+  padding: 20px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.w-marquee-track {
+  display: flex; width: max-content;
+  animation: w-marquee 46s linear infinite;
+}
+.w-marquee:hover .w-marquee-track { animation-play-state: paused; }
+.w-marquee-track span {
+  display: inline-flex; align-items: center; gap: 28px; padding-right: 28px;
+  font: italic 500 clamp(26px, 3.2vw, 40px)/1 var(--w-serif);
+  white-space: nowrap;
+}
+.w-marquee-track span::after { content: "✦"; font-style: normal; font-size: .45em; color: #e4c77e; }
+@keyframes w-marquee { to { transform: translateX(-50%); } }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SECTION HEADINGS — an editorial eyebrow, a serif headline
+   ══════════════════════════════════════════════════════════════════════ */
+.w-page .w-sec-badge {
+  background: none !important; border: 0 !important; padding: 0 !important;
+  color: #a67a2a !important;
+  font: 700 11.5px/1 'DM Sans', sans-serif; letter-spacing: .26em; text-transform: uppercase;
+  gap: 12px;
+}
+.w-page .w-sec-badge svg { display: none; }
+.w-page .w-sec-badge::before,
+.w-page .w-badge-row:not(.w-badge-left) .w-sec-badge::after {
+  content: ""; width: 28px; height: 1px; background: currentColor; opacity: .55;
+}
+
+.w-page .w-h2 {
+  font-family: var(--w-serif);
+  font-weight: 500;
+  font-size: clamp(34px, 4.8vw, 60px);
+  line-height: 1.04;
+  letter-spacing: -.012em;
+}
+.w-page .w-h1 .highlight,
+.w-page .w-h2 .highlight {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--w-wine);
+  font-style: italic;
+  animation: none;
+}
+.w-page .w-lede { color: #6f5a63; }
+
+/* ── occasion cards: tilt + a glare that follows the cursor ── */
+.w-page .w-ecard {
+  position: relative;
+  transition: transform .45s cubic-bezier(.2, .8, .2, 1), box-shadow .45s ease;
+  will-change: transform;
+}
+.w-page .w-ecard::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .45), transparent 60%);
+  opacity: 0; transition: opacity .3s ease; mix-blend-mode: soft-light;
+}
+.w-page .w-ecard.is-tilting { box-shadow: 0 30px 60px -28px rgba(59, 10, 42, .45); }
+.w-page .w-ecard.is-tilting::after { opacity: 1; }
+.w-page .w-ecard h3 { font-family: var(--w-serif); font-size: 23px; font-weight: 600; letter-spacing: -.005em; }
+
+/* ── the reassurance strip: quieter, numbered ── */
+.w-page .w-truthgrid { counter-reset: truth; }
+.w-page .w-truth { counter-increment: truth; text-align: left; padding: 34px 26px; }
+.w-page .w-truth-orn { display: none; }
+.w-page .w-truth::before {
+  content: "0" counter(truth);
+  display: block; margin-bottom: 14px;
+  font: italic 500 30px/1 var(--w-serif); color: #c9922f;
+}
+.w-page .w-truth-t { font-family: var(--w-serif); font-size: 22px; font-weight: 600; }
+.w-page .w-truth-d { margin: 0; max-width: none; }
+
+/* feature + step cards share the serif */
+.w-page .w-why h3, .w-page .w-step h3 { font-family: var(--w-serif); font-size: 22px; font-weight: 600; }
+.w-page .w-why-ic { background: none; border: 1px solid rgba(201, 146, 47, .4); color: #a67a2a; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SHARING + "PAPER MEETS PHONE" — these sections' styles lived only in
+   app/landing-1.css, which this page no longer imports, so on the live
+   site the QR card rendered as bare text and the chat header ran
+   together ("FFamily group18 members"). Carried over here verbatim.
+   ══════════════════════════════════════════════════════════════════════ */
+.w-h2-left { text-align: left; }
+.w-lede-left { margin-left: 0; margin-right: 0; }
+.w-chatfig { margin: 0; }
+.w-chatcard {
+  background: #fff; border: 1px solid var(--w-line);
+  border-radius: 18px; padding: 18px;
+  box-shadow: 0 20px 50px -24px rgba(59,10,42,.4);
+}
+.w-chat-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 14px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--w-line);
+}
+.w-chat-av {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cream-2); color: var(--w-maroon);
+  font-weight: 800; font-size: 14px; flex-shrink: 0;
+}
+.w-chat-head b { display: block; font-size: 13.5px; color: var(--w-ink); }
+.w-chat-head em { font-style: normal; font-size: 11.5px; color: var(--w-muted); }
+.w-figcap {
+  margin-top: 10px; text-align: center;
+  font-size: 11.5px; color: var(--w-muted); letter-spacing: .01em;
+}
+.w-qrsec { background: #fff; border-top: 1px solid var(--w-line); }
+.w-qrgrid {
+  display: grid; grid-template-columns: .85fr 1fr;
+  gap: clamp(32px, 6vw, 72px); align-items: center;
+}
+.w-qrfig { margin: 0; }
+.w-qrcard {
+  max-width: 320px; margin: 0 auto;
+  background: linear-gradient(170deg, #fffdf8, var(--cream-2));
+  border: 1px solid rgba(201,146,47,.35); border-radius: 12px;
+  padding: 30px 24px 24px; text-align: center;
+  box-shadow: 0 24px 54px -28px rgba(59,10,42,.55);
+  transform: rotate(-2deg);
+}
+.w-qrcard-kick {
+  margin: 0 0 10px; font-size: 10px; letter-spacing: .24em;
+  text-transform: uppercase; color: var(--w-muted);
+}
+.w-qrcard-name {
+  margin: 0; font-family: 'Pinyon Script', cursive;
+  font-size: 34px; line-height: 1.15; color: var(--w-maroon);
+}
+.w-qrcard-date {
+  margin: 8px 0 0; font-size: 12px; letter-spacing: .2em; color: var(--w-ink);
+}
+.w-qrrule {
+  display: block; height: 1px; margin: 20px auto;
+  width: 60%; background: linear-gradient(90deg, transparent, rgba(201,146,47,.6), transparent);
+}
+.w-qrblock {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px; border-radius: 10px; background: #fff;
+  border: 1px solid rgba(201,146,47,.3); color: var(--w-maroon-deep);
+}
+.w-qrcard-scan {
+  margin: 12px 0 0; font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--w-muted);
+}
+.w-page .w-badge-left { text-align: left; }
+.w-qrcard-name { font-family: 'Pinyon Script', 'Great Vibes', cursive; }
+@media (max-width: 960px) {
+  .w-qrgrid { grid-template-columns: 1fr; }
+  .w-qrfig { order: 2; }
+}
+@media (max-width: 560px) {
+  .w-qrcard { transform: none; }
+}
+
+/* demo titles in the serif too */
+.w-page .w-demonames { font-family: var(--w-serif); font-weight: 600; font-size: clamp(24px, 2.4vw, 30px); }
+
+/* ── responsive ── */
+@media (max-width: 960px) {
+  .w-herovis { margin-top: 8px; }
+  .w-chip-1 { left: 0; } .w-chip-2 { right: 0; } .w-chip-3 { left: 2%; } .w-chip-4 { right: 2%; }
+  .w-orbit-1 { width: min(480px, 112%); }
+}
+@media (max-width: 560px) {
+  .w-hero-eyebrow { font-size: 10px; letter-spacing: .16em; gap: 8px; }
+  .w-hero-eyebrow::before { width: 18px; }
+  .w-page .w-h1 { font-size: clamp(42px, 12.4vw, 56px); }
+  .w-chip > span { padding: 7px 10px 7px 7px; gap: 8px; border-radius: 12px; }
+  .w-chip i { width: 24px; height: 24px; border-radius: 8px; }
+  .w-chip b { font-size: 11px; } .w-chip small { display: none; }
+  .w-chip-3, .w-chip-4 { display: none; }
+  .w-marquee { padding: 14px 0; }
+  .w-page .w-truth { text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w-page .w-hero::before, .w-orbit i, .w-chip > span, .w-marquee-track,
+  .w-h1 .w-line > span, .w-hero-eyebrow { animation: none !important; }
+  .w-rot-w { transition: none; }
+}
+
+/* the printed card lifts and straightens under the cursor */
+.w-page .w-qrcard { transition: transform .45s cubic-bezier(.2, .8, .2, 1), box-shadow .45s ease; }
+.w-page .w-qrcard.is-tilting { box-shadow: 0 34px 70px -30px rgba(59, 10, 42, .6); }

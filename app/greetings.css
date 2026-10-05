@@ -46,6 +46,27 @@
   .w-portal-toggle-header { display: none; }
 }
 
+/* In the mobile drawer the toggle is a full-width segmented control. It
+   needs these more specific rules because the drawer's own link style
+   (.w-nav-drawer a in landing.css: padding 0, no background) also hits
+   the toggle's two links — which squashed them into one word,
+   "InvitationsGreetings", with the white active pill collapsed. */
+.w-nav-drawer .w-portal-toggle { display: flex; width: 100%; padding: 4px; margin-bottom: 4px; }
+.w-nav-drawer .w-portal-toggle a {
+  flex: 1; justify-content: center;
+  padding: 10px 14px; font-size: 14px; font-weight: 700;
+  color: var(--w-muted, #8c7b70); background: none;
+}
+.w-nav-drawer .w-portal-toggle a.active {
+  background: #fff; color: var(--w-ink, #1b1116);
+  box-shadow: 0 2px 8px rgba(26, 15, 20, .1);
+}
+/* Log out lives in the drawer on small screens; showing it in the top
+   bar as well put it on screen twice. */
+@media (max-width: 860px) {
+  .w-nav-logout { display: none !important; }
+}
+
 /* ── Landing hero ── */
 .g-hero {
   padding: 64px 0 40px;
@@ -129,3 +150,20 @@
   padding: 12px 14px; font-size: 13px; word-break: break-all;
   background: #faf7f2; margin-bottom: 14px;
 }
+
+/* Logged out on a phone, the header's Login pill, Create Invite button
+   and menu button were wider than the screen together: at 390px the
+   menu button sat at x = 466, off the edge, so the menu could not be
+   opened at all. Login is in the drawer, so it goes first; the CTA
+   tightens; on the very narrowest phones the CTA is in the drawer too. */
+@media (max-width: 560px) {
+  .w-nav-actions { gap: 6px; }
+  .w-nav-actions .w-nav-login { display: none; }
+  .w-nav-actions .btn-sm { padding: 8px 14px; font-size: 13px; }
+  .w-nav-actions .btn-sm .btn-arrow { display: none; }
+}
+@media (max-width: 359px) {
+  .w-nav-actions .btn-sm { display: none; }
+}
+/* Same drawer link rule also flattened the drawer's Create Invite button. */
+.w-nav-drawer > a.btn { padding: 11px 22px; color: #fff; font-size: 14px; }

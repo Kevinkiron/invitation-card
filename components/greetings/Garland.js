@@ -19,13 +19,13 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 
-function rng(seed) {
+export function rng(seed) {
   let s = seed >>> 0;
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 }
 
 // ── pine branch: a curved stem with needles fanned off both sides ──
-function pineBranch(r, x0, y0, len, angDeg, bend, scale = 1) {
+export function pineBranch(r, x0, y0, len, angDeg, bend, scale = 1) {
   const a = (angDeg * Math.PI) / 180;
   const x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len;
   const nx = -Math.sin(a), ny = Math.cos(a);
@@ -52,7 +52,7 @@ function pineBranch(r, x0, y0, len, angDeg, bend, scale = 1) {
   return out;
 }
 
-function berries(r, x, y, n = 3, size = 5.4) {
+export function berries(r, x, y, n = 3, size = 5.4) {
   let out = "";
   const pts = [[0, 0], [size * 1.7, size * 0.5], [size * 0.6, size * 1.6], [-size * 1.2, size * 1.1], [size * 1.9, size * 2]].slice(0, n);
   for (const [dx, dy] of pts) {
@@ -63,11 +63,11 @@ function berries(r, x, y, n = 3, size = 5.4) {
   return out;
 }
 
-function hollyLeaf(x, y, rot, s = 1) {
+export function hollyLeaf(x, y, rot, s = 1) {
   return `<path transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" d="M0 0 C6 -6 10 -4 14 -9 C15 -4 20 -3 24 -6 C23 -1 27 2 32 1 C28 5 29 9 33 12 C27 12 24 15 22 19 C19 14 14 15 10 17 C11 12 7 9 3 9 C5 5 2 3 0 0 Z" fill="url(#ic-holly)" stroke="#164a2a" stroke-width=".8"/><path transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" d="M2 2 Q16 6 30 9" stroke="#8fc39a" stroke-width=".9" fill="none" opacity=".7"/>`;
 }
 
-const DEFS = `<defs>
+export const DEFS = `<defs>
  <radialGradient id="ic-berry" cx="35%" cy="30%"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="55%" stop-color="#c8102e"/><stop offset="100%" stop-color="#7a0a1c"/></radialGradient>
  <linearGradient id="ic-holly" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3f8a52"/><stop offset="100%" stop-color="#1c5332"/></linearGradient>
  <radialGradient id="ic-mari" cx="40%" cy="35%"><stop offset="0%" stop-color="#ffd54a"/><stop offset="60%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d9480f"/></radialGradient>
@@ -98,7 +98,7 @@ function garlandPine(seed = 7) {
 }
 
 // ── Diwali / Onam / Pongal: a marigold toran with mango leaves ──
-function marigold(r, x, y, s, grad) {
+export function marigold(r, x, y, s, grad) {
   let out = `<circle cx="${x}" cy="${y}" r="${s}" fill="url(#${grad})"/>`;
   for (let k = 0; k < 10; k++) {
     const a = (k / 10) * Math.PI * 2 + r();

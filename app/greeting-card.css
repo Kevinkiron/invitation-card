@@ -75,8 +75,11 @@
   position: relative; z-index: 5;
   width: min(380px, 90vw);
   aspect-ratio: 3 / 4.3;
-  perspective: 1600px;
-  transform-style: preserve-3d;
+  /* flat, not preserve-3d: the letter inside folds in its own 3D space
+     (app/greeting-letter.css). Sharing one 3D space with the envelope let
+     the folded panels (lifted a couple of pixels towards the viewer)
+     poke through the envelope in front of them. */
+  transform-style: flat;
   transition: transform .5s cubic-bezier(.2, .8, .2, 1);
 }
 /* In the create-page phone, the card keeps its real 3 : 4.3 shape and

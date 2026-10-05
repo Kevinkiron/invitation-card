@@ -1,47 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import ParticleField from "@/components/greetings/ParticleField";
 import Envelope from "@/components/greetings/Envelope";
-import { getScene } from "@/components/greetings/scenes";
-import IllustratedCard from "@/components/greetings/IllustratedCard";
+import CardBook from "@/components/greetings/CardBook";
 import "@/app/greeting-card.css";
-import "@/app/greeting-scenes.css";
 import "@/app/greeting-envelope.css";
 
 /* ══════════════════════════════════════════════════════════════════════
    GREETING CARD RENDERER
 
-   A greeting card is one message to one recipient, so this is much
-   smaller than WeddingCinema.js or CelebrationCinema.js: no scroll-driven
-   scenes, no RSVP. What it does borrow from the wedding template is the
-   ceremony of opening it — the guest sees a closed cover first and the
-   card flips open on tap to reveal the message, with particles (snow,
-   petals, confetti — see lib/greetings/occasions.js) drifting behind it
-   and a soft gold shimmer across the occasion name, the same
-   foil-catching-light trick the wedding cinema's monogram uses.
+   What the recipient opens, in two small ceremonies:
 
-   The closed cover itself is either a hand-built animated scene (Santa's
-   sleigh flying past a shining star for Christmas, a blooming pookalam
-   and a gliding boat for Onam — components/greetings/scenes/) for the
-   occasions that have one, or the plain parametric motif from
-   lib/design/showcase.js for every other occasion. See
-   components/greetings/scenes/index.js for which is which — that list
-   grows over time rather than every occasion getting a thinner version
-   of the same treatment at once.
+   1. a sealed envelope addressed to them (components/greetings/
+      Envelope.js) — tapping the wax seal splits the ribbon, folds back
+      the flap and drops the envelope away;
+   2. the card it held (components/greetings/CardBook.js) — a photo
+      cover that opens like a little book onto a printed verse and the
+      sender's own letter: "Dear Anna," their photo and message, "From
+      David & Family". On a wide screen it opens into a two-page spread;
+      on a phone the pages turn one at a time.
 
-   `preview` (the create-page phone) starts already open and silent, the
-   same convention WeddingCinema/CelebrationCinema use, and for the same
-   reason: the sender is editing their own card, not being surprised by
-   it.
+   Particles (snow, petals, confetti — lib/greetings/occasions.js) start
+   drifting once the envelope has gone, and the sender's music, if any,
+   starts on the tap that breaks the seal (browsers only allow sound
+   that begins inside a user gesture).
 
-   Before any of that, the guest sees the card as a sealed envelope
-   (components/greetings/Envelope.js) addressed to them, postmarked with
-   that occasion's own stamp (lib/greetings/occasions.js). Breaking the
-   seal is its own small ceremony — the flap folds back and the envelope
-   fades away — before the card underneath is even tappable, so opening a
-   card is two small moments instead of one.
+   `preview` (the create-page phone) skips the envelope and opens
+   straight onto the letter page, silent: the sender is editing their
+   own card, not being surprised by it.
    ══════════════════════════════════════════════════════════════════════ */
 export default function GreetingCard({ tokens, preview = false }) {
   const p = tokens?.palette || {};
@@ -57,7 +45,10 @@ export default function GreetingCard({ tokens, preview = false }) {
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
 
-  const openEnvelope = useCallback(() => setEnvelopeOpening(true), []);
+  /* The card underneath becomes usable once the envelope has dropped
+     away (app/greeting-envelope.css: seal at 0s, gone from 1.45s). */
+  const timers = useRef([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   useEffect(() => {
     if (preview || !musicUrl) return;
@@ -73,54 +64,18 @@ export default function GreetingCard({ tokens, preview = false }) {
     if (audioRef.current) audioRef.current.muted = muted;
   }, [muted]);
 
-  const open = useCallback(() => {
-    setOpened(true);
-    if (!preview && audioRef.current && !started) {
+  const openEnvelope = useCallback(() => {
+    if (envelopeOpening) return;
+    setEnvelopeOpening(true);
+    /* Music starts on the tap itself — browsers only allow sound that
+       begins inside a user gesture. */
+    if (audioRef.current && !started) {
       setStarted(true);
       audioRef.current.play().catch(() => {});
     }
-  }, [preview, started]);
-
-  /* ── The tilt — a fine-pointer flourish, never the whole story ──
-     The card leans toward the cursor and a soft glare tracks it, the same
-     "catching the light" trick real foil stationery has. It never runs in
-     the sender's own preview (nothing to tilt toward while they're
-     editing), on a touch device (no hover to ask for it), or with reduced
-     motion requested — the foil sweep and shimmer already carry the
-     premium feel with no pointer at all. */
-  const wrapRef = useRef(null);
-  const stageRef = useRef(null);
-  useEffect(() => {
-    if (preview) return;
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const wrap = wrapRef.current, stage = stageRef.current;
-    if (!wrap || !stage) return;
-
-    const onMove = (e) => {
-      const r = stage.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
-      const rx = (0.5 - py) * 12;
-      const ry = (px - 0.5) * 16;
-      stage.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
-      stage.style.setProperty("--gc-gx", `${px * 100}%`);
-      stage.style.setProperty("--gc-gy", `${py * 100}%`);
-      stage.classList.add("gc-tilting");
-    };
-    const onLeave = () => {
-      stage.style.transform = "";
-      stage.classList.remove("gc-tilting");
-    };
-
-    wrap.addEventListener("pointermove", onMove);
-    wrap.addEventListener("pointerleave", onLeave);
-    return () => {
-      wrap.removeEventListener("pointermove", onMove);
-      wrap.removeEventListener("pointerleave", onLeave);
-    };
-  }, [preview]);
+    const quick = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    timers.current.push(setTimeout(() => setOpened(true), quick ? 0 : 1500));
+  }, [envelopeOpening, started]);
 
   const style = {
     "--gc-bg": p.bg || "#1c1420",
@@ -131,10 +86,6 @@ export default function GreetingCard({ tokens, preview = false }) {
     "--gc-muted": p.muted || "#c9b9c6",
   };
 
-  const Scene = getScene(tokens?.occasion);
-  // Every occasion resolves to some Scene now (a bespoke one for
-  // Christmas/Onam, GenericScene — motif + Lottie — for the rest), so the
-  // closed cover always has something animated on it, never a flat motif.
 
   return (
     <div className={`gc ${preview ? "gc-preview" : ""}`} style={style}>
@@ -152,50 +103,21 @@ export default function GreetingCard({ tokens, preview = false }) {
         </button>
       )}
 
-      <div className="gc-envelope-wrap" ref={wrapRef}>
-        <div className="gc-stage" ref={stageRef}>
-          <div className={`gc-card ${opened ? "gc-open" : ""}`}>
-            <div className="gc-card-inner">
-
-              {/* ── Front: the closed cover ── */}
-              <div className="gc-face gc-face-front">
-                <span className="gc-front-glow" aria-hidden="true" />
-                <span className="gc-glare" aria-hidden="true" />
-                <Scene occasion={tokens?.occasion} accent={p.accent || "#c69a55"} palette={p} />
-                <div className="gc-front-frame" aria-hidden="true" />
-                <div className="gc-front-body">
-                  <p className="gc-front-eyebrow">A card for</p>
-                  <h2 className="gc-front-to">{to}</h2>
-                  <p className="gc-front-occasion">{tokens?.occasionName || "A little something"}</p>
-                  <button type="button" className="gc-open-btn" onClick={open}>
-                    <Sparkles size={13} className="gc-open-spark" />
-                    <span>Tap to open</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Back: the inside of the card, revealed on flip ──
-                  Cream paper, garland, script headline, TO / FROM and a
-                  cast of animated characters — see
-                  components/greetings/IllustratedCard.js. Its entrance
-                  waits ~1s for the flip to finish, except in the
-                  create-page preview, which starts open. */}
-              <div className="gc-face gc-face-back">
-                <IllustratedCard
-                  occasion={tokens?.occasion}
-                  occasionName={tokens?.occasionName}
-                  palette={p}
-                  to={to}
-                  from={from}
-                  message={message}
-                  photoUrl={photoUrl}
-                  entering={opened}
-                  delay={preview ? 0.15 : 0.95}
-                />
-                <span className="gc-glare" aria-hidden="true" />
-              </div>
-            </div>
-          </div>
+      <div className="gc-envelope-wrap">
+        <div className="gc-stage">
+          {/* The card itself — a cover, a verse and the letter, opening
+              like a little book: components/greetings/CardBook.js. */}
+          <CardBook
+            occasion={tokens?.occasion}
+            occasionName={tokens?.occasionName}
+            palette={p}
+            to={to}
+            from={from}
+            message={message}
+            photoUrl={photoUrl}
+            ready={opened}
+            preview={preview}
+          />
         </div>
 
         {!preview && (

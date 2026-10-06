@@ -339,38 +339,34 @@
 }
 .cb-dark .cb-msg { text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
 
-/* ── The sender's photo as the message box's background, shown whole ──
-   .cb-note-fill  the same photo, blurred and softened, filling the box
-   .cb-note-photo the complete photo (contain, never cropped), sitting in
-                  the box from --cb-photo-top down, below the writing
-   The old wash over the whole photo (.cb-note.has-photo::before) is now
-   only a light veil behind the text at the top. */
+/* ── The sender's photo as the message box's background, contained ──
+   .cb-note-fill  the same photo, blurred, filling the whole box
+   .cb-note-photo the complete photo, centred, never cropped
+   The veil (::before) keeps the writing at the top readable and clears
+   towards the bottom so the photo stays bright. */
 .cb-note.has-photo img.cb-note-fill {
   position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; z-index: 0;
-  filter: blur(14px) saturate(1.05) brightness(1.04);
+  filter: blur(14px) saturate(1.05) brightness(1.02);
 }
 .cb-note.has-photo img.cb-note-photo {
-  position: absolute; left: 3%; top: var(--cb-photo-top, 40%);
-  width: 94%; height: calc(100% - var(--cb-photo-top, 40%) - 3%); inset: auto;
-  left: 3%; top: var(--cb-photo-top, 40%);
-  object-fit: contain; object-position: 50% 100%; z-index: 1;
-  filter: drop-shadow(0 .8cqw 1.6cqw rgba(0, 0, 0, .35));
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; object-position: 50% 50%; z-index: 0;
 }
 .cb-note.has-photo::before {
   z-index: 1;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 78%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 62%, transparent) var(--cb-photo-top, 40%),
-    transparent calc(var(--cb-photo-top, 40%) + 18px));
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 82%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 55%, transparent) 42%,
+    transparent 78%);
 }
 .cb-dark .cb-note.has-photo::before {
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash) 80%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash) 64%, transparent) var(--cb-photo-top, 40%),
-    transparent calc(var(--cb-photo-top, 40%) + 18px));
+    color-mix(in srgb, var(--cb-wash) 82%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash) 55%, transparent) 42%,
+    transparent 78%);
 }
 .cb-note.has-photo .cb-note-label, .cb-note.has-photo .cb-msg { z-index: 2; }
-.cb-note.has-photo .cb-msg { text-shadow: 0 0 .8cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 80%, transparent); }
+.cb-note.has-photo .cb-msg { text-shadow: 0 0 .9cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 85%, transparent); }
 
 /* ── The sender's own cover photo: whole, over a blurred copy of itself ── */
 .cb-cover-blur { filter: blur(16px) brightness(.72) saturate(1.1); transform: scale(1.18); animation: none; }
@@ -379,11 +375,3 @@
   object-fit: contain;
   filter: drop-shadow(0 1.4cqw 2.4cqw rgba(0, 0, 0, .55));
 }
-
-/* With a photo, the writing is a touch smaller and the space above the box
-   tighter, so the photo underneath gets as much of the box as possible. */
-.cb-wish.with-photo .cb-orn { display: none; }
-.cb-wish.with-photo .cb-note { margin-top: 2cqw; padding: 3.4cqw 4cqw; }
-.cb-wish.with-photo .cb-note-label { display: none; }
-.cb-wish.with-photo .cb-msg { margin: 0; line-height: 1.24; }
-.cb-wish.with-photo .cb-inner { bottom: 15cqw; }

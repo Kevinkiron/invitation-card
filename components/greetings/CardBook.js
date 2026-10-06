@@ -38,7 +38,7 @@ import "@/app/greeting-book.css";
 const CAVEAT = "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap";
 
 function messageSize(len, photo) {
-  const base = photo ? 0.74 : 1;
+  const base = photo ? 0.92 : 1;
   const s = len > 300 ? 4.2 : len > 200 ? 4.9 : len > 120 ? 5.6 : 6.4;
   return `${(s * base).toFixed(2)}cqw`;
 }
@@ -142,44 +142,25 @@ function VersePage({ theme, words, art, own }) {
   );
 }
 
-/* The sender's photo is the background of the message box, shown
-   WHOLE: a soft blurred copy fills the box, and the complete photo —
-   never cropped — sits in the lower part of it. The message is written
-   above the photo on the blurred part, so the writing never covers a
-   face: the box measures where the writing ends (ResizeObserver, so it
-   follows font loading, typing in the preview and screen size) and the
-   photo starts just below it. (It used to
-   be cropped to fill the box with a pale wash over it, which cut faces
-   off and faded them.) */
+/* The sender's photo is the background of the message box, as it has
+   always been, but CONTAINED rather than cropped: the whole photo shows,
+   centred, over a soft blurred copy of itself that fills the rest of the
+   box — so nobody's face is ever cut off. The message is written over
+   it with a light veil at the top for legibility. */
 function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
   const text = message || "Wishing you all the good things.";
-  const noteRef = useRef(null);
-  const msgRef = useRef(null);
-  useEffect(() => {
-    const note = noteRef.current, msg = msgRef.current;
-    if (!photoUrl || !note || !msg || typeof ResizeObserver === "undefined") return;
-    const place = () => {
-      const top = msg.offsetTop + msg.offsetHeight + 6;
-      note.style.setProperty("--cb-photo-top", `${top}px`);
-    };
-    place();
-    const ro = new ResizeObserver(place);
-    ro.observe(note);
-    ro.observe(msg);
-    return () => ro.disconnect();
-  }, [photoUrl, text]);
   return (
-    <div className={`cb-page cb-wish ${photoUrl ? "with-photo" : ""}`} style={{ "--cb-msg": messageSize(text.length, !!photoUrl) }}>
+    <div className="cb-page cb-wish" style={{ "--cb-msg": messageSize(text.length, !!photoUrl) }}>
       <FrameBorder theme={theme} />
       <div className="cb-inner">
         <p className="cb-kicker">{words.wish}</p>
         <h3 className="cb-dear">Dear {to},</h3>
         <span className="cb-orn" aria-hidden="true">✦</span>
-        <div ref={noteRef} className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
+        <div className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
           {photoUrl && <img className="cb-note-fill" src={photoUrl} alt="" aria-hidden="true" />}
           {photoUrl && <img className="cb-note-photo" src={photoUrl} alt={`A photo from ${from || "the sender"}`} />}
           <span className="cb-note-label">Your wish</span>
-          <p ref={msgRef} className="cb-msg">{text}</p>
+          <p className="cb-msg">{text}</p>
           {!photoUrl && emblem && <div className="cb-note-art" aria-hidden="true"><GreetingLottie src={emblem.src} /></div>}
         </div>
         <p className="cb-from">From {from || "me"}</p>

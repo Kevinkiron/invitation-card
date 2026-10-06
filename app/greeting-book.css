@@ -355,15 +355,15 @@
 .cb-note.has-photo::before {
   z-index: 1;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 58%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 28%, transparent) 40%,
-    transparent 66%);
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 45%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 18%, transparent) 38%,
+    transparent 58%);
 }
 .cb-dark .cb-note.has-photo::before {
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash) 58%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash) 28%, transparent) 40%,
-    transparent 66%);
+    color-mix(in srgb, var(--cb-wash) 45%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash) 18%, transparent) 38%,
+    transparent 58%);
 }
 .cb-note.has-photo .cb-note-label, .cb-note.has-photo .cb-msg { z-index: 2; }
 .cb-note.has-photo .cb-msg {

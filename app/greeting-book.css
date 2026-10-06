@@ -346,7 +346,7 @@
    towards the bottom so the photo stays bright. */
 .cb-note.has-photo img.cb-note-fill {
   position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; z-index: 0;
-  filter: blur(24px) saturate(1.08) brightness(1.02);
+  filter: blur(10px) saturate(1.06) brightness(1.02);
 }
 /* the wrapper centres the photo; the photo itself is sized to its own
    shape (never cropped), so the feathered mask lands on its real edges */
@@ -363,12 +363,12 @@
      melts in at the top and bottom (and sides) instead of ending in a
      hard line */
   -webkit-mask-image:
-    linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
   mask-composite: intersect;
 }
 .cb-note.has-photo::before {

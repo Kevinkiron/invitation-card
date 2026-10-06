@@ -355,18 +355,25 @@
 .cb-note.has-photo::before {
   z-index: 1;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 82%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 55%, transparent) 42%,
-    transparent 78%);
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 58%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 28%, transparent) 40%,
+    transparent 66%);
 }
 .cb-dark .cb-note.has-photo::before {
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--cb-wash) 82%, transparent) 0%,
-    color-mix(in srgb, var(--cb-wash) 55%, transparent) 42%,
-    transparent 78%);
+    color-mix(in srgb, var(--cb-wash) 58%, transparent) 0%,
+    color-mix(in srgb, var(--cb-wash) 28%, transparent) 40%,
+    transparent 66%);
 }
 .cb-note.has-photo .cb-note-label, .cb-note.has-photo .cb-msg { z-index: 2; }
-.cb-note.has-photo .cb-msg { text-shadow: 0 0 .9cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 85%, transparent); }
+.cb-note.has-photo .cb-msg {
+  /* a soft halo in the paper colour round each letter keeps the writing
+     readable now that the veil behind it is lighter */
+  text-shadow:
+    0 0 .5cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 95%, transparent),
+    0 0 1.4cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 85%, transparent),
+    0 0 2.6cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 60%, transparent);
+}
 
 /* ── The sender's own cover photo: whole, over a blurred copy of itself ── */
 .cb-cover-blur { filter: blur(16px) brightness(.72) saturate(1.1); transform: scale(1.18); animation: none; }

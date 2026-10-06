@@ -264,7 +264,7 @@
 .cb-note {
   position: relative; width: 100%; flex: 1; min-height: 0;
   margin: 2.4cqw 0 2cqw; padding: 4.4cqw 4.6cqw;
-  border-radius: 3cqw; overflow: hidden;
+  border-radius: 2cqw; overflow: hidden;
   display: flex; flex-direction: column; text-align: left;
 }
 .cb-note:not(.has-photo) {
@@ -357,20 +357,18 @@
 .cb-note.has-photo img.cb-note-photo {
   position: static; display: block;
   width: auto; height: auto; max-width: 100%; max-height: 100%;
-  /* rounded corners, and the faintest softening over the whole photo —
-     just enough to sit back behind the writing (1.6px was too much) */
-  border-radius: 3cqw;
-  filter: blur(.6px);
+  /* square corners; the photo itself stays sharp and only its edges
+     blur away into the soft copy behind it (the wider feather below) */
   /* feather the photo's edges into the blurred copy behind it, so it
      melts in at the top and bottom (and sides) instead of ending in a
      hard line */
   -webkit-mask-image:
-    linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+    linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+    linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
   mask-composite: intersect;
 }
 .cb-note.has-photo::before {

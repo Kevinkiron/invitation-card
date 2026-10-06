@@ -157,10 +157,14 @@ function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
         <h3 className="cb-dear">Dear {to},</h3>
         <span className="cb-orn" aria-hidden="true">✦</span>
         <div className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
-          {photoUrl && <img className="cb-note-fill" src={photoUrl} alt="" aria-hidden="true" />}
           {photoUrl && (
-            <span className="cb-note-photo-wrap">
-              <img className="cb-note-photo" src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
+            /* the photo layers in one wrapper, so their outer edges can
+               melt into the card paper without fading the writing */
+            <span className="cb-note-bg">
+              <img className="cb-note-fill" src={photoUrl} alt="" aria-hidden="true" />
+              <span className="cb-note-photo-wrap">
+                <img className="cb-note-photo" src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
+              </span>
             </span>
           )}
           <span className="cb-note-label">Your wish</span>

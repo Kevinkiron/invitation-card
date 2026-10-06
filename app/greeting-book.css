@@ -401,3 +401,25 @@
   object-fit: contain;
   filter: drop-shadow(0 1.4cqw 2.4cqw rgba(0, 0, 0, .55));
 }
+
+/* No edges at all: the photo background (blurred fill + photo) melts
+   into the card paper on every side instead of sitting in a box. Only
+   the background wrapper is masked, so the writing stays crisp. */
+.cb-note.has-photo { border-radius: 0; box-shadow: none; overflow: visible; }
+.cb-note-bg {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+.cb-note.has-photo img.cb-note-fill { inset: 0; width: 100%; height: 100%; }
+/* the veil behind the writing fades out at the edges too */
+.cb-note.has-photo::before {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+}

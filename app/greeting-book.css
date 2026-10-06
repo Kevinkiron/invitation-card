@@ -357,9 +357,8 @@
 .cb-note.has-photo img.cb-note-photo {
   position: static; display: block;
   width: auto; height: auto; max-width: 100%; max-height: 100%;
-  /* a light softening over the whole photo, top to bottom, so it reads
-     as a background behind the writing while faces stay recognisable */
-  filter: blur(1.6px) saturate(1.04);
+  /* the photo itself stays sharp — only its edges fade into the blurred
+     copy behind it (a 1.6px blur over the whole photo was too much) */
   /* feather the photo's edges into the blurred copy behind it, so it
      melts in at the top and bottom (and sides) instead of ending in a
      hard line */

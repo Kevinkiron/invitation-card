@@ -346,11 +346,31 @@
    towards the bottom so the photo stays bright. */
 .cb-note.has-photo img.cb-note-fill {
   position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; z-index: 0;
-  filter: blur(14px) saturate(1.05) brightness(1.02);
+  filter: blur(24px) saturate(1.08) brightness(1.02);
+}
+/* the wrapper centres the photo; the photo itself is sized to its own
+   shape (never cropped), so the feathered mask lands on its real edges */
+.cb-note-photo-wrap {
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; align-items: center; justify-content: center;
 }
 .cb-note.has-photo img.cb-note-photo {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain; object-position: 50% 50%; z-index: 0;
+  position: static; display: block;
+  width: auto; height: auto; max-width: 100%; max-height: 100%;
+  /* a light softening over the whole photo, top to bottom, so it reads
+     as a background behind the writing while faces stay recognisable */
+  filter: blur(1.6px) saturate(1.04);
+  /* feather the photo's edges into the blurred copy behind it, so it
+     melts in at the top and bottom (and sides) instead of ending in a
+     hard line */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  mask-composite: intersect;
 }
 .cb-note.has-photo::before {
   z-index: 1;

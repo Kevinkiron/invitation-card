@@ -8,6 +8,8 @@ import { cardWords } from "@/lib/greetings/verses";
 import { getLottie } from "@/lib/greetings/lottie";
 import { getOccasion } from "@/lib/greetings/occasions";
 import { coverPhoto, photoAlt } from "@/lib/greetings/photos";
+import { cardStyleVars, customVerse } from "@/lib/greetings/card-style";
+import { coverChoice } from "@/lib/greetings/covers";
 import "@/app/greeting-book.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -32,6 +34,8 @@ import "@/app/greeting-book.css";
    come from the occasion's card theme (lib/greetings/card-themes.js).
    `preview` (the create-page phone) opens straight onto the letter.
    ══════════════════════════════════════════════════════════════════════ */
+
+const CAVEAT = "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap";
 
 function messageSize(len, photo) {
   const base = photo ? 0.92 : 1;
@@ -102,20 +106,27 @@ function Cover({ words, photo, alt, onOpen, label }) {
   );
 }
 
-function VersePage({ theme, words, art }) {
+/* `own` is the sender's own title and lines (lib/greetings/card-style.js
+   customVerse), which replace the printed verse and its closing couplet;
+   a blank title keeps the occasion's. */
+function VersePage({ theme, words, art, own }) {
+  const lines = own?.lines?.length ? own.lines : words.verse;
+  const close = own?.lines?.length ? [] : words.close;
   return (
-    <div className="cb-page cb-verse">
+    <div className={`cb-page cb-verse ${lines.length > 5 ? "is-long" : ""}`}>
       <FrameBorder theme={theme} />
       <div className="cb-inner">
         <p className="cb-kicker">{words.kicker}</p>
-        <h3 className="cb-title">{words.title}</h3>
+        <h3 className="cb-title">{own?.title || words.title}</h3>
         {art && <div className="cb-art" aria-hidden="true"><GreetingLottie src={art.src} /></div>}
         <div className="cb-lines">
-          {words.verse.map((l, i) => <span key={i} style={{ "--i": i }}>{l}</span>)}
+          {lines.map((l, i) => <span key={i} style={{ "--i": i }}>{l}</span>)}
         </div>
-        <div className="cb-close">
-          {words.close.map((l, i) => <span key={i}>{l}</span>)}
-        </div>
+        {close.length > 0 && (
+          <div className="cb-close">
+            {close.map((l, i) => <span key={i}>{l}</span>)}
+          </div>
+        )}
         <span className="cb-orn" aria-hidden="true">✦</span>
       </div>
     </div>
@@ -145,13 +156,18 @@ function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
 
 export default function CardBook({
   occasion, occasionName, palette = {}, to, from, message, photoUrl, ready = true, preview = false,
+  background = null, look = null, verse = null, cover = null, focusPage = null,
 }) {
   const o = getOccasion(occasion);
   const theme = cardTheme(occasion, { palette, name: occasionName, lottie: o?.lottie });
   const words = cardWords(occasion, occasionName);
   const art = getLottie(theme.cast?.hero) || getLottie(theme.emblem);
   const emblem = getLottie(theme.emblem) || art;
-  const cover = coverPhoto(o?.photo);
+  const chosen = coverChoice(occasion, cover);
+  const coverSrc = chosen?.url || coverPhoto(o?.photo);
+  const coverAlt = chosen?.alt ?? photoAlt(o?.photo);
+  const own = customVerse({ verse });
+  const { vars, dark, font } = cardStyleVars({ background, style: look }, theme);
 
   const wide = useWide(preview);
   const [page, setPage] = useState(preview ? 2 : 0);
@@ -159,6 +175,9 @@ export default function CardBook({
   /* Switching to the wide layout mid-read: the spread has two states
      (closed / open), so any inside page means open. */
   useEffect(() => { if (wide) setPage((p) => (p > 0 ? 1 : 0)); }, [wide]);
+  /* The create page turns the preview to the page being edited: the
+     cover while choosing a cover, the verse while writing it, and so on. */
+  useEffect(() => { if (focusPage != null) setPage(focusPage); }, [focusPage]);
 
   const go = useCallback((n) => setPage((p) => Math.max(0, Math.min(last, p + n))), [last]);
 
@@ -186,18 +205,19 @@ export default function CardBook({
     "--cb-ink": theme.ink || "#8f294e",
     "--cb-leaf": theme.leaf || "#6b7f4a",
     "--cb-panel": theme.panel || "#2b1a1f",
+    ...vars,
   };
 
   const coverEl = (
     <Cover
       words={words}
-      photo={cover}
-      alt={photoAlt(o?.photo)}
+      photo={coverSrc}
+      alt={coverAlt}
       onOpen={() => go(1)}
       label={`Open your ${(occasionName || "").replace(/ (Wishes|Mubarak)$/, "") || "card"} wish`}
     />
   );
-  const verseEl = <VersePage theme={theme} words={words} art={art} />;
+  const verseEl = <VersePage theme={theme} words={words} art={art} own={own} />;
   const wishEl = <WishPage theme={theme} words={words} to={to} from={from} message={message} photoUrl={photoUrl} emblem={emblem} />;
 
   const labels = wide
@@ -215,7 +235,8 @@ export default function CardBook({
 
   if (wide) {
     return (
-      <div className={`cb cb-spread ${page ? "is-open" : ""} ${ready ? "is-ready" : ""}`} style={style}>
+      <div className={`cb cb-spread ${page ? "is-open" : ""} ${ready ? "is-ready" : ""} ${dark ? "cb-dark" : ""}`} style={style}>
+        {font === "handwritten" && <link rel="stylesheet" href={CAVEAT} />}
         <div className="cb-book" onPointerDown={onDown} onPointerUp={onUp}>
           <div className={`cb-right ${page ? "is-shown" : ""}`}>{wishEl}</div>
           <div className="cb-leaf cb-spine-leaf">
@@ -231,7 +252,8 @@ export default function CardBook({
 
   const pages = [coverEl, verseEl, wishEl];
   return (
-    <div className={`cb cb-stack ${ready ? "is-ready" : ""} ${preview ? "cb-instant" : ""} ${page < 2 ? "has-under" : ""}`} style={style}>
+    <div className={`cb cb-stack ${ready ? "is-ready" : ""} ${preview ? "cb-instant" : ""} ${page < 2 ? "has-under" : ""} ${dark ? "cb-dark" : ""}`} style={style}>
+      {font === "handwritten" && <link rel="stylesheet" href={CAVEAT} />}
       <div className="cb-book" onPointerDown={onDown} onPointerUp={onUp}>
         {pages.map((el, k) => (
           <div

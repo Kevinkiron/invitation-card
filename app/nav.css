@@ -1,0 +1,97 @@
+/* ══════════════════════════════════════════════════════════════════════
+   SITE HEADER — components/Nav.js
+
+   The header's styles used to live only in app/landing.css, which only
+   the homepage imports, and its colours came from variables set on the
+   homepage's .w-page wrapper. Opened directly, every other page
+   (/greetings, /greetings/create, /create, the dashboard...) showed the
+   header as a jumble of unstyled links wrapping over two lines.
+
+   Nav.js now imports this file itself, with the colours given as fallbacks
+   so the homepage's own values still apply there. Every selector is wrapped in
+   :where(), which has no specificity, so the homepage's own header
+   rules in landing.css / landing-premium.css still win there; this only
+   fills in where nothing else styles the header.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:where(.w-nav) {
+  position: sticky; top: 0; z-index: 100;
+  transition: background .35s ease, border-color .35s ease, backdrop-filter .35s ease;
+}
+:where(.w-nav-solid) {
+  background: rgba(254, 252, 250, .88);
+  backdrop-filter: saturate(200%) blur(20px);
+  -webkit-backdrop-filter: saturate(200%) blur(20px);
+  border-bottom: 1px solid var(--w-line, #ede5d8);
+}
+:where(.w-nav-inner) {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px; gap: 16px;
+}
+:where(.w-nav-logo) { display: flex; align-items: center; gap: 10px; }
+:where(.w-nav-logo-sub) {
+  font-size: 8px; letter-spacing: .32em; text-transform: uppercase;
+  color: var(--w-muted, #7a6570); font-weight: 600;
+}
+:where(.w-nav-links) {
+  display: flex; align-items: center; gap: 4px;
+}
+/* BigDates-style nav links: icon + text pill, accent ring on hover */
+:where(.w-nav-link) {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 14px; font-weight: 500; color: var(--w-muted, #7a6570);
+  transition: color .2s, background .2s, border-color .2s;
+  white-space: nowrap;
+}
+:where(.w-nav-link:hover) {
+  color: var(--w-ink, #1a0f14);
+  background: var(--w-line, #ede5d8);
+}
+/* Category nav links with per-event accent */
+:where(.w-nav-link.accented) {
+  background: var(--category-bg);
+  border-color: var(--category-border);
+  color: var(--accent);
+}
+:where(.w-nav-link.accented:hover) {
+  background: var(--category-bg);
+  border-color: var(--accent);
+}
+:where(.w-nav-actions) {
+  display: flex; align-items: center; gap: 10px;
+}
+:where(.w-nav-login) {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 14px; font-weight: 600; color: var(--w-ink, #1a0f14);
+  transition: background .2s, color .2s;
+}
+:where(.w-nav-login:hover) {
+  background: var(--w-line, #ede5d8);
+}
+:where(.w-nav-burger) {
+  display: none; background: none; border: none;
+  color: var(--w-ink, #1a0f14); padding: 6px;
+}
+/* Mobile nav drawer */
+:where(.w-nav-drawer) {
+  border-top: 1px solid var(--w-line, #ede5d8);
+  background: rgba(254, 252, 250, .98);
+  padding: 18px 28px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+:where(.w-nav-drawer a), :where(.w-nav-drawer button) {
+  font-size: 15px; font-weight: 600; color: var(--w-ink, #1a0f14);
+  background: none; border: none; text-align: left; padding: 0;
+}
+:where(.w-nav-drawer a:hover), :where(.w-nav-drawer button:hover) { color: var(--w-maroon, #5a1230); }
+
+@media (max-width: 860px) {
+  :where(.w-nav-links) { display: none !important; }
+  :where(.w-nav-burger) { display: block !important; }
+}
+@media (max-width: 560px) {
+  :where(.w-nav-inner) { padding: 14px 20px; }
+  :where(.w-nav-drawer) { padding: 16px 20px; }
+}

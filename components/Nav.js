@@ -7,6 +7,7 @@ import { LayoutGrid, Shield, LogOut, ArrowRight, Menu, X, User } from "lucide-re
 import { useAuth } from "./AuthProvider";
 import Wordmark, { BrandMark } from "./Wordmark";
 import { C } from "@/lib/theme";
+import "@/app/nav.css";
 import "@/app/greetings.css";
 
 /* Per-event nav link accents — mirrors BigDates nav category colours */

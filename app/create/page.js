@@ -599,7 +599,7 @@ export default function CreatePage() {
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    accept="image/jpeg,image/png,image/webp"
                     multiple
                     hidden
                     onChange={(e) => addPhotos(e.target.files)}

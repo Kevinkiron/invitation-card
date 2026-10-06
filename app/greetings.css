@@ -200,3 +200,56 @@
 .g-bg-dot input { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); border: 0; padding: 0; cursor: pointer; }
 .g-bg-arrow { color: #8c7b70; font-size: 13px; }
 .g-bg-preview { width: 44px; height: 30px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }
+
+/* ── Verse step: write your own page one ── */
+.g-verse-form { display: flex; flex-direction: column; gap: 8px; }
+.g-verse-form input, .g-verse-form textarea {
+  width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(60, 40, 20, .16);
+  background: #fff; padding: 11px 13px; font: 500 15px/1.45 'Cormorant Garamond', Georgia, serif; color: #3b2c26;
+  resize: vertical;
+}
+.g-verse-form .g-verse-title { font-style: italic; font-size: 17px; }
+.g-verse-form input:focus, .g-verse-form textarea:focus { outline: none; border-color: #DE6B5A; box-shadow: 0 0 0 3px rgba(222, 107, 90, .15); }
+.g-verse-hint { margin: 0; font-size: 11.5px; color: #8c7b70; }
+.g-verse-actions { display: flex; gap: 8px; }
+.g-verse-actions .btn { flex: 1; justify-content: center; }
+
+/* ── Cover step: pick a photo for the front ── */
+.g-cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.g-cover {
+  position: relative; aspect-ratio: 3 / 4.3; padding: 0; border-radius: 10px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; background: #efe7da;
+  box-shadow: 0 6px 14px -8px rgba(40, 20, 10, .5);
+  transition: transform .18s ease, border-color .18s ease;
+}
+.g-cover:hover { transform: translateY(-2px); }
+.g-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.g-cover.is-on { border-color: #DE6B5A; box-shadow: 0 0 0 3px rgba(222, 107, 90, .25), 0 8px 18px -8px rgba(40, 20, 10, .55); }
+.g-cover.is-on::after {
+  content: "✓"; position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 50%;
+  background: #DE6B5A; color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
+}
+.g-cover-upload { border: 2px dashed rgba(60, 40, 20, .25); background: #fff; }
+.g-cover-upload span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 100%; color: #8c7b70; }
+.g-cover-upload b { font-size: 11px; }
+
+/* ── Style step: text colour and font ── */
+.g-style-label { margin: 4px 0 -2px; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #8c7b70; }
+.g-ink-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.g-ink {
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; padding: 0;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .15), 0 3px 8px -4px rgba(0, 0, 0, .4);
+  transition: transform .15s ease;
+}
+.g-ink:hover { transform: scale(1.08); }
+.g-ink.is-on { box-shadow: 0 0 0 2px #DE6B5A, 0 3px 8px -4px rgba(0, 0, 0, .4); }
+.g-ink-auto { width: auto; padding: 0 11px; border-radius: 999px; font: 700 11.5px/26px inherit; background: #fff; color: #3b2c26; }
+.g-font-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.g-font {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px 8px;
+  border-radius: 12px; cursor: pointer; background: #fff; border: 2px solid rgba(60, 40, 20, .08);
+  font-family: inherit; color: #3b2c26;
+}
+.g-font span { font-size: 19px; line-height: 1.15; white-space: nowrap; }
+.g-font small { font-size: 10.5px; color: #8c7b70; font-weight: 700; letter-spacing: .04em; }
+.g-font.is-on { border-color: #DE6B5A; background: rgba(222, 107, 90, .06); }

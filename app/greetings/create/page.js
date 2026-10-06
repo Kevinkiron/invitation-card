@@ -19,6 +19,10 @@ import { uploadPhoto, describeFile } from "@/lib/photos";
 import { uploadAudio, describeAudioFile } from "@/lib/music/upload";
 import { whatsappHref, SITE_URL } from "@/lib/share";
 import { BACKGROUNDS, backgroundCss, backgroundIsLight } from "@/lib/greetings/backgrounds";
+import { INKS, FONTS } from "@/lib/greetings/card-style";
+import { coverOptions } from "@/lib/greetings/covers";
+import { cardWords } from "@/lib/greetings/verses";
+import { cardTheme } from "@/lib/greetings/card-themes";
 import "@/app/greetings.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -40,7 +44,7 @@ import "@/app/greetings.css";
    answer #4 scoped this feature to creation only, not the dashboard.
    ══════════════════════════════════════════════════════════════════════ */
 
-const STEPS = ["to", "from", "message", "background", "extras", "done"];
+const STEPS = ["to", "from", "message", "verse", "cover", "style", "extras", "done"];
 const STEP = (name) => STEPS.indexOf(name);
 
 function isDark(hex) {
@@ -80,6 +84,7 @@ export default function GreetingCreatePage() {
   const [copied, setCopied] = useState(false);
 
   const photoRef = useRef(null);
+  const coverRef = useRef(null);
   const audioRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -145,8 +150,8 @@ export default function GreetingCreatePage() {
     } else if (step === "message") {
       setTokens((t) => ({ ...t, message: text.slice(0, 600) }));
       say("user", text);
-      say("assistant", "Lovely. Now pick a background for the card — tap a colour to see it on the preview.");
-      setStepIdx(STEP("background"));
+      say("assistant", verseQuestion());
+      setStepIdx(STEP("verse"));
     }
     setInput("");
   }
@@ -155,8 +160,8 @@ export default function GreetingCreatePage() {
     const text = occasion?.greeting || tokens.message || "";
     setTokens((t) => ({ ...t, message: text }));
     say("user", "Use that as it is.");
-    say("assistant", "Lovely. Now pick a background for the card — tap a colour to see it on the preview.");
-    setStepIdx(STEP("background"));
+    say("assistant", verseQuestion());
+    setStepIdx(STEP("verse"));
   }
 
   async function addPhoto(fileList) {
@@ -201,14 +206,64 @@ export default function GreetingCreatePage() {
     setTokens((t) => ({ ...t, media: { ...t.media, [key]: null, ...(key === "musicUrl" ? { musicTrackId: null, musicLabel: null } : {}) } }));
   }
 
-  /* ── Background: the gradient behind the card ── */
+  /* ── Page one: the verse — theirs, or the occasion's own ── */
+  const words = cardWords(occasion?.slug, occasion?.name);
+  function verseQuestion() {
+    return `Page one of the card has a little verse. This is the one we wrote for ${occasion?.name || "it"}:\n\n${words.title}\n${words.verse.join("\n")}\n\nKeep it, or write your own below.`;
+  }
+  function editVerse(patch) {
+    setTokens((t) => ({ ...t, verse: { title: t.verse?.title || "", lines: t.verse?.lines || [], ...patch } }));
+  }
+  function confirmVerse(keep) {
+    const own = (tokens.verse?.lines || []).some((l) => l.trim()) || tokens.verse?.title?.trim();
+    if (keep || !own) {
+      setTokens((t) => ({ ...t, verse: null }));
+      say("user", "Keep that verse.");
+    } else {
+      say("user", [tokens.verse.title, ...(tokens.verse.lines || [])].filter((l) => l && l.trim()).join("\n"));
+    }
+    say("assistant", "Now choose a photo for the front of the card — or upload one of your own.");
+    setStepIdx(STEP("cover"));
+  }
+
+  /* ── The cover photo ── */
+  async function uploadCover(fileList) {
+    const file = fileList?.[0];
+    if (!file || !session?.user?.id) return;
+    const problem = describeFile(file);
+    if (problem) { setErr(problem); return; }
+    setUploading(true);
+    setErr("");
+    try {
+      const url = await uploadPhoto(file, session.user.id);
+      setTokens((t) => ({ ...t, cover: { photoUrl: url } }));
+    } catch (e) {
+      setErr(e.message || "That photo did not upload.");
+    } finally {
+      setUploading(false);
+      if (coverRef.current) coverRef.current.value = "";
+    }
+  }
+  function confirmCover() {
+    const c = tokens.cover;
+    say("user", c?.photoUrl ? "My own photo" : c?.id ? (coverOptions(occasion?.slug).find((x) => x.id === c.id)?.alt || "That one") : "The first one is perfect");
+    say("assistant", "Last bit of styling: the paper colour inside the card, the text colour and a font. Tap to try them on the preview.");
+    setStepIdx(STEP("style"));
+  }
+
+  /* ── Inside the card: paper colour, text colour, font ── */
   function pickBackground(bg) {
     setTokens((t) => ({ ...t, background: bg ? { id: bg.id, from: bg.from, to: bg.to } : null }));
   }
-  function confirmBackground() {
+  function pickLook(patch) {
+    setTokens((t) => ({ ...t, style: { ...(t.style || {}), ...patch } }));
+  }
+  function confirmStyle() {
     const bg = tokens.background;
-    const name = !bg ? "Keep the occasion colour" : bg.id === "custom" ? "My own colours" : (BACKGROUNDS.find((b) => b.id === bg.id)?.name || "That one");
-    say("user", name);
+    const paper = !bg ? "Classic paper" : bg.id === "custom" ? "My own colours" : (BACKGROUNDS.find((b) => b.id === bg.id)?.name || "That colour");
+    const ink = INKS.find((i) => i.id === tokens.style?.ink)?.name;
+    const font = FONTS.find((f) => f.id === tokens.style?.font)?.name;
+    say("user", [paper, ink && `${ink} text`, font && `${font} font`].filter(Boolean).join(", "));
     say("assistant", "You can add a photo or a little music if you'd like, or just publish it as is.");
     setStepIdx(STEP("extras"));
   }
@@ -404,16 +459,75 @@ export default function GreetingCreatePage() {
                   <RefreshCw size={13} /> Back
                 </button>
               </div>
-            ) : step === "background" ? (
+            ) : step === "verse" ? (
+              <div className="g-verse-form">
+                <input
+                  type="text"
+                  className="g-verse-title"
+                  value={tokens.verse?.title || ""}
+                  onChange={(e) => editVerse({ title: e.target.value.slice(0, 60) })}
+                  placeholder={words.title}
+                  aria-label="Title for page one"
+                />
+                <textarea
+                  rows={5}
+                  value={(tokens.verse?.lines || []).join("\n")}
+                  onChange={(e) => editVerse({ lines: e.target.value.split("\n").slice(0, 8) })}
+                  placeholder={words.verse.join("\n")}
+                  aria-label="Your verse, one line per line"
+                />
+                <p className="g-verse-hint">Up to 8 short lines. Leave it empty to keep ours.</p>
+                <div className="g-verse-actions">
+                  <button type="button" className="btn btn-ghost" onClick={() => confirmVerse(true)}>Keep the default</button>
+                  <button type="button" className="btn btn-primary" onClick={() => confirmVerse(false)}>
+                    Use my words <Send size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : step === "cover" ? (
               <div className="g-bg-picker">
+                <div className="g-cover-grid" role="radiogroup" aria-label="Cover photo">
+                  {coverOptions(occasion?.slug).map((c, i) => {
+                    const on = tokens.cover?.id ? tokens.cover.id === c.id : !tokens.cover && i === 0;
+                    return (
+                      <button
+                        key={c.id} type="button" role="radio" aria-checked={on}
+                        className={`g-cover ${on ? "is-on" : ""}`}
+                        onClick={() => setTokens((t) => ({ ...t, cover: i === 0 ? null : { id: c.id } }))}
+                        title={c.alt}
+                      >
+                        <img src={c.thumb} alt={c.alt} loading="lazy" />
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    className={`g-cover g-cover-upload ${tokens.cover?.photoUrl ? "is-on" : ""}`}
+                    onClick={() => coverRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {tokens.cover?.photoUrl
+                      ? <img src={tokens.cover.photoUrl} alt="Your cover photo" />
+                      : <span>{uploading ? <Loader2 size={16} className="spin" /> : <Paperclip size={16} />}<b>Your own</b></span>}
+                  </button>
+                </div>
+                <input ref={coverRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => uploadCover(e.target.files)} />
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmCover} disabled={uploading}>
+                  Use this cover <Send size={14} />
+                </button>
+              </div>
+            ) : step === "style" ? (
+              <div className="g-bg-picker">
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap" />
+                <p className="g-style-label">Paper colour</p>
                 <div className="g-bg-grid" role="radiogroup" aria-label="Card background">
                   <button
                     type="button" role="radio" aria-checked={!tokens.background}
-                    className={`g-bg-swatch ${!tokens.background ? "is-on" : ""}`}
-                    style={{ background: backgroundCss(null, p.bg || "#1c1420") }}
+                    className={`g-bg-swatch is-light ${!tokens.background ? "is-on" : ""}`}
+                    style={{ background: cardTheme(occasion?.slug, { name: occasion?.name }).paper || "#fbf6ee" }}
                     onClick={() => pickBackground(null)}
                   >
-                    <span>Occasion</span>
+                    <span>Classic</span>
                   </button>
                   {BACKGROUNDS.map((b) => (
                     <button
@@ -450,8 +564,45 @@ export default function GreetingCreatePage() {
                   )}
                 </div>
 
-                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmBackground}>
-                  Use this background <Send size={14} />
+                <p className="g-style-label">Text colour</p>
+                <div className="g-ink-row" role="radiogroup" aria-label="Text colour">
+                  <button
+                    type="button" role="radio" aria-checked={!tokens.style?.ink}
+                    className={`g-ink g-ink-auto ${!tokens.style?.ink ? "is-on" : ""}`}
+                    onClick={() => pickLook({ ink: null })}
+                    title="Automatic"
+                  >Auto</button>
+                  {INKS.map((ink) => (
+                    <button
+                      key={ink.id} type="button" role="radio" aria-checked={tokens.style?.ink === ink.id}
+                      className={`g-ink ${tokens.style?.ink === ink.id ? "is-on" : ""}`}
+                      style={{ background: ink.hex }}
+                      onClick={() => pickLook({ ink: ink.id })}
+                      title={ink.name}
+                      aria-label={ink.name}
+                    />
+                  ))}
+                </div>
+
+                <p className="g-style-label">Font</p>
+                <div className="g-font-row" role="radiogroup" aria-label="Font">
+                  {FONTS.map((f) => {
+                    const on = (tokens.style?.font || "classic") === f.id;
+                    return (
+                      <button
+                        key={f.id} type="button" role="radio" aria-checked={on}
+                        className={`g-font ${on ? "is-on" : ""}`}
+                        onClick={() => pickLook({ font: f.id })}
+                      >
+                        <span style={{ fontFamily: f.display, fontStyle: f.style, fontWeight: f.weight }}>Dear Anna</span>
+                        <small>{f.name}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmStyle}>
+                  Use this style <Send size={14} />
                 </button>
               </div>
             ) : step === "extras" ? (
@@ -463,7 +614,7 @@ export default function GreetingCreatePage() {
                   <div className="g-opt-label">
                     Photo {tokens.media.photoUrl && <span className="g-opt-sub">— added</span>}
                   </div>
-                  <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" hidden onChange={(e) => addPhoto(e.target.files)} />
+                  <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => addPhoto(e.target.files)} />
                   {tokens.media.photoUrl ? (
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeMedia("photoUrl")}><XIcon size={13} /></button>
                   ) : (
@@ -524,11 +675,11 @@ export default function GreetingCreatePage() {
           {/* ── Live preview ── */}
           <section className="ai-preview-col">
             <PhoneFrame
-              statusColor={backgroundIsLight(tokens.background, p.bg) ? "#1b1116" : "#fdf6ea"}
+              statusColor={isDark(p.bg) ? "#fdf6ea" : "#1b1116"}
               statusBg="transparent"
               label="Card preview"
             >
-              <GreetingCard tokens={tokens} preview />
+              <GreetingCard tokens={tokens} preview focusPage={step === "cover" ? 0 : step === "verse" ? 1 : 2} />
             </PhoneFrame>
           </section>
         </div>

@@ -428,7 +428,7 @@
    whose edge fades gently into the paper (a short feather rather than a
    crisp outline), and the photo inside has rounded corners too. */
 .cb-note-bg {
-  border-radius: 8cqw;
+  border-radius: 11cqw;
   -webkit-mask-image:
     linear-gradient(180deg, transparent 0%, #000 7%, #000 93%, transparent 100%),
     linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
@@ -436,4 +436,4 @@
     linear-gradient(180deg, transparent 0%, #000 7%, #000 93%, transparent 100%),
     linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
 }
-.cb-note.has-photo img.cb-note-photo { border-radius: 3.5cqw; }
+.cb-note.has-photo img.cb-note-photo { border-radius: 5cqw; }

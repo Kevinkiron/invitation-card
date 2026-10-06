@@ -445,17 +445,26 @@
    fades into the fill a little inside that. */
 .cb-note-bg {
   border-radius: 0;
-  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='9' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='9' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
   -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-composite: source-over; mask-composite: add;
 }
 .cb-note.has-photo img.cb-note-photo {
   border-radius: 0;
-  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect x='7' y='7' width='86' height='86' rx='12' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect x='7' y='7' width='86' height='86' rx='12' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect x='7' y='7' width='86' height='86' rx='6' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect x='7' y='7' width='86' height='86' rx='6' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
   -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-composite: source-over; mask-composite: add;
+}
+
+/* The veil behind the writing fades out at the top as well as the sides
+   (it used to stop in a straight line along the top of the box). */
+.cb-note.has-photo::before {
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='9' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-50%' y='-50%' width='200%' height='200%'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3Crect x='10' y='10' width='80' height='80' rx='9' fill='white' filter='url(%23b)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
 }

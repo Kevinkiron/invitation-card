@@ -38,7 +38,7 @@ import "@/app/greeting-book.css";
 const CAVEAT = "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap";
 
 function messageSize(len, photo) {
-  const base = photo ? 0.92 : 1;
+  const base = photo ? 0.8 : 1;
   const s = len > 300 ? 4.2 : len > 200 ? 4.9 : len > 120 ? 5.6 : 6.4;
   return `${(s * base).toFixed(2)}cqw`;
 }
@@ -69,10 +69,19 @@ const FLOURISH =
   "M16 40 C16 26 26 16 40 16 M22 52 C22 34 34 22 52 22 M26 26 C34 30 38 36 38 44 C38 50 33 53 29 51 C25 49 26 44 30 44 " +
   "M26 26 C30 34 36 38 44 38 C50 38 53 33 51 29 C49 25 44 26 44 30 M58 22 L70 22 M22 58 L22 70";
 
-function Cover({ words, photo, alt, onOpen, label }) {
+function Cover({ words, photo, alt, onOpen, label, own = false }) {
   return (
     <div className="cb-cover">
-      {photo && <img className="cb-cover-photo" src={photo} alt={alt} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
+      {photo && own && (
+        /* The sender's own photo is never cropped to fill the cover: a
+           soft, blurred copy fills the card and the whole photo sits on
+           top of it, so nobody's face is cut off. */
+        <>
+          <img className="cb-cover-photo cb-cover-blur" src={photo} alt="" aria-hidden="true" />
+          <img className="cb-cover-whole" src={photo} alt={alt || "The sender's photo"} />
+        </>
+      )}
+      {photo && !own && <img className="cb-cover-photo" src={photo} alt={alt} onError={(e) => { e.currentTarget.style.display = "none"; }} />}
       <span className="cb-cover-shade" aria-hidden="true" />
       <svg className="cb-foil-frame" viewBox="0 0 300 430" preserveAspectRatio="none" aria-hidden="true" focusable="false">
         <defs>
@@ -133,18 +142,39 @@ function VersePage({ theme, words, art, own }) {
   );
 }
 
+/* The sender's photo is shown whole — never cropped, never under the
+   writing. It sits as a mounted print sized to its own shape (portrait,
+   landscape or square), and the message is written on the paper below
+   it. The longer the message, the smaller the print, so both always fit
+   the page. (It used to fill the box behind the text with a pale wash
+   over it: faces were cut off by the crop and faded by the wash.) */
+function photoHeight(len) {
+  if (len > 300) return "24cqw";
+  if (len > 200) return "30cqw";
+  if (len > 120) return "36cqw";
+  return "46cqw";
+}
+
 function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
   const text = message || "Wishing you all the good things.";
   return (
-    <div className="cb-page cb-wish" style={{ "--cb-msg": messageSize(text.length, !!photoUrl) }}>
+    <div
+      className={`cb-page cb-wish ${photoUrl ? "has-photo" : ""}`}
+      style={{ "--cb-msg": messageSize(text.length, !!photoUrl), "--cb-photo-h": photoHeight(text.length) }}
+    >
       <FrameBorder theme={theme} />
       <div className="cb-inner">
         <p className="cb-kicker">{words.wish}</p>
         <h3 className="cb-dear">Dear {to},</h3>
-        <span className="cb-orn" aria-hidden="true">✦</span>
-        <div className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
-          {photoUrl && <img src={photoUrl} alt={`A photo from ${from || "the sender"}`} />}
-          <span className="cb-note-label">Your wish</span>
+        {photoUrl ? (
+          <figure className="cb-print">
+            <img src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
+          </figure>
+        ) : (
+          <span className="cb-orn" aria-hidden="true">✦</span>
+        )}
+        <div className={`cb-note ${photoUrl ? "is-under-photo" : ""}`}>
+          {!photoUrl && <span className="cb-note-label">Your wish</span>}
           <p className="cb-msg">{text}</p>
           {!photoUrl && emblem && <div className="cb-note-art" aria-hidden="true"><GreetingLottie src={emblem.src} /></div>}
         </div>
@@ -213,6 +243,7 @@ export default function CardBook({
       words={words}
       photo={coverSrc}
       alt={coverAlt}
+      own={Boolean(cover?.photoUrl && chosen)}
       onOpen={() => go(1)}
       label={`Open your ${(occasionName || "").replace(/ (Wishes|Mubarak)$/, "") || "card"} wish`}
     />

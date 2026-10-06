@@ -1495,3 +1495,9 @@
 .wc.wc-preview .wc-gallery-frame { width: 140px; }
 .wc.wc-preview .wc-date-lockup .wc-date-day { font-size: 48px; }
 .wc.wc-preview .wc-closing-image { width: 80px; height: 80px; }
+
+/* Faces sit in the upper part of almost every photo people upload, so
+   crop from there rather than the dead centre: a portrait photo in a
+   wide frame used to lose the top of everyone's head. */
+.wc-hero-media, .wc-couple-photo img, .wc-story-image img, .wc-event-image img,
+.wc-gallery-frame img, .wc-venue-backdrop img, .wc-closing-image img { object-position: 50% 28%; }

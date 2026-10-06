@@ -338,3 +338,38 @@
     color-mix(in srgb, var(--cb-wash) 5%, transparent) 100%);
 }
 .cb-dark .cb-msg { text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+
+/* ── The sender's photo on the letter page: a mounted print, whole ──
+   Sized to the photo's own shape (never cropped) and kept clear of the
+   writing, which goes on the paper underneath. */
+.cb-print {
+  margin: 2.6cqw 0 0; padding: 1.6cqw; flex: 0 0 auto;
+  display: inline-flex; max-width: 100%;
+  background: #fffdf8;
+  box-shadow: 0 1.2cqw 3cqw -1cqw rgba(50, 30, 15, .45), 0 .2cqw .5cqw rgba(50, 30, 15, .2);
+  transform: rotate(-1.2deg);
+}
+.cb-print img {
+  display: block; width: auto; height: auto;
+  max-width: calc(73cqw - 3.2cqw); max-height: var(--cb-photo-h, 44cqw);
+  object-fit: contain;
+}
+.cb-wish.has-photo .cb-note.is-under-photo {
+  flex: 0 1 auto; margin: 3cqw 0 1.4cqw; padding: 0;
+  background: none; border: 0; box-shadow: none; text-align: center;
+}
+.cb-wish.has-photo .cb-msg { margin: 0; }
+.cb-wish.has-photo .cb-from { margin-top: auto; }
+.is-shown .cb-print { animation: cb-lay 1s cubic-bezier(.2, .9, .3, 1.15) .7s both; }
+@keyframes cb-lay {
+  from { opacity: 0; transform: translateY(-4cqw) rotate(-9deg) scale(1.12); }
+  to   { opacity: 1; transform: rotate(-1.2deg); }
+}
+
+/* ── The sender's own cover photo: whole, over a blurred copy of itself ── */
+.cb-cover-blur { filter: blur(16px) brightness(.72) saturate(1.1); transform: scale(1.18); animation: none; }
+.cb-cover-whole {
+  position: absolute; left: 9%; top: 36%; width: 82%; height: 38%;
+  object-fit: contain;
+  filter: drop-shadow(0 1.4cqw 2.4cqw rgba(0, 0, 0, .55));
+}

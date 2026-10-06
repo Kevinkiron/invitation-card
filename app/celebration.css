@@ -1470,3 +1470,8 @@
   .cc-particles { display: none; }
   .cc-ambient i { animation: none; }
 }
+
+/* Faces sit in the upper part of almost every uploaded photo: crop from
+   there, not the dead centre (see the same rule in wedding-cinema.css). */
+.cc-hero-media, .cc-person-photo img, .cc-chapter-image img, .cc-event-image img,
+.cc-frame-photo img, .cc-gallery img { object-position: 50% 28%; }

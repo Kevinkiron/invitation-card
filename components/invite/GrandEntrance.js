@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaithTopper } from "@/components/wedding/FaithArt";
 import { Lantern } from "@/components/wedding/ornaments";
-import { weddingPhoto } from "@/lib/design/default-photos";
+import { weddingPhoto, defaultHero } from "@/lib/design/default-photos";
 import "@/app/grand-entrance.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -127,6 +127,7 @@ function Wreath() {
 
 export default function GrandEntrance({
   kind = "wedding", faith = "", kicker = "", title = "", sub = "", mono = "", palette = {}, cue = "Tap to open", onOpen,
+  photoSrc = "",
 }) {
   const door = doorFor(kind, faith);
   const [phase, setPhase] = useState("idle"); // idle → opening → gone
@@ -156,7 +157,15 @@ export default function GrandEntrance({
   if (phase === "gone") return null;
   const colors = PARTICLE[door];
   /* weddings: the couple's hands in a window across both doors */
-  const photo = kind === "wedding" ? weddingPhoto(faith) : null;
+  /* The arched window across the doors: the couple's hands for a wedding;
+     for a housewarming or any other event on panelled doors, the
+     invitation's own main photo (or its default, lib/design/default-photos.js).
+     The gift wrap and the curtains have no panels and need none. */
+  const photo = kind === "wedding"
+    ? weddingPhoto(faith)
+    : (door === "home" || door === "palace")
+      ? { src: photoSrc || defaultHero(kind), pos: "50% 45%" }
+      : null;
   const half = photo && (
     <div className="ge-photo" style={{ "--ge-photo-pos": photo.pos }}>
       <img src={photo.src} alt="" draggable="false" />

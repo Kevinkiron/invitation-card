@@ -767,6 +767,7 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
       {!preview && (
         <GrandEntrance
           kind={kind}
+          photoSrc={tokens.media?.heroImageUrl || ""}
           kicker={voice.kicker || ""}
           title={second ? `${name} & ${second}` : name}
           sub={invitation.displayDate || ""}

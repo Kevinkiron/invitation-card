@@ -372,7 +372,7 @@
 }
 .ge-door-l .ge-photo { left: 8%; right: 0; border-right: 0; border-top-left-radius: 100% 24%; }
 .ge-door-r .ge-photo { left: 0; right: 8%; border-left: 0; border-top-right-radius: 100% 24%; }
-.ge-photo img {
+.ge .ge-photo img {
   position: absolute; top: 0; height: 100%; width: 200%; max-width: none;
   object-fit: cover; object-position: var(--ge-photo-pos, 50% 45%);
   transform-origin: 50% 50%;
@@ -420,3 +420,6 @@
   .ge-opening { animation: ge-out .4s ease forwards; }
   .ge-opening .ge-door, .ge-opening .ge-bit, .ge-opening .ge-stage, .ge-opening .ge-backlight { animation: none !important; }
 }
+
+/* the wreath seal on the housewarming door, sized for the arch's crown */
+.ge-has-photo .ge-wreath { width: 112px; }

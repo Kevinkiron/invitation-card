@@ -19,7 +19,9 @@ import { isCelebration } from "@/lib/design/celebration-tokens";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
-import { C, PLANS, money } from "@/lib/theme";
+import { C, money } from "@/lib/theme";
+import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
+import { priceOf, planLabel } from "@/lib/pricing";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
@@ -165,7 +167,27 @@ export default function CreatePage() {
   // this only distinguishes copy, not which component actually renders.
   const cinemaMode = weddingMode || celebrationMode;
   const [publishing, setPublishing] = useState(false);
-  const [plan, setPlan] = useState("STANDARD");
+  /* ₹25 add-ons unlocked for this invitation (lib/pricing.js). Kept
+     apart from `tokens` so an AI turn can never drop or add one; merged
+     in for the preview and when publishing. */
+  const [addons, setAddons] = useState([]);
+  const [unlocking, setUnlocking] = useState(null);
+  const afterUnlock = useRef(null);
+  const can = (id) => addons.includes(id);
+  /* Run `then` now if the add-on is unlocked, otherwise ask first and run
+     it straight after (in the same tap, so a file picker may still open). */
+  function requireAddon(id, then) {
+    if (can(id)) { then?.(); return; }
+    afterUnlock.current = then || null;
+    setUnlocking(id);
+  }
+  function confirmUnlock(id) {
+    setAddons((a) => (a.includes(id) ? a : [...a, id]));
+    setUnlocking(null);
+    const then = afterUnlock.current;
+    afterUnlock.current = null;
+    then?.();
+  }
 
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -355,8 +377,9 @@ export default function CreatePage() {
         tokens.invitation?.headline ||
         (tokens.host?.name ? `${tokens.host.name}'s Celebration` : "") ||
         "Celebration Invitation";
+      const paidTokens = { ...tokens, addons };
       const cfg = generative
-        ? { v: 2, tokens, eventKind: tokens.eventKind || (isCin ? "wedding" : null) }
+        ? { v: 2, tokens: paidTokens, eventKind: tokens.eventKind || (isCin ? "wedding" : null) }
         : draftToConfig(draft, templateSlug);
       const { data: inv, error } = await supabase
         .from("invitations")
@@ -367,7 +390,7 @@ export default function CreatePage() {
             : cfg.headline) || "Invitation",
           design_config: cfg,
           status: "published",
-          plan,
+          plan: "BASIC",
         })
         .select()
         .single();
@@ -398,8 +421,8 @@ export default function CreatePage() {
       }
 
       await supabase.from("payments").insert({
-        invitation_id: inv.id, amount: PLANS[plan].price, currency: "INR",
-        plan, status: "completed", provider: "demo",
+        invitation_id: inv.id, amount: priceOf(paidTokens), currency: "INR",
+        plan: planLabel(paidTokens), status: "completed", provider: "demo",
       });
 
       router.push(`/manage/${inv.id}`);
@@ -503,23 +526,7 @@ export default function CreatePage() {
                   <strong style={{ fontSize: 15 }}>Your invitation is ready</strong>
                 </div>
 
-                <div className="grid g3" style={{ gap: 8, marginBottom: 14 }}>
-                  {Object.entries(PLANS).map(([k, p]) => (
-                    <button
-                      key={k}
-                      onClick={() => setPlan(k)}
-                      style={{
-                        cursor: "pointer", textAlign: "left", padding: "11px 12px", borderRadius: 12,
-                        border: `2px solid ${plan === k ? C.heart : C.line}`,
-                        background: plan === k ? "rgba(222,107,90,.06)" : "#fff",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      <div style={{ fontSize: 12.5, fontWeight: 800 }}>{p.label}</div>
-                      <div className="display" style={{ fontSize: 19, color: C.heart, marginTop: 3 }}>{money(p.price)}</div>
-                    </button>
-                  ))}
-                </div>
+                <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Invitation" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
                   <ShieldCheck size={14} color={C.green} /> Payment is simulated in this build — no card is charged.
@@ -528,7 +535,7 @@ export default function CreatePage() {
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
                   {publishing
                     ? <><Loader2 size={16} className="spin" /> Publishing…</>
-                    : <><CreditCard size={16} /> Publish invitation</>}
+                    : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>
 
                 <button
@@ -555,6 +562,9 @@ export default function CreatePage() {
                     a non-wedding invitation. */}
                 {cinemaMode && (
                   <>
+                    {!can("photos") ? (
+                      <LockedFeature id="photos" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
+                    ) : (
                     <div
                       style={{
                         border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px",
@@ -583,7 +593,7 @@ export default function CreatePage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => fileRef.current?.click()}
+                        onClick={() => requireAddon("photos", () => fileRef.current?.click())}
                         disabled={busy || uploading}
                         style={{
                           display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
@@ -596,7 +606,11 @@ export default function CreatePage() {
                         {uploading ? "Uploading…" : photoCount ? "Add more" : "Add photos"}
                       </button>
                     </div>
+                    )}
 
+                    {!can("music") ? (
+                      <LockedFeature id="music" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
+                    ) : (
                     <MusicPicker
                       tokens={tokens}
                       eventKind={tokens?.eventKind || draft.eventType}
@@ -604,13 +618,18 @@ export default function CreatePage() {
                       onChoose={chooseMusic}
                       disabled={busy || uploading}
                     />
+                    )}
 
+                    {!can("colour") ? (
+                      <LockedFeature id="colour" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
+                    ) : (
                     <BackgroundPicker
                       tokens={tokens}
                       onChoose={chooseBackground}
                       disabled={busy || uploading}
                       wedding={weddingMode}
                     />
+                    )}
                   </>
                 )}
 
@@ -626,7 +645,7 @@ export default function CreatePage() {
                   <button
                     type="button"
                     className="btn btn-ghost"
-                    onClick={() => fileRef.current?.click()}
+                    onClick={() => requireAddon("photos", () => fileRef.current?.click())}
                     disabled={busy || uploading}
                     aria-label="Add photos"
                     title="Add photos"
@@ -680,9 +699,9 @@ export default function CreatePage() {
               >
                 {generative ? (
                   weddingMode ? (
-                    <WeddingCinema tokens={tokens} preview />
+                    <WeddingCinema tokens={{ ...tokens, addons }} preview />
                   ) : celebrationMode ? (
-                    <CelebrationCinema tokens={tokens} preview />
+                    <CelebrationCinema tokens={{ ...tokens, addons }} preview />
                   ) : (
                     <TokenInvite tokens={tokens} />
                   )
@@ -714,6 +733,8 @@ export default function CreatePage() {
           </aside>
         </div>
       </main>
+
+      <UnlockDialog id={unlocking} onConfirm={confirmUnlock} onClose={() => { afterUnlock.current = null; setUnlocking(null); }} />
 
       {/* Responsive styles for the chat layout are in app/responsive.css */}
     </>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Send, Check, CreditCard, ShieldCheck, Loader2, Paperclip, Music,
+  Send, Check, CreditCard, Lock, ShieldCheck, Loader2, Paperclip, Music,
   X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink, MessageCircle,
 } from "lucide-react";
 import Nav from "@/components/Nav";
@@ -12,7 +12,9 @@ import GreetingCard from "@/components/GreetingCard";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
-import { C, PLANS, money } from "@/lib/theme";
+import { C, money } from "@/lib/theme";
+import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
+import { priceOf, planLabel, ADDON_PRICE } from "@/lib/pricing";
 import { OCCASIONS, getOccasion } from "@/lib/greetings/occasions";
 import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/lib/design/greeting-tokens";
 import { uploadPhoto, describeFile } from "@/lib/photos";
@@ -76,7 +78,25 @@ export default function GreetingCreatePage() {
   ]);
   const autoStarted = useRef(false);
   const [input, setInput] = useState("");
-  const [plan, setPlan] = useState("BASIC");
+  /* ₹25 add-ons unlocked for this card (lib/pricing.js): photos, music
+     and the sender's own colours. Merged into the tokens for the preview
+     and when publishing. */
+  const [addons, setAddons] = useState([]);
+  const [unlocking, setUnlocking] = useState(null);
+  const afterUnlock = useRef(null);
+  const can = (id) => addons.includes(id);
+  function requireAddon(id, then) {
+    if (can(id)) { then?.(); return; }
+    afterUnlock.current = then || null;
+    setUnlocking(id);
+  }
+  function confirmUnlock(id) {
+    setAddons((a) => (a.includes(id) ? a : [...a, id]));
+    setUnlocking(null);
+    const then = afterUnlock.current;
+    afterUnlock.current = null;
+    then?.();
+  }
   const [publishing, setPublishing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
@@ -269,7 +289,7 @@ export default function GreetingCreatePage() {
   }
 
   function goToReview() {
-    say("assistant", "Your card is ready — pick a plan and publish it.");
+    say("assistant", "Your card is ready — check the total and publish it.");
     setStepIdx(STEP("done"));
   }
 
@@ -284,9 +304,9 @@ export default function GreetingCreatePage() {
         .insert({
           owner_id: session.user.id,
           title,
-          design_config: { v: 3, kind: "greeting", tokens },
+          design_config: { v: 3, kind: "greeting", tokens: { ...tokens, addons } },
           status: "published",
-          plan,
+          plan: "BASIC",
         })
         .select()
         .single();
@@ -295,8 +315,8 @@ export default function GreetingCreatePage() {
       /* No invitation_events insert — a greeting card has no guest list
          and nothing for anyone to RSVP to (Kevin's answer #2). */
       await supabase.from("payments").insert({
-        invitation_id: inv.id, amount: PLANS[plan].price, currency: "INR",
-        plan, status: "completed", provider: "demo",
+        invitation_id: inv.id, amount: priceOf({ addons }), currency: "INR",
+        plan: planLabel({ addons }), status: "completed", provider: "demo",
       });
 
       setResult({ slug: inv.slug });
@@ -424,30 +444,14 @@ export default function GreetingCreatePage() {
               </div>
             ) : step === "done" ? (
               <div className="card" style={{ padding: 18 }}>
-                <div className="grid g3" style={{ gap: 8, marginBottom: 14 }}>
-                  {Object.entries(PLANS).map(([k, pl]) => (
-                    <button
-                      key={k}
-                      onClick={() => setPlan(k)}
-                      style={{
-                        cursor: "pointer", textAlign: "left", padding: "11px 12px", borderRadius: 12,
-                        border: `2px solid ${plan === k ? C.heart : C.line}`,
-                        background: plan === k ? "rgba(222,107,90,.06)" : "#fff",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      <div style={{ fontSize: 12.5, fontWeight: 800 }}>{pl.label}</div>
-                      <div className="display" style={{ fontSize: 19, color: C.heart, marginTop: 3 }}>{money(pl.price)}</div>
-                    </button>
-                  ))}
-                </div>
+                <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Greeting card" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
                   <ShieldCheck size={14} color={C.green} /> Payment is simulated in this build — no card is charged.
                 </div>
 
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
-                  {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><CreditCard size={16} /> Publish card</>}
+                  {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>
 
                 <button
@@ -503,17 +507,24 @@ export default function GreetingCreatePage() {
                   <button
                     type="button"
                     className={`g-cover g-cover-upload ${tokens.cover?.photoUrl ? "is-on" : ""}`}
-                    onClick={() => coverRef.current?.click()}
+                    onClick={() => requireAddon("photos", () => coverRef.current?.click())}
                     disabled={uploading}
                   >
                     {tokens.cover?.photoUrl
                       ? <img src={tokens.cover.photoUrl} alt="Your cover photo" />
-                      : <span>{uploading ? <Loader2 size={16} className="spin" /> : <Paperclip size={16} />}<b>Your own</b></span>}
+                      : <span>{uploading ? <Loader2 size={16} className="spin" /> : can("photos") ? <Paperclip size={16} /> : <Lock size={15} />}<b>Your own</b>{!can("photos") && <small style={{ fontSize: 10, fontWeight: 800 }}>+{money(ADDON_PRICE)}</small>}</span>}
                   </button>
                 </div>
                 <input ref={coverRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => uploadCover(e.target.files)} />
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmCover} disabled={uploading}>
                   Use this cover <Send size={14} />
+                </button>
+              </div>
+            ) : step === "style" && !can("colour") ? (
+              <div className="g-bg-picker">
+                <LockedFeature id="colour" onUnlock={(k) => requireAddon(k)} />
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={confirmStyle}>
+                  Keep the classic look <Send size={14} />
                 </button>
               </div>
             ) : step === "style" ? (
@@ -618,8 +629,8 @@ export default function GreetingCreatePage() {
                   {tokens.media.photoUrl ? (
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeMedia("photoUrl")}><XIcon size={13} /></button>
                   ) : (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => photoRef.current?.click()} disabled={uploading}>
-                      {uploading ? <Loader2 size={14} className="spin" /> : "Add"}
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => requireAddon("photos", () => photoRef.current?.click())} disabled={uploading}>
+                      {uploading ? <Loader2 size={14} className="spin" /> : can("photos") ? "Add" : <><Lock size={12} /> {money(ADDON_PRICE)}</>}
                     </button>
                   )}
                 </div>
@@ -635,8 +646,8 @@ export default function GreetingCreatePage() {
                   {tokens.media.musicUrl ? (
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeMedia("musicUrl")}><XIcon size={13} /></button>
                   ) : (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => audioRef.current?.click()} disabled={uploading}>
-                      {uploading ? <Loader2 size={14} className="spin" /> : "Add"}
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => requireAddon("music", () => audioRef.current?.click())} disabled={uploading}>
+                      {uploading ? <Loader2 size={14} className="spin" /> : can("music") ? "Add" : <><Lock size={12} /> {money(ADDON_PRICE)}</>}
                     </button>
                   )}
                 </div>
@@ -679,11 +690,12 @@ export default function GreetingCreatePage() {
               statusBg="transparent"
               label="Card preview"
             >
-              <GreetingCard tokens={tokens} preview focusPage={step === "cover" ? 0 : step === "verse" ? 1 : 2} />
+              <GreetingCard tokens={{ ...tokens, addons }} preview focusPage={step === "cover" ? 0 : step === "verse" ? 1 : 2} />
             </PhoneFrame>
           </section>
         </div>
       </main>
+      <UnlockDialog id={unlocking} onConfirm={confirmUnlock} onClose={() => { afterUnlock.current = null; setUnlocking(null); }} />
     </>
   );
 }

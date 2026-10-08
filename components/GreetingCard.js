@@ -5,6 +5,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import ParticleField from "@/components/greetings/ParticleField";
 import Envelope from "@/components/greetings/Envelope";
 import CardBook from "@/components/greetings/CardBook";
+import { hasAddon } from "@/lib/pricing";
 import "@/app/greeting-card.css";
 import "@/app/greeting-envelope.css";
 
@@ -36,8 +37,12 @@ export default function GreetingCard({ tokens, preview = false, focusPage = null
   const to = tokens?.to || "Someone lovely";
   const from = tokens?.from || "";
   const message = tokens?.message || "";
-  const photoUrl = tokens?.media?.photoUrl || null;
-  const musicUrl = tokens?.media?.musicUrl || null;
+  /* Photos, music and the sender's own colours are ₹25 add-ons
+     (lib/pricing.js); each shows only once unlocked. */
+  const photoUrl = (hasAddon(tokens, "photos") && tokens?.media?.photoUrl) || null;
+  const musicUrl = (hasAddon(tokens, "music") && tokens?.media?.musicUrl) || null;
+  const ownColours = hasAddon(tokens, "colour");
+  const cover = tokens?.cover?.photoUrl && !hasAddon(tokens, "photos") ? null : tokens?.cover;
 
   const [opened, setOpened] = useState(preview);
   const [envelopeOpening, setEnvelopeOpening] = useState(preview);
@@ -117,10 +122,10 @@ export default function GreetingCard({ tokens, preview = false, focusPage = null
             photoUrl={photoUrl}
             ready={opened}
             preview={preview}
-            background={tokens?.background}
-            look={tokens?.style}
+            background={ownColours ? tokens?.background : null}
+            look={ownColours ? tokens?.style : null}
             verse={tokens?.verse}
-            cover={tokens?.cover}
+            cover={cover}
             focusPage={focusPage}
           />
         </div>

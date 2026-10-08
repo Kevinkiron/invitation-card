@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaithTopper } from "@/components/wedding/FaithArt";
 import { Lantern } from "@/components/wedding/ornaments";
+import { weddingPhoto } from "@/lib/design/default-photos";
 import "@/app/grand-entrance.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -29,31 +30,6 @@ import "@/app/grand-entrance.css";
      curtain naming ceremonies — soft velvet curtains scattered with stars
      home    housewarmings — a warm wooden front door with a wreath
    ══════════════════════════════════════════════════════════════════════ */
-
-/* The couple's hands, by tradition, in the arched window across the
-   wedding doors. Hindu and Jain use the artwork supplied by Welcvm
-   (public/wedding/hindu-hands.jpg). The rest are free Unsplash photos,
-   each checked as free (not Unsplash+) on Unsplash before going in:
-     christian  "man and woman holding hands" by Saeed Sarshar (JZB-sebrKa4)
-     muslim     "a close up of hands with henna" by Anthony Lim (t2mrOFP0DoM)
-     sikh       "a couple holding hands" by Planet Volumes (JRiyNjRtyiI)
-     other      "a bride and groom hold hands as the sun sets" by
-                Jaakko Perälä (_HoymeqvBEI)
-   `pos` is the object-position that keeps the hands in view. */
-const us = (id) => `https://images.unsplash.com/${id}?w=1100&q=72&auto=format&fit=crop`;
-const WEDDING_PHOTOS = {
-  hindu:     { src: "/wedding/hindu-hands.jpg", pos: "50% 38%" },
-  christian: { src: us("photo-1618566864264-fb013f791da4"), pos: "40% 30%" },
-  muslim:    { src: us("photo-1720944517997-dbba56f97ad6"), pos: "50% 55%" },
-  sikh:      { src: us("photo-1740417265999-42c749fcbed3"), pos: "60% 50%" },
-  other:     { src: us("photo-1716813344739-51ac117d5ecc"), pos: "50% 55%" },
-};
-function weddingPhoto(faith) {
-  const f = String(faith || "").toLowerCase();
-  if (f === "hindu" || f === "jain") return WEDDING_PHOTOS.hindu;
-  if (f === "christian" || f === "catholic") return WEDDING_PHOTOS.christian;
-  return WEDDING_PHOTOS[f] || WEDDING_PHOTOS.other;
-}
 
 export function doorFor(kind, faith) {
   if (kind === "wedding") {

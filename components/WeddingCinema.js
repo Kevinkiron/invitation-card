@@ -6,6 +6,8 @@ import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
 import { Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
 import GrandEntrance from "@/components/invite/GrandEntrance";
 import { weddingBackgroundVars } from "@/lib/design/invite-background";
+import { withPhotoRules } from "@/lib/design/default-photos";
+import { hasAddon } from "@/lib/pricing";
 import { FaithCrest, FaithTopper, GoldFrame, FrameKnots, faithKey } from "@/components/wedding/FaithArt";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
@@ -299,7 +301,13 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════ */
 export default function WeddingCinema({ tokens: rawTokens, preview = false, guest = null }) {
-  const tokens = useMemo(() => ({ ...emptyWeddingTokens(), ...rawTokens }), [rawTokens]);
+  /* Uploaded photos show only with the "photos" add-on; otherwise, and
+     whenever there is no hero, the default photos stand in
+     (lib/design/default-photos.js, lib/pricing.js). */
+  const tokens = useMemo(() => {
+    const t = { ...emptyWeddingTokens(), ...rawTokens };
+    return withPhotoRules(t, "wedding", faithKey(t.invitation?.religion), hasAddon(rawTokens, "photos"));
+  }, [rawTokens]);
 
   const { couple, invitation, venue, events, story, media, social } = tokens;
   const bride = couple.bride || "Bride";
@@ -367,7 +375,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
       "--wc-paper": p.paper || "#fff8ea",
       "--wc-text": p.text || "#4f392f",
       /* the couple's own background from the gradient picker on /create */
-      ...weddingBackgroundVars(tokens.background),
+      ...weddingBackgroundVars(hasAddon(tokens, "colour") ? tokens.background : null),
     };
   }, [tokens.palette, tokens.background]);
 

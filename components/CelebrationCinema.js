@@ -11,6 +11,8 @@ import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
 import GrandEntrance from "@/components/invite/GrandEntrance";
 import { celebrationBackgroundVars } from "@/lib/design/invite-background";
+import { withPhotoRules } from "@/lib/design/default-photos";
+import { hasAddon } from "@/lib/pricing";
 import "@/app/celebration.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -402,7 +404,13 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
      "celebration" theme, not birthday — this component now renders any
      occasion, not only the three with a bespoke look. */
   const kind = celebrationKind(rawTokens) || rawTokens?.eventKind || "celebration";
-  const tokens = useMemo(() => hydrate(rawTokens, kind), [rawTokens, kind]);
+  /* Uploaded photos show only with the "photos" add-on; otherwise, and
+     whenever there is no hero, the default photos stand in
+     (lib/design/default-photos.js, lib/pricing.js). */
+  const tokens = useMemo(
+    () => withPhotoRules(hydrate(rawTokens, kind), kind, null, hasAddon(rawTokens, "photos")),
+    [rawTokens, kind]
+  );
   const theme = useMemo(() => themeFor(kind, tokens), [kind, tokens]);
 
   const { host, invitation, venue, events, story, media, social, rsvp } = tokens;
@@ -485,7 +493,7 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
       "--cc-paper": palette.paper,
       "--cc-text": palette.text,
       /* the host's own background from the gradient picker on /create */
-      ...celebrationBackgroundVars(tokens.background),
+      ...celebrationBackgroundVars(hasAddon(tokens, "colour") ? tokens.background : null),
     }),
     [palette, tokens.background]
   );

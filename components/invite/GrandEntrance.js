@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaithTopper } from "@/components/wedding/FaithArt";
 import { Lantern } from "@/components/wedding/ornaments";
+import { CoupleFigure } from "@/components/invite/Couple";
 import "@/app/grand-entrance.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -154,20 +155,24 @@ export default function GrandEntrance({
 
   if (phase === "gone") return null;
   const colors = PARTICLE[door];
+  /* weddings: the couple stand on the doors, facing each other */
+  const couple = ["temple", "chapel", "mosque", "palace"].includes(door) ? (door === "chapel" ? "western" : "indian") : null;
 
   return (
-    <div className={`ge ge-${door} ${phase === "opening" ? "ge-opening" : ""}`} style={style}>
+    <div className={`ge ge-${door} ${couple ? "ge-has-couple" : ""} ${phase === "opening" ? "ge-opening" : ""}`} style={style}>
       <div className="ge-backlight" aria-hidden="true" />
       <div className="ge-stage">
         <div className="ge-door ge-door-l" aria-hidden="true">
           <i className="ge-panel ge-panel-top" /><i className="ge-panel ge-panel-bottom" />
           {door === "chapel" && <RoseWindow side="l" />}
+          {couple && <CoupleFigure who="bride" style={couple} id="ge-foil-b" />}
           {(door === "temple" || door === "palace" || door === "home") && <i className="ge-handle" />}
           {door === "gift" && <i className="ge-ribbon" />}
         </div>
         <div className="ge-door ge-door-r" aria-hidden="true">
           <i className="ge-panel ge-panel-top" /><i className="ge-panel ge-panel-bottom" />
           {door === "chapel" && <RoseWindow side="r" />}
+          {couple && <CoupleFigure who="groom" style={couple} id="ge-foil-g" />}
           {(door === "temple" || door === "palace" || door === "home") && <i className="ge-handle" />}
           {door === "gift" && <i className="ge-ribbon" />}
         </div>

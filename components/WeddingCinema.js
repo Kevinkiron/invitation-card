@@ -3,11 +3,12 @@
 import { Fragment, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { MapPin, Calendar, ChevronDown, Sparkles } from "lucide-react";
 import { emptyWeddingTokens } from "@/lib/design/wedding-tokens";
-import { BulbFrame, Lantern, FloralCorner, DeityMedallion, RuleOrnament, FaithBand } from "@/components/wedding/ornaments";
+import { Lantern, FloralCorner, DeityMedallion, RuleOrnament } from "@/components/wedding/ornaments";
+import GrandEntrance from "@/components/invite/GrandEntrance";
+import { weddingBackgroundVars } from "@/lib/design/invite-background";
+import { FaithCrest, FaithTopper, GoldFrame, FrameKnots, faithKey } from "@/components/wedding/FaithArt";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
-import GreetingLottie from "@/components/greetings/GreetingLottie";
-import { getLottie } from "@/lib/greetings/lottie";
 
 /* ══════════════════════════════════════════════════════════════════════
    WEDDING CINEMA — Cinematic scroll-driven wedding invitation
@@ -365,8 +366,10 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
       "--wc-accent": p.accent || "#c69a55",
       "--wc-paper": p.paper || "#fff8ea",
       "--wc-text": p.text || "#4f392f",
+      /* the couple's own background from the gradient picker on /create */
+      ...weddingBackgroundVars(tokens.background),
     };
-  }, [tokens.palette]);
+  }, [tokens.palette, tokens.background]);
 
   return (
     <div className={`wc ${preview ? "wc-preview" : ""}`} style={style}>
@@ -403,51 +406,22 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
 
       {!preview && <MusicToggle music={music} className="wc-music" />}
 
-      {/* ── Opening overlay ──
-          A short entrance plays once on load — glow, then a ring drawing
-          itself around the monogram, then the monogram and the flourishes
-          either side of it, then the button — before the guest has even
-          reached for it. Tapping fires a burst of light from the centre
-          at the same moment the two panels part, so the gesture reads as
-          "unsealing" the invitation rather than a plain fade. */}
+      {/* ── Grand entrance ──
+          The guest arrives at a pair of closed doors dressed for the
+          wedding's tradition (temple, chapel, mosque or palace), with the
+          couple's names above a gold seal. Tapping the seal swings the
+          doors open into the invitation — see components/invite/GrandEntrance.js. */}
       {!preview && (
-        <div className={`wc-opening ${opened ? "wc-opened" : ""}`}>
-          <div className="wc-opening-panels"><div /><div /></div>
-          <span className="wc-opening-burst" aria-hidden="true" />
-
-          <div className="wc-opening-center">
-            <span className="wc-opening-glow" aria-hidden="true" />
-
-            <svg className="wc-opening-ring" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
-              <circle className="wc-opening-ring-track" cx="80" cy="80" r="70" fill="none" strokeWidth="1" />
-              <circle className="wc-opening-ring-draw" cx="80" cy="80" r="70" fill="none" strokeWidth="1.4" />
-              {[0, 90, 180, 270].map((deg) => (
-                <circle
-                  key={deg}
-                  className="wc-opening-ring-dot"
-                  cx={80 + 70 * Math.cos((deg * Math.PI) / 180)}
-                  cy={80 + 70 * Math.sin((deg * Math.PI) / 180)}
-                  r="2.2"
-                />
-              ))}
-            </svg>
-
-            <div className="wc-opening-flourish wc-opening-flourish-top">
-              <RuleOrnament gold={tokens.palette?.accent || "#c69a55"} />
-            </div>
-
-            <div className="wc-opening-monogram">{mono}</div>
-
-            <div className="wc-opening-flourish wc-opening-flourish-bottom">
-              <RuleOrnament gold={tokens.palette?.accent || "#c69a55"} />
-            </div>
-
-            <button className="wc-opening-trigger" onClick={openInvitation}>
-              <Sparkles size={14} className="wc-opening-trigger-spark" />
-              <span>Tap to open</span>
-            </button>
-          </div>
-        </div>
+        <GrandEntrance
+          kind="wedding"
+          faith={faithKey(invitation.religion)}
+          kicker="The wedding of"
+          title={`${bride} & ${groom}`}
+          sub={invitation.displayDate || ""}
+          mono={mono}
+          palette={tokens.palette || {}}
+          onOpen={openInvitation}
+        />
       )}
 
       {/* ── HERO ── */}
@@ -685,107 +659,56 @@ function DateScene({ dated, revealed, onReveal, accent, deep }) {
   );
 }
 
-/* The symbol at the head of the invitation card. This used to be a
-   hard-coded ॐ, which is the right mark on a Hindu card and the wrong one
-   on every other — a Christian or Muslim family opened their own
-   invitation and found someone else's faith at the top of it. The
-   interview asks once; anything unrecognised falls back to the neutral
-   ornament rather than guessing. */
-const FAITH_MARK = {
-  hindu: "ॐ",
-  jain: "ॐ",
-  muslim: "☪",
-  christian: "✝",
-  catholic: "✝",
-  sikh: "☬",
-  buddhist: "☸",
-  interfaith: "✦",
-  none: "✦",
+/* Corner flowers in each tradition's own colours: marigold for Hindu,
+   Jain and Sikh weddings, ivory roses for Christian ones, lotus pink for
+   Buddhist ones; a Muslim card gets the geometric rosette instead. The
+   rest of the decoration — crest, garland, frame — is the gold artwork
+   in components/wedding/FaithArt.js. (This used to be cartoon Lottie
+   stickers: a dove, a bride and groom, a mosque.) */
+const FAITH_BLOOM = {
+  hindu:     ["#f59e0b", "#c2410c"],
+  jain:      ["#f59e0b", "#c2410c"],
+  sikh:      ["#f59e0b", "#c2410c"],
+  christian: ["#f3e4e6", "#b98d95"],
+  buddhist:  ["#f2b8c6", "#c45f7c"],
 };
-
-/* Animated decoration on the invitation card, by tradition, in place of
-   the drawn flowers: a Ganesha above the names and a kalash and diya in
-   the corners for a Hindu wedding, a dove and a bride and groom for a
-   Christian one, a mosque in each corner and real hanging lanterns for a
-   Muslim one. Each key is a free LottieFiles animation in
-   lib/greetings/lottie.js. A tradition with nothing suitable on
-   LottieFiles yet (Sikh, Buddhist) or no answer at all keeps the drawn
-   blooms and medallion — better a good drawing than a wrong animation.
-   `mirror` flips the right-hand corner when both corners are the same
-   animation; never set it on anything carrying a sacred mark (the
-   kalash's swastika must not be reversed). */
-const FAITH_DECOR = {
-  hindu:     { medallion: "ganesha", corners: ["kalash", "hangingLamp"] },
-  jain:      { corners: ["kalash", "hangingLamp"] },
-  christian: { corners: ["dove", "weddingCouple"] },
-  catholic:  { corners: ["dove", "weddingCouple"] },
-  muslim:    { corners: ["mosque", "mosque"], mirror: true, lanterns: "ramadanLanterns" },
-};
-
-function DecorLottie({ name, className }) {
-  const anim = getLottie(name);
-  if (!anim) return null;
-  return (
-    <span className={className} aria-hidden="true">
-      <GreetingLottie src={anim.src} />
-    </span>
-  );
-}
 
 function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, dateRevealed, palette }) {
   const [ref, vis] = useReveal();
-  const faith = String(invitation.religion || "").trim().toLowerCase();
-  const mark = FAITH_MARK[faith] || "✦";
+  const faith = faithKey(invitation.religion);
   const gold = palette?.accent || "#c69a55";
   const deepBloom = palette?.primary || "#8f294e";
   /* The petals need two tones or the gradient collapses and the cluster
      reads as a maroon blob. Lift the palette's own primary towards pink
      for the face of the petal and keep the original for its shadow. */
-  const bloom = lighten(deepBloom, 0.42);
-  const decor = FAITH_DECOR[faith] || null;
+  const [bloom, deep] = FAITH_BLOOM[faith] || [lighten(deepBloom, 0.42), deepBloom];
+  /* The Bismillah is already drawn in the crest of a Muslim card. */
+  const deityLine = faith === "muslim" && /bismillah|بسم/i.test(invitation.deityLine || "") ? "" : invitation.deityLine;
 
   return (
     <section ref={ref} className="wc-scene" id="families" data-chapter="The families">
-      <div className={`wc-inv-card wc-fade ${vis ? "wc-visible" : ""} ${decor?.corners ? "wc-inv-animated" : ""}`}>
-        {/* The frame: festoon bulbs all the way round, lanterns hung
-            inside them, blooms in two corners. All drawn, no assets. */}
-        <BulbFrame gold={gold} />
-        {decor?.lanterns ? (
-          <>
-            <DecorLottie name={decor.lanterns} className="wc-anim-lantern wc-anim-lantern-l" />
-            <DecorLottie name={decor.lanterns} className="wc-anim-lantern wc-anim-lantern-r" />
-          </>
-        ) : (
+      <div className={`wc-inv-card wc-inv-${faith} wc-fade ${vis ? "wc-visible" : ""}`}>
+        {/* The frame: a fine double gold rule with knotted corners, the
+            tradition's garland across the top, and corner flowers. */}
+        <GoldFrame gold={gold} />
+        <FrameKnots gold={gold} />
+        <div className="wc-topper-slot"><FaithTopper faith={faith} gold={gold} /></div>
+        {faith === "muslim" && (
           <>
             <span className="wc-lantern-slot wc-lantern-l"><Lantern gold={gold} cord={40} /></span>
             <span className="wc-lantern-slot wc-lantern-r"><Lantern gold={gold} cord={58} /></span>
           </>
         )}
-        {/* The corners follow the tradition: animated decoration from
-            FAITH_DECOR where there is one, otherwise the drawn blooms
-            (a geometric rosette variant for a Muslim card). */}
-        {decor?.corners ? (
-          <>
-            <DecorLottie name={decor.corners[0]} className="wc-anim-corner wc-anim-bl" />
-            <DecorLottie name={decor.corners[1]} className={`wc-anim-corner wc-anim-br ${decor.mirror ? "wc-anim-mirror" : ""}`} />
-          </>
-        ) : (
-          <>
-            <span className="wc-floral-slot wc-floral-bl">
-              <FloralCorner id="bl" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
-            </span>
-            <span className="wc-floral-slot wc-floral-br">
-              <FloralCorner id="br" bloom={bloom} deep={deepBloom} variant={faith === "muslim" ? "geo" : "bloom"} />
-            </span>
-          </>
-        )}
+        <span className="wc-floral-slot wc-floral-bl">
+          <FloralCorner id="bl" bloom={bloom} deep={deep} variant={faith === "muslim" ? "geo" : "bloom"} />
+        </span>
+        <span className="wc-floral-slot wc-floral-br">
+          <FloralCorner id="br" bloom={bloom} deep={deep} variant={faith === "muslim" ? "geo" : "bloom"} />
+        </span>
 
         <div className="wc-inv-inner">
-          <FaithBand faith={faith} gold={gold} />
-          {decor?.medallion
-            ? <DecorLottie name={decor.medallion} className="wc-anim-medallion" />
-            : <DeityMedallion mark={mark} gold={gold} />}
-          {invitation.deityLine && <p className="wc-inv-deity">{invitation.deityLine}</p>}
+          <div className="wc-crest-slot"><FaithCrest faith={faith} gold={gold} /></div>
+          {deityLine && <p className="wc-inv-deity">{deityLine}</p>}
 
           {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}
           <p className="wc-inv-kicker">{invitation.kicker || "Together With Their Families"}</p>

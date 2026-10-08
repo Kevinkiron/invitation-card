@@ -9,6 +9,8 @@ import {
 import { themeFor } from "@/components/celebration/themes";
 import { useCinemaMusic } from "@/lib/music/useCinemaMusic";
 import MusicToggle from "@/components/MusicToggle";
+import GrandEntrance from "@/components/invite/GrandEntrance";
+import { celebrationBackgroundVars } from "@/lib/design/invite-background";
 import "@/app/celebration.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -482,8 +484,10 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
       "--cc-accent": palette.accent,
       "--cc-paper": palette.paper,
       "--cc-text": palette.text,
+      /* the host's own background from the gradient picker on /create */
+      ...celebrationBackgroundVars(tokens.background),
     }),
-    [palette]
+    [palette, tokens.background]
   );
 
   const particleColors = useMemo(() => theme.particleColors(palette), [theme, palette]);
@@ -753,12 +757,14 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
       {!preview && <MusicToggle music={music} className="cc-music" />}
 
       {!preview && (
-        <OpeningOverlay
-          theme={theme}
-          palette={palette}
-          opened={opened}
-          onOpen={openInvitation}
+        <GrandEntrance
+          kind={kind}
+          kicker={voice.kicker || ""}
           title={second ? `${name} & ${second}` : name}
+          sub={invitation.displayDate || ""}
+          palette={palette}
+          cue={voice.openCue || "Tap to open"}
+          onOpen={openInvitation}
         />
       )}
 
@@ -770,28 +776,6 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
 /* ══════════════════════════════════════════════════════════════════════
    SUB-COMPONENTS
    ══════════════════════════════════════════════════════════════════════ */
-
-/* The overlay is `position: fixed`, and its two panels are transformed.
-   That is safe in this direction only: the panels are DESCENDANTS of the
-   fixed layer, not ancestors of it. Nothing that wraps `.cc` may ever
-   animate a transform — a transformed ancestor becomes the containing
-   block for every fixed child, and the whole opening lands halfway down
-   the page instead of over the screen. See the warning block at the head
-   of app/celebration.css; this shipped as a real bug once already. */
-function OpeningOverlay({ theme, palette, opened, onOpen, title }) {
-  return (
-    <div className={`cc-opening cc-opening-${theme.opening} ${opened ? "cc-opened" : ""}`}>
-      <div className="cc-opening-panels" aria-hidden="true"><div /><div /></div>
-      <div className="cc-opening-orn" aria-hidden="true">
-        <theme.OpeningOrnament palette={palette} />
-      </div>
-      <div className="cc-opening-title" aria-hidden="true">{title}</div>
-      <button type="button" className="cc-opening-trigger" onClick={onOpen}>
-        {theme.voice.openCue}
-      </button>
-    </div>
-  );
-}
 
 function HeroScene({ theme, palette, tokens, name, second, dateRevealed }) {
   const { invitation, host, media } = tokens;

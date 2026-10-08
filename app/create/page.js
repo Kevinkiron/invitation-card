@@ -10,6 +10,7 @@ import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import ChatDateField from "@/components/ChatDateField";
 import MusicPicker from "@/components/MusicPicker";
+import BackgroundPicker from "@/components/BackgroundPicker";
 import TokenInvite from "@/components/TokenInvite";
 import WeddingCinema from "@/components/WeddingCinema";
 import CelebrationCinema from "@/components/CelebrationCinema";
@@ -261,6 +262,17 @@ export default function CreatePage() {
      asks about or knows which track is playing. */
   function chooseMusic(choice) {
     setTokens((t) => ({ ...t, media: { ...(t.media || {}), ...choice } }));
+  }
+
+  /* The background gradient (components/BackgroundPicker.js) is the
+     same: written onto tokens.background from the browser, never by the
+     model, and the preview repaints at once. */
+  function chooseBackground(bg) {
+    setTokens((t) => {
+      const next = { ...t };
+      if (bg) next.background = bg; else delete next.background;
+      return next;
+    });
   }
 
   async function send(text, tokensOverride) {
@@ -591,6 +603,13 @@ export default function CreatePage() {
                       userId={session?.user?.id}
                       onChoose={chooseMusic}
                       disabled={busy || uploading}
+                    />
+
+                    <BackgroundPicker
+                      tokens={tokens}
+                      onChoose={chooseBackground}
+                      disabled={busy || uploading}
+                      wedding={weddingMode}
                     />
                   </>
                 )}

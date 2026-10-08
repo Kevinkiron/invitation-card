@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaithTopper } from "@/components/wedding/FaithArt";
 import { Lantern } from "@/components/wedding/ornaments";
-import { CoupleFigure } from "@/components/invite/Couple";
 import "@/app/grand-entrance.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -30,6 +29,31 @@ import "@/app/grand-entrance.css";
      curtain naming ceremonies — soft velvet curtains scattered with stars
      home    housewarmings — a warm wooden front door with a wreath
    ══════════════════════════════════════════════════════════════════════ */
+
+/* The couple's hands, by tradition, in the arched window across the
+   wedding doors. Hindu and Jain use the artwork supplied by Welcvm
+   (public/wedding/hindu-hands.jpg). The rest are free Unsplash photos,
+   each checked as free (not Unsplash+) on Unsplash before going in:
+     christian  "man and woman holding hands" by Saeed Sarshar (JZB-sebrKa4)
+     muslim     "a close up of hands with henna" by Anthony Lim (t2mrOFP0DoM)
+     sikh       "a couple holding hands" by Planet Volumes (JRiyNjRtyiI)
+     other      "a bride and groom hold hands as the sun sets" by
+                Jaakko Perälä (_HoymeqvBEI)
+   `pos` is the object-position that keeps the hands in view. */
+const us = (id) => `https://images.unsplash.com/${id}?w=1100&q=72&auto=format&fit=crop`;
+const WEDDING_PHOTOS = {
+  hindu:     { src: "/wedding/hindu-hands.jpg", pos: "50% 38%" },
+  christian: { src: us("photo-1618566864264-fb013f791da4"), pos: "40% 30%" },
+  muslim:    { src: us("photo-1720944517997-dbba56f97ad6"), pos: "50% 55%" },
+  sikh:      { src: us("photo-1740417265999-42c749fcbed3"), pos: "60% 50%" },
+  other:     { src: us("photo-1716813344739-51ac117d5ecc"), pos: "50% 55%" },
+};
+function weddingPhoto(faith) {
+  const f = String(faith || "").toLowerCase();
+  if (f === "hindu" || f === "jain") return WEDDING_PHOTOS.hindu;
+  if (f === "christian" || f === "catholic") return WEDDING_PHOTOS.christian;
+  return WEDDING_PHOTOS[f] || WEDDING_PHOTOS.other;
+}
 
 export function doorFor(kind, faith) {
   if (kind === "wedding") {
@@ -155,24 +179,29 @@ export default function GrandEntrance({
 
   if (phase === "gone") return null;
   const colors = PARTICLE[door];
-  /* weddings: the couple stand on the doors, facing each other */
-  const couple = ["temple", "chapel", "mosque", "palace"].includes(door) ? (door === "chapel" ? "western" : "indian") : null;
+  /* weddings: the couple's hands in a window across both doors */
+  const photo = kind === "wedding" ? weddingPhoto(faith) : null;
+  const half = photo && (
+    <div className="ge-photo" style={{ "--ge-photo-pos": photo.pos }}>
+      <img src={photo.src} alt="" draggable="false" />
+    </div>
+  );
 
   return (
-    <div className={`ge ge-${door} ${couple ? "ge-has-couple" : ""} ${phase === "opening" ? "ge-opening" : ""}`} style={style}>
+    <div className={`ge ge-${door} ${photo ? "ge-has-photo" : ""} ${phase === "opening" ? "ge-opening" : ""}`} style={style}>
       <div className="ge-backlight" aria-hidden="true" />
       <div className="ge-stage">
         <div className="ge-door ge-door-l" aria-hidden="true">
           <i className="ge-panel ge-panel-top" /><i className="ge-panel ge-panel-bottom" />
           {door === "chapel" && <RoseWindow side="l" />}
-          {couple && <CoupleFigure who="bride" style={couple} id="ge-foil-b" />}
+          {half}
           {(door === "temple" || door === "palace" || door === "home") && <i className="ge-handle" />}
           {door === "gift" && <i className="ge-ribbon" />}
         </div>
         <div className="ge-door ge-door-r" aria-hidden="true">
           <i className="ge-panel ge-panel-top" /><i className="ge-panel ge-panel-bottom" />
           {door === "chapel" && <RoseWindow side="r" />}
-          {couple && <CoupleFigure who="groom" style={couple} id="ge-foil-g" />}
+          {half}
           {(door === "temple" || door === "palace" || door === "home") && <i className="ge-handle" />}
           {door === "gift" && <i className="ge-ribbon" />}
         </div>

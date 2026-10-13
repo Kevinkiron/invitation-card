@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Unlock, Music2, Palette, Images, X as XIcon, Check, ShieldCheck } from "lucide-react";
+import { Lock, Unlock, Music2, Palette, Images, X as XIcon, Check } from "lucide-react";
 import { C, money } from "@/lib/theme";
 import { ADDONS, ADDON_PRICE, BASE_PRICE } from "@/lib/pricing";
 
@@ -56,13 +56,10 @@ export function UnlockDialog({ id, onConfirm, onClose }) {
           <Icon size={20} color="#fff" />
         </span>
         <div style={{ fontSize: 16, fontWeight: 800, color: C.ink }}>Unlock {a.label.toLowerCase()}</div>
-        <div style={{ fontSize: 12.5, color: C.muted, margin: "6px 0 16px", lineHeight: 1.5 }}>{a.blurb}<br />One-time {money(ADDON_PRICE)} for this page.</div>
+        <div style={{ fontSize: 12.5, color: C.muted, margin: "6px 0 16px", lineHeight: 1.5 }}>{a.blurb}<br />Adds {money(ADDON_PRICE)} to your total — you pay once, when you publish.</div>
         <button type="button" className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={() => onConfirm(id)}>
-          <Unlock size={15} /> Pay {money(ADDON_PRICE)} &amp; unlock
+          <Unlock size={15} /> Unlock for {money(ADDON_PRICE)}
         </button>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center", fontSize: 11, color: C.muted, marginTop: 10 }}>
-          <ShieldCheck size={13} color={C.green} /> Payment is simulated in this build.
-        </div>
       </div>
     </div>
   );

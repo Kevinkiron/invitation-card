@@ -17,11 +17,11 @@ import CelebrationCinema from "@/components/CelebrationCinema";
 import { isCinema } from "@/lib/design/wedding-tokens";
 import { isCelebration } from "@/lib/design/celebration-tokens";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
 import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
-import { priceOf, planLabel } from "@/lib/pricing";
+import { priceOf } from "@/lib/pricing";
+import { payAndPublish } from "@/lib/checkout";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
@@ -381,20 +381,9 @@ export default function CreatePage() {
       const cfg = generative
         ? { v: 2, tokens: paidTokens, eventKind: tokens.eventKind || (isCin ? "wedding" : null) }
         : draftToConfig(draft, templateSlug);
-      const { data: inv, error } = await supabase
-        .from("invitations")
-        .insert({
-          owner_id: session.user.id,
-          title: (generative
-            ? (isCin ? cinemaTitle : isCel ? celebrationTitle : tokens.content?.headline)
-            : cfg.headline) || "Invitation",
-          design_config: cfg,
-          status: "published",
-          plan: "BASIC",
-        })
-        .select()
-        .single();
-      if (error) throw error;
+      const title = (generative
+        ? (isCin ? cinemaTitle : isCel ? celebrationTitle : tokens.content?.headline)
+        : cfg.headline) || "Invitation";
 
       /* The functions guests RSVP to.
 
@@ -404,32 +393,28 @@ export default function CreatePage() {
          generative flow the draft is always empty, so EVERY published
          invitation was silently given the demo wedding's four functions.
          An engagement was asking guests to RSVP to a Mehendi. */
-      const rows = generative
-        ? rsvpRowsFromTokens(tokens).map((r, i) => ({ ...r, invitation_id: inv.id, sort_order: i }))
-        : invitation.events.map((e, i) => ({
-            invitation_id: inv.id,
+      const events = generative
+        ? rsvpRowsFromTokens(tokens)
+        : invitation.events.map((e) => ({
             name: e.name || "Celebration",
             event_date: e.date || null,
             event_time: e.time || null,
             venue: e.venue || "",
             address: e.address || "",
-            sort_order: i,
           }));
-      if (rows.length) {
-        const { error: e2 } = await supabase.from("invitation_events").insert(rows);
-        if (e2) throw e2;
-      }
 
-      await supabase.from("payments").insert({
-        invitation_id: inv.id, amount: priceOf(paidTokens), currency: "INR",
-        plan: planLabel(paidTokens), status: "completed", provider: "demo",
+      /* Razorpay first; the server publishes only once the payment is
+         verified (lib/checkout.js → app/api/payments/confirm). */
+      const inv = await payAndPublish({
+        session, kind: "invitation", addons, title, design_config: cfg, events,
+        description: title,
       });
 
       router.push(`/manage/${inv.id}`);
     } catch (e) {
-      setErr(
-        `Could not publish: ${e.message || "unknown error"}. If your Supabase project is paused, restore it and try again — your answers are still here.`
-      );
+      if (!e.cancelled) {
+        setErr(`Could not publish: ${e.message || "unknown error"} Your answers are still here.`);
+      }
       setPublishing(false);
     }
   }
@@ -529,7 +514,7 @@ export default function CreatePage() {
                 <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Invitation" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
-                  <ShieldCheck size={14} color={C.green} /> Payment is simulated in this build — no card is charged.
+                  <ShieldCheck size={14} color={C.green} /> Secure payment by Razorpay — UPI, cards, netbanking and wallets.
                 </div>
 
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>

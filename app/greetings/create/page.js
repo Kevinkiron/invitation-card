@@ -10,11 +10,11 @@ import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import GreetingCard from "@/components/GreetingCard";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
 import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
 import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
-import { priceOf, planLabel, ADDON_PRICE } from "@/lib/pricing";
+import { priceOf, ADDON_PRICE } from "@/lib/pricing";
+import { payAndPublish } from "@/lib/checkout";
 import { OCCASIONS, getOccasion } from "@/lib/greetings/occasions";
 import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/lib/design/greeting-tokens";
 import { uploadPhoto, describeFile } from "@/lib/photos";
@@ -299,29 +299,18 @@ export default function GreetingCreatePage() {
     setErr("");
     try {
       const title = `A ${occasion?.name || "Greeting"} card for ${tokens.to || "someone lovely"}`;
-      const { data: inv, error } = await supabase
-        .from("invitations")
-        .insert({
-          owner_id: session.user.id,
-          title,
-          design_config: { v: 3, kind: "greeting", tokens: { ...tokens, addons } },
-          status: "published",
-          plan: "BASIC",
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      /* No invitation_events insert — a greeting card has no guest list
-         and nothing for anyone to RSVP to (Kevin's answer #2). */
-      await supabase.from("payments").insert({
-        invitation_id: inv.id, amount: priceOf({ addons }), currency: "INR",
-        plan: planLabel({ addons }), status: "completed", provider: "demo",
+      /* Razorpay first; the server publishes only once the payment is
+         verified (lib/checkout.js → app/api/payments/confirm). No events:
+         a greeting card has nothing for anyone to RSVP to. */
+      const inv = await payAndPublish({
+        session, kind: "greeting", addons, title,
+        design_config: { v: 3, kind: "greeting", tokens: { ...tokens, addons } },
+        description: `${occasion?.name || "Greeting"} card`,
       });
 
       setResult({ slug: inv.slug });
     } catch (e) {
-      setErr(`Could not publish: ${e.message || "unknown error"}. If your Supabase project is paused, restore it and try again — your card is still here.`);
+      if (!e.cancelled) setErr(`Could not publish: ${e.message || "unknown error"} Your card is still here.`);
       setPublishing(false);
     }
   }
@@ -447,7 +436,7 @@ export default function GreetingCreatePage() {
                 <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Greeting card" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
-                  <ShieldCheck size={14} color={C.green} /> Payment is simulated in this build — no card is charged.
+                  <ShieldCheck size={14} color={C.green} /> Secure payment by Razorpay — UPI, cards, netbanking and wallets.
                 </div>
 
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>

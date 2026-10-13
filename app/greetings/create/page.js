@@ -14,7 +14,7 @@ import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
 import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
 import { priceOf, ADDON_PRICE } from "@/lib/pricing";
-import { payAndPublish } from "@/lib/checkout";
+import { payAndPublish, confirmPayment, resumePendingPayment } from "@/lib/checkout";
 import { OCCASIONS, getOccasion } from "@/lib/greetings/occasions";
 import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/lib/design/greeting-tokens";
 import { uploadPhoto, describeFile } from "@/lib/photos";
@@ -101,6 +101,8 @@ export default function GreetingCreatePage() {
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
   const [result, setResult] = useState(null); // { slug }
+  /* Paid but not yet published (lib/checkout.js) — "Try again" finishes it. */
+  const [paidPending, setPaidPending] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const photoRef = useRef(null);
@@ -300,20 +302,53 @@ export default function GreetingCreatePage() {
     try {
       const title = `A ${occasion?.name || "Greeting"} card for ${tokens.to || "someone lovely"}`;
       /* Razorpay first; the server publishes only once the payment is
-         verified (lib/checkout.js → app/api/payments/confirm). No events:
-         a greeting card has nothing for anyone to RSVP to. */
+         verified (lib/checkout.js → app/api/payments/*). No events: a
+         greeting card has nothing for anyone to RSVP to. */
       const inv = await payAndPublish({
         session, kind: "greeting", addons, title,
         design_config: { v: 3, kind: "greeting", tokens: { ...tokens, addons } },
         description: `${occasion?.name || "Greeting"} card`,
       });
-
+      setPaidPending(null);
       setResult({ slug: inv.slug });
     } catch (e) {
-      if (!e.cancelled) setErr(`Could not publish: ${e.message || "unknown error"} Your card is still here.`);
-      setPublishing(false);
+      failed(e);
     }
   }
+
+  function failed(e) {
+    if (e.pending) {
+      setPaidPending(e.pending);
+      setErr(`Your payment went through, but the card is not published yet: ${e.message} Tap "Finish publishing" — you will not be charged again.`);
+    } else if (!e.cancelled) {
+      setErr(`Could not publish: ${e.message || "unknown error"} Your card is still here.`);
+    }
+    setPublishing(false);
+  }
+
+  async function finishPublishing() {
+    if (!paidPending) return;
+    setPublishing(true);
+    setErr("");
+    try {
+      const inv = await confirmPayment(session, paidPending);
+      setPaidPending(null);
+      setResult({ slug: inv.slug });
+    } catch (e) {
+      failed(e);
+    }
+  }
+
+  /* Came back after paying (a reload, a closed tab) before the card was
+     published? Finish it now. */
+  useEffect(() => {
+    if (!session?.access_token) return;
+    resumePendingPayment(session, "greeting")
+      .then((inv) => { if (inv) setResult({ slug: inv.slug }); })
+      .catch((e) => { if (e.pending) failed(e); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.access_token]);
+
 
   function copyLink(url) {
     navigator.clipboard?.writeText(url).then(() => {
@@ -439,9 +474,21 @@ export default function GreetingCreatePage() {
                   <ShieldCheck size={14} color={C.green} /> Secure payment by Razorpay — UPI, cards, netbanking and wallets.
                 </div>
 
-                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
+                {err && (
+                  <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#9b2c1f", background: "#fdecea", border: "1px solid #f5c2bb", borderRadius: 10, padding: "9px 11px", marginBottom: 10 }}>
+                    {err}
+                  </div>
+                )}
+
+                {paidPending && (
+                  <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", marginBottom: 8 }} onClick={finishPublishing} disabled={publishing}>
+                    {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><RefreshCw size={16} /> Finish publishing</>}
+                  </button>
+                )}
+
+                {!paidPending && <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
                   {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
-                </button>
+                </button>}
 
                 <button
                   className="btn btn-ghost btn-sm"

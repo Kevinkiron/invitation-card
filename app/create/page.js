@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight, Send, Loader2, Sparkles, Check, RefreshCw,
   CreditCard, ShieldCheck, AlertTriangle, Paperclip, Images, X as XIcon,
+  Copy, ExternalLink, MessageCircle, Users,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
@@ -21,7 +22,8 @@ import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
 import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
 import { priceOf } from "@/lib/pricing";
-import { payAndPublish } from "@/lib/checkout";
+import { payAndPublish, confirmPayment, resumePendingPayment } from "@/lib/checkout";
+import { whatsappHref, SITE_URL } from "@/lib/share";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
@@ -167,6 +169,12 @@ export default function CreatePage() {
   // this only distinguishes copy, not which component actually renders.
   const cinemaMode = weddingMode || celebrationMode;
   const [publishing, setPublishing] = useState(false);
+  /* After payment: the live invitation { id, slug, title, design_config },
+     shown with its link right here. `paidPending` is a payment that went
+     through but has not published yet (lib/checkout.js). */
+  const [published, setPublished] = useState(null);
+  const [paidPending, setPaidPending] = useState(null);
+  const [copied, setCopied] = useState(false);
   /* ₹25 add-ons unlocked for this invitation (lib/pricing.js). Kept
      apart from `tokens` so an AI turn can never drop or add one; merged
      in for the preview and when publishing. */
@@ -410,13 +418,53 @@ export default function CreatePage() {
         description: title,
       });
 
-      router.push(`/manage/${inv.id}`);
-    } catch (e) {
-      if (!e.cancelled) {
-        setErr(`Could not publish: ${e.message || "unknown error"} Your answers are still here.`);
-      }
+      setPaidPending(null);
+      setPublished({ ...inv, title, design_config: cfg });
       setPublishing(false);
+    } catch (e) {
+      publishFailed(e);
     }
+  }
+
+  function publishFailed(e) {
+    if (e.pending) {
+      setPaidPending(e.pending);
+      setErr(`Your payment went through, but the invitation is not published yet: ${e.message} Tap "Finish publishing" — you will not be charged again.`);
+    } else if (!e.cancelled) {
+      setErr(`Could not publish: ${e.message || "unknown error"} Your answers are still here.`);
+    }
+    setPublishing(false);
+  }
+
+  async function finishPublishing() {
+    if (!paidPending) return;
+    setPublishing(true);
+    setErr("");
+    try {
+      const inv = await confirmPayment(session, paidPending);
+      setPaidPending(null);
+      setPublished({ ...inv, title: "", design_config: { v: 2, tokens } });
+      setPublishing(false);
+    } catch (e) {
+      publishFailed(e);
+    }
+  }
+
+  /* Came back after paying (a reload, a closed tab) before the invitation
+     was published? Finish it now and show the link. */
+  useEffect(() => {
+    if (!session?.access_token) return;
+    resumePendingPayment(session, "invitation")
+      .then((inv) => { if (inv) setPublished({ ...inv, title: "", design_config: null }); })
+      .catch((e) => { if (e.pending) publishFailed(e); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.access_token]);
+
+  function copyLink(url) {
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }).catch(() => {});
   }
 
   if (!ready || !session) return <Loading />;
@@ -502,7 +550,37 @@ export default function CreatePage() {
               </div>
             )}
 
-            {done ? (
+            {published ? (() => {
+              const link = `${SITE_URL}/i/${published.slug}`;
+              return (
+                <div className="card" style={{ padding: 18 }}>
+                  <div style={{ display: "flex", gap: 9, alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ width: 24, height: 24, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Check size={14} color="#fff" />
+                    </span>
+                    <strong style={{ fontSize: 15 }}>Paid — your invitation is live</strong>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Share this link with your guests. It is also saved in your dashboard.</div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.line}`, borderRadius: 12, padding: "9px 10px 9px 13px", marginBottom: 10, background: "#fff" }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link}</span>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => copyLink(link)} style={{ flexShrink: 0 }}>
+                      <Copy size={13} /> {copied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+
+                  <a href={whatsappHref({ title: published.title, slug: published.slug, design_config: published.design_config || {} }, link)} target="_blank" rel="noreferrer" className="btn btn-lg" style={{ width: "100%", justifyContent: "center", textDecoration: "none", background: "#25D366", color: "#fff", border: "none", marginBottom: 8 }}>
+                    <MessageCircle size={16} /> Send on WhatsApp
+                  </a>
+                  <a href={link} target="_blank" rel="noreferrer" className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", textDecoration: "none", marginBottom: 8 }}>
+                    <ExternalLink size={16} /> Open the invitation
+                  </a>
+                  <a href={`/manage/${published.id}`} className="btn btn-ghost btn-sm" style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}>
+                    <Users size={13} /> Manage RSVPs
+                  </a>
+                </div>
+              );
+            })() : done ? (
               <div className="card" style={{ padding: 18 }}>
                 <div style={{ display: "flex", gap: 9, alignItems: "center", marginBottom: 12 }}>
                   <span style={{ width: 24, height: 24, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -517,11 +595,25 @@ export default function CreatePage() {
                   <ShieldCheck size={14} color={C.green} /> Secure payment by Razorpay — UPI, cards, netbanking and wallets.
                 </div>
 
+                {err && (
+                  <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#9b2c1f", background: "#fdecea", border: "1px solid #f5c2bb", borderRadius: 10, padding: "9px 11px", marginBottom: 10 }}>
+                    {err}
+                  </div>
+                )}
+
+                {paidPending && (
+                  <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", marginBottom: 8 }} onClick={finishPublishing} disabled={publishing}>
+                    {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><RefreshCw size={16} /> Finish publishing</>}
+                  </button>
+                )}
+
+                {!paidPending && (
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
                   {publishing
                     ? <><Loader2 size={16} className="spin" /> Publishing…</>
                     : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>
+                )}
 
                 <button
                   className="btn btn-ghost btn-sm"

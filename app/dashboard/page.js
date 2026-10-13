@@ -28,6 +28,8 @@ export default function DashboardPage() {
         .from("invitations")
         .select("*")
         .eq("owner_id", session.user.id)
+        /* unpaid drafts from a closed payment sheet (app/api/payments/order) */
+        .neq("status", "pending_payment")
         .order("created_at", { ascending: false });
       setInvs(data || []);
 

@@ -719,7 +719,19 @@ function InvitationCard({ couple, invitation, venue, mono, bride, groom, dated, 
           {deityLine && <p className="wc-inv-deity">{deityLine}</p>}
 
           {couple.hosts && <p className="wc-inv-parents">{couple.hosts}</p>}
-          <p className="wc-inv-kicker">{invitation.kicker || "Together With Their Families"}</p>
+          {/* The fixed "Together With Their Families" line only stands in
+              when the couple gave no hosts line. When they did, it already
+              says it ("Together with the Ashley and Justin families"), and
+              the two read as a repeat. A kicker the couple wrote themselves
+              still shows, unless it is the same "together with" wording. */}
+          {(() => {
+            const k = String(invitation.kicker || "").trim();
+            if (!couple.hosts) return <p className="wc-inv-kicker">{k || "Together With Their Families"}</p>;
+            if (k && !/together\s+with/i.test(k) && k.toLowerCase() !== String(couple.hosts).trim().toLowerCase()) {
+              return <p className="wc-inv-kicker">{k}</p>;
+            }
+            return null;
+          })()}
           <div className="wc-inv-monogram">{mono}</div>
           {invitation.message && <p className="wc-inv-message">{invitation.message}</p>}
           <h1>

@@ -151,6 +151,11 @@ export default function CreatePage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  /* "Keep editing": the invitation was finished and the couple went back
+     to change something. While this is on, a reply from the AI never
+     re-opens the publish card by itself — they leave with "Done editing". */
+  const [editing, setEditing] = useState(false);
+  const editingRef = useRef(false);
   const [progress, setProgress] = useState(0);
   const [templateReason, setTemplateReason] = useState("");
   // "text" | "date" | "datetime" — which control to show above the input
@@ -199,6 +204,7 @@ export default function CreatePage() {
 
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
+  const inputRef = useRef(null);
   const scrollRef = useRef(null);
   const autoStarted = useRef(false);
 
@@ -305,6 +311,38 @@ export default function CreatePage() {
     });
   }
 
+  function startEditing() {
+    editingRef.current = true;
+    setEditing(true);
+    setDone(false);
+    setErr("");
+    setAskField("text");
+    const isWed = isCinema(tokens) || tokens?.eventKind === "wedding";
+    const first = (tokens?.events || []).find((e) => e.id !== "ceremony")?.name || "haldi";
+    setMessages((m) => [...m, {
+      role: "assistant",
+      content: isWed
+        ? `Of course — what would you like to change? For example “change the date to 14 February 2027”, “move the ${first} to 11 am”, “add a sangeet”, “change the venue”, “make the message warmer”, or “the bride's name is Priya”. Photos, music and the background colour are in the options below.\n\nWhen you are happy, tap “Done editing”.`
+        : "Of course — what would you like to change? Tell me in your own words (the date, the venue, the names, the wording…). Photos, music and the background colour are in the options below.\n\nWhen you are happy, tap “Done editing”.",
+    }]);
+    setTimeout(() => inputRef.current?.focus?.(), 50);
+  }
+
+  function stopEditing(latest) {
+    editingRef.current = false;
+    setEditing(false);
+    /* Drop any half-asked change so it cannot leak into the saved page. */
+    setTokens((t) => {
+      const base = latest || t;
+      if (!base?._edit) return base;
+      const n = { ...base };
+      delete n._edit;
+      return n;
+    });
+    setAskField("text");
+    setDone(true);
+  }
+
   async function send(text, tokensOverride) {
     const content = (text ?? input).trim();
     if (!content || busy) return;
@@ -326,6 +364,7 @@ export default function CreatePage() {
           messages: nextMessages,
           tokens: outgoing,
           turnCount: messages.filter((m) => m.role === "user").length,
+          editing: editingRef.current,
         }),
       });
       /* Read as text first. A failure that never reached our route — a
@@ -357,7 +396,13 @@ export default function CreatePage() {
       if (data.tokens) setTokens(data.tokens);
       if (data.eventKind) setDraft((d) => ({ ...d, eventType: data.eventKind }));
       setProgress(data.progress ?? 0);
-      setDone(Boolean(data.done));
+      if (editingRef.current) {
+        /* They said "done" / "looks good" — back to the publish card. */
+        if (data.finished) stopEditing(data.tokens);
+        else setDone(false);
+      } else {
+        setDone(Boolean(data.done));
+      }
       setAskField(["date", "datetime"].includes(data.askField) ? data.askField : "text");
 
       const say = [data.reply, data.askNext].filter(Boolean).join("\n\n");
@@ -618,7 +663,7 @@ export default function CreatePage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
-                  onClick={() => { setDone(false); send("Actually, I'd like to change something."); }}
+                  onClick={startEditing}
                   disabled={publishing}
                 >
                   <RefreshCw size={13} /> Keep editing
@@ -710,6 +755,23 @@ export default function CreatePage() {
                   </>
                 )}
 
+                {editing && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.green}`, background: "#f3fbf6", borderRadius: 14, padding: "10px 12px", marginBottom: 10 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: C.ink, lineHeight: 1.4 }}>
+                      <strong>Editing.</strong> Tell me what to change — the preview updates as you go.
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => stopEditing()}
+                      disabled={busy || uploading}
+                      style={{ flexShrink: 0 }}
+                    >
+                      <Check size={14} /> Done editing
+                    </button>
+                  </div>
+                )}
+
                 <div className="ai-input-row">
                   <input
                     ref={fileRef}
@@ -732,8 +794,10 @@ export default function CreatePage() {
                   </button>
 
                   <input
+                    ref={inputRef}
                     placeholder={
                       uploading ? "Uploading your photos…"
+                      : editing ? "What would you like to change?"
                       : (askField === "date" || askField === "datetime") ? "Or type the date yourself…"
                       : draft.eventType ? "Type your answer…"
                       : "Tell me what you're celebrating…"

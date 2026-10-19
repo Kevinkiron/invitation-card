@@ -9,6 +9,7 @@ import {
   weddingPublishable,
 } from "@/lib/ai/wedding-prompt";
 import { readAnswer, acknowledge, PROSE_STEPS } from "@/lib/ai/wedding-script";
+import { readEdit, applyEdit, editQuestion, FINISHED, CANCEL } from "@/lib/ai/wedding-edit";
 import { validateCelebrationPatch } from "@/lib/ai/validate-celebration";
 import { classifyEvent } from "@/lib/ai/classify";
 import { patchWeddingTokens, isCinema, emptyWeddingTokens } from "@/lib/design/wedding-tokens";
@@ -151,6 +152,123 @@ Return ONLY that one field. Invent no facts — no dates, no places, no names be
   }
 }
 
+/* ── Changes after the interview ──────────────────────────────────────
+   The deterministic reader lives in lib/ai/wedding-edit.js; this only
+   wires it to the response and makes the one optional model call (a
+   prose rewrite: "make the message warmer"). */
+const REWRITE_SCHEMA = { type: "object", properties: { text: { type: "string" } } };
+
+async function rewriteWeddingProse({ tokens, field, direction, key, info }) {
+  if (info.provider === "gemini" && !key) return "";
+  const c = tokens.couple || {};
+  const current = String(tokens.invitation?.[field] || "");
+  try {
+    const r = await chat({
+      system: `You write copy for wedding invitations. British English, warm, never flowery, never a list, no emoji.
+The couple are ${c.bride || "the bride"} and ${c.groom || "the groom"}${tokens.venue?.name ? `, marrying at ${tokens.venue.name}${tokens.venue.city ? `, ${tokens.venue.city}` : ""}` : ""}.
+Rewrite the ${field === "message" ? "invitation paragraph on the card" : "thank-you note at the foot of the page"} as asked. Two sentences at most.
+Current text: ${current || "(none yet)"}
+Return ONLY \`text\`. Invent no facts — no dates, no places, no names beyond the two above.`,
+      messages: [{ role: "user", content: direction }],
+      schema: REWRITE_SCHEMA,
+      maxTokens: 300,
+      geminiKey: key,
+    });
+    return r.ok && has(r.data?.text) ? r.data.text.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+async function handleWeddingEdit({ base, said, key, info, started }) {
+  const merge = patchWeddingTokens;
+  const out = (tokens, reply, askNext = "", extra = {}) => ({
+    reply,
+    askNext,
+    askField: "text",
+    done: false,
+    editing: true,
+    publishable: weddingPublishable(tokens),
+    tokens,
+    eventKind: "wedding",
+    progress: weddingProgress(tokens),
+    provider: info.provider,
+    elapsedMs: Date.now() - started,
+    ...extra,
+  });
+  const ANYTHING_ELSE = "Anything else to change? When you are happy, tap “Done editing”.";
+  const strip = (t) => { const n = { ...t }; delete n._edit; return n; };
+
+  let tokens = base;
+  const pending = base._edit;
+  const text = String(said || "").trim();
+
+  /* Photographs added from the paperclip while editing. */
+  if (/^\[\s*added \d+ photos?\s*\]$/i.test(text)) {
+    return out(tokens, "Those are in — the preview shows them now.", pending ? editQuestion(pending, tokens) : ANYTHING_ELSE);
+  }
+
+  /* Finished. */
+  if (FINISHED.test(text) && !(pending && pending.step === "story" && pending.n)) {
+    const t = strip(tokens);
+    const ok = weddingPublishable(t);
+    return out(t, ok ? "Lovely — your invitation is ready to publish." : "Almost — it still needs the names, the date, the venue and at least one function before it can go out.", "", { finished: ok, done: ok });
+  }
+
+  let r;
+  if (pending) {
+    if (CANCEL.test(text)) return out(strip(tokens), "No problem — left as it was.", ANYTHING_ELSE);
+    if (pending.step === "pickFunction") {
+      const ev = (tokens.events || []).find((e) => new RegExp(`\\b${String(e.name || "").split(/\s+/)[0]}`, "i").test(text) || new RegExp(`\\b${e.id}\\b`, "i").test(text));
+      if (!ev) return out(tokens, "Which one did you mean?", editQuestion(pending, tokens));
+      const target = { step: pending.next || "functionDetail", eventId: ev.id };
+      return out({ ...tokens, _edit: target }, "", editQuestion(target, tokens));
+    }
+    r = applyEdit({ ...pending, asked: true }, text, strip(tokens), merge);
+    if (r.ask) r = applyEdit({ ...pending, asked: true }, text, strip(tokens), merge);
+  } else {
+    r = readEdit(text, strip(tokens), merge);
+    if (r.help) return out(strip(tokens), "", editQuestion({ step: "none" }, tokens) || HELP_TEXT(tokens));
+    if (r.pointer) return out(strip(tokens), r.pointer, ANYTHING_ELSE);
+    if (!r.tokens && !r.rewrite && r.target) {
+      const q = editQuestion(r.target, tokens);
+      return out({ ...strip(tokens), _edit: r.target }, r.said || "Sure.", q);
+    }
+  }
+
+  if (r.retry) {
+    const tries = Number(pending?.tries || 0) + 1;
+    if (pending && tries >= 3) return out(strip(tokens), "Let us leave that one as it was for now.", ANYTHING_ELSE);
+    return out({ ...tokens, _edit: pending ? { ...pending, tries } : undefined }, r.retry, "");
+  }
+
+  if (r.rewrite) {
+    const text2 = await rewriteWeddingProse({ tokens, field: r.rewrite.field, direction: r.rewrite.direction, key, info });
+    if (!text2) {
+      const target = { step: r.rewrite.field === "message" ? "message" : "thanks" };
+      return out({ ...strip(tokens), _edit: { ...target, asked: true } }, "I could not rewrite that just now.", "Type it out exactly as you would like it to read, and I will put it on the card.");
+    }
+    const t = merge(strip(tokens), { invitation: { [r.rewrite.field]: text2 } });
+    return out(t, `Rewritten: “${text2}”`, ANYTHING_ELSE);
+  }
+
+  let next = r.tokens ? strip(r.tokens) : strip(tokens);
+  if (r.prose === "venue") next = await enrichWeddingProse({ tokens: next, step: { id: "venue" }, said: text, key, info });
+  if (r.prose === "story") next = await enrichWeddingProse({ tokens: next, step: { id: "story" }, said: text, key, info });
+
+  const follow = r.then || null;
+  if (follow) {
+    next = { ...next, _edit: follow };
+    return out(next, r.said || "Got it.", editQuestion(follow, next));
+  }
+  return out(next, r.said || "Updated.", ANYTHING_ELSE);
+}
+
+const HELP_TEXT = (tokens) =>
+  `What would you like to change? For example “change the date to 14 February 2027”, “move the ${
+    (tokens?.events || []).find((e) => e.id !== "ceremony")?.name || "haldi"
+  } to 11 am”, “add a sangeet”, “change the venue”, “make the message warmer”, or “the bride's name is Priya”. Photos, music and the background colour are in the options below the chat.`;
+
 export async function POST(req) {
   const started = Date.now();
   try {
@@ -224,14 +342,12 @@ export async function POST(req) {
       const lastUser = [...convo].reverse().find((m) => m.role === "user");
       const said = String(lastUser?.content || "");
 
-      /* Nothing asked yet: open the interview. */
-      if (!askedStep) {
-        return NextResponse.json({
-          reply: "Everything is answered — your invitation is ready to publish.",
-          askNext: "", done: weddingPublishable(base), tokens: base,
-          eventKind: "wedding", progress: weddingProgress(base),
-          provider: info.provider, elapsedMs: Date.now() - started,
-        });
+      /* Every step answered, or the couple pressed "Keep editing": read
+         the message as a change to make. See lib/ai/wedding-edit.js. */
+      if (!askedStep || base._edit || body.editing) {
+        return NextResponse.json(
+          await handleWeddingEdit({ base, said, key, info, started })
+        );
       }
 
       /* How many times this same step has already bounced, so an
@@ -311,12 +427,21 @@ export async function POST(req) {
       ? incoming
       : { ...emptyCelebrationTokens(knownKind), ...incoming };
 
-    const system = buildCelebrationPrompt({
+    let system = buildCelebrationPrompt({
       tokens: base,
       kind: base._premium,
       turnCount,
       today: new Date().toISOString().slice(0, 10),
     });
+    /* "Keep editing": the invitation is already complete and they are
+       changing something. Apply the change, say what changed, and ask
+       whether there is anything else — do not restart the interview. */
+    if (body.editing) {
+      system += `
+
+## They are editing a finished invitation
+The interview is complete. The person pressed "Keep editing" and is now asking for changes. Apply exactly the change they ask for to the data objects (keep everything else as it is), confirm what changed in \`reply\`, and set \`askNext\` to "Anything else to change?". Do not ask any interview question again. Set \`done: true\` only if they say they are finished.`;
+    }
 
     const r = await chat({
       system,
@@ -362,6 +487,7 @@ export async function POST(req) {
       askNext: correction ? correction.message : (patch.done ? "" : askNext),
       askField: correction ? correction.field : (patch.done ? "text" : askField),
       done: correction ? false : Boolean(patch.done),
+      ...(body.editing ? { editing: true, finished: !correction && FINISHED.test(String(convo.filter((m) => m.role === "user").pop()?.content || "").trim()) } : {}),
       tokens: next,
       eventKind: next._premium,
       progress: celebrationProgress(next),

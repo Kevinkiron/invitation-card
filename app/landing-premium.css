@@ -384,3 +384,76 @@
 /* the printed card lifts and straightens under the cursor */
 .w-page .w-qrcard { transition: transform .45s cubic-bezier(.2, .8, .2, 1), box-shadow .45s ease; }
 .w-page .w-qrcard.is-tilting { box-shadow: 0 34px 70px -30px rgba(59, 10, 42, .6); }
+
+
+/* ══ 2b. Greeting cards on the homepage (app/page.js #greetings) ══════ */
+.w-gsec {
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgba(192,80,106,.08), transparent 60%),
+    linear-gradient(180deg, #fff7f3, #fdf1ec);
+  border-top: 1px solid rgba(192,80,106,.10);
+  border-bottom: 1px solid rgba(192,80,106,.10);
+}
+.w-ggrid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+.w-gtext .w-section-top, .w-gtext { text-align: left; }
+.w-gtext .w-h2 { text-align: left; margin-left: 0; }
+.w-glist { list-style: none; padding: 0; margin: 18px 0 24px; display: grid; gap: 10px; }
+.w-glist li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #4a3a40; }
+.w-glist svg { flex-shrink: 0; color: #fff; background: #C0506A; border-radius: 50%; padding: 3px; width: 20px; height: 20px; }
+.w-gcta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.w-gprice { font-size: 13px; font-weight: 700; color: #8a6f78; }
+
+.w-gtiles {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.w-gtiles li:nth-child(even) { transform: translateY(22px); }
+.w-gtile {
+  position: relative; display: block; overflow: hidden;
+  aspect-ratio: 3 / 4; border-radius: 16px;
+  background: #e9d9d2;
+  box-shadow: 0 10px 26px -14px rgba(60,20,30,.45);
+  text-decoration: none;
+  transition: transform .45s cubic-bezier(.2,.7,.3,1), box-shadow .45s ease;
+}
+.w-gtile img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; transition: transform .6s cubic-bezier(.2,.7,.3,1);
+}
+.w-gtile-veil { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(30,10,16,.72)); }
+.w-gtile-name {
+  position: absolute; left: 12px; right: 34px; bottom: 11px;
+  color: #fff; font-weight: 800; font-size: 14px; line-height: 1.2;
+  text-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.w-gtile-go {
+  position: absolute; right: 9px; bottom: 9px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; color: #C0506A; background: rgba(255,255,255,.92);
+  transform: translateX(4px); opacity: 0; transition: all .3s ease;
+}
+.w-gtile:hover { transform: translateY(-4px); box-shadow: 0 18px 34px -14px rgba(60,20,30,.55); }
+.w-gtile:hover img { transform: scale(1.07); }
+.w-gtile:hover .w-gtile-go, .w-gtile:focus-visible .w-gtile-go { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .w-ggrid { grid-template-columns: 1fr; }
+  .w-gtiles li:nth-child(even) { transform: none; }
+}
+@media (max-width: 600px) {
+  /* a swipeable row on phones */
+  .w-gtiles {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    margin: 0 -16px; padding: 4px 16px 10px; gap: 10px;
+    scrollbar-width: none;
+  }
+  .w-gtiles::-webkit-scrollbar { display: none; }
+  .w-gtiles li { flex: 0 0 42%; scroll-snap-align: start; }
+  .w-gtile-go { opacity: 1; transform: none; }
+}
+
+.w-page .w-cta-note a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }

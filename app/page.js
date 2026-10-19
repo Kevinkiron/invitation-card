@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight, Check, Church, Gem, Cake, House, Star, Mic, Code,
   MessageCircle, Sparkles, QrCode, Images, Link2, Pencil, ShieldCheck, Clock,
-  MapPin, Music,
+  MapPin, Music, Mail,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -14,6 +14,8 @@ import RotatingWord from "@/components/landing/RotatingWord";
 import LandingFX from "@/components/landing/LandingFX";
 import { EVENTS, cardMotif } from "@/lib/design/showcase";
 import { DEMOS } from "@/lib/demo/fixtures";
+import { OCCASIONS } from "@/lib/greetings/occasions";
+import { photo, photoAlt } from "@/lib/greetings/photos";
 import "./landing.css";
 import "./landing-premium.css";
 
@@ -119,6 +121,11 @@ const WHY = [
    type, the month, and their written permission to publish it. A rating
    badge needs a real review source and count. Until then the section
    renders an honest placeholder — it does NOT render invented people. */
+/* The greeting-card occasions shown on the homepage (the full list is on
+   /greetings). Each tile opens the card maker on that occasion. */
+const GREETING_PICKS = ["diwali", "christmas", "eid", "onam", "birthday-wish", "anniversary-wish", "thank-you", "new-year"];
+const GREETINGS = GREETING_PICKS.map((slug) => OCCASIONS.find((o) => o.slug === slug)).filter(Boolean);
+
 const TESTIMONIALS = [];
 
 /* ── Contact ──────────────────────────────────────────────────────────
@@ -154,7 +161,7 @@ export default function Home() {
           <div className="wrap w-herogrid">
             <div className="w-herotext">
 
-              <p className="w-hero-eyebrow">Invitation websites · Indian celebrations</p>
+              <p className="w-hero-eyebrow">Invitations &amp; greeting cards · Indian celebrations</p>
 
               <h1 className="w-h1">
                 <span className="w-line"><span>Invitations</span></span>
@@ -176,10 +183,16 @@ export default function Home() {
                     <ArrowRight size={16} />
                   </span>
                 </Link>
-                <a href="#demos" className="btn btn-ghost">See live examples</a>
+                <Link href="/greetings" className="btn btn-ghost">
+                  <Mail size={16} />
+                  <span>Send a Greeting Card</span>
+                </Link>
               </div>
 
-              <p className="w-cta-note">Create in minutes · Share anywhere · No app needed</p>
+              <p className="w-cta-note">
+                Create in minutes · Share anywhere · No app needed ·{" "}
+                <a href="#demos">See live examples</a>
+              </p>
 
               <div className="w-assure">
                 {ASSURE.map(([t, d]) => (
@@ -291,6 +304,63 @@ export default function Home() {
                   </li>
                 );
               })}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── 2b. GREETING CARDS ────────────────────────────────────
+            The second product, which used to be reachable only from the
+            Invitations | Greetings toggle in the header. One message for
+            one person: an envelope that opens into a little card. */}
+        <section className="w-blk w-gsec" id="greetings" aria-labelledby="greetings-h">
+          <div className="wrap w-ggrid">
+            <Reveal>
+              <div className="w-gtext">
+                <p className="w-badge-row w-badge-left">
+                  <span
+                    className="w-sec-badge"
+                    style={{ color: "#C0506A", borderColor: "rgba(192,80,106,.25)", background: "rgba(192,80,106,.06)" }}
+                  >
+                    <Mail size={14} strokeWidth={2} />
+                    Greeting cards
+                  </span>
+                </p>
+                <h2 className="w-h2" id="greetings-h">
+                  Not hosting?{" "}
+                  <span className="highlight">Send a card</span>
+                </h2>
+                <p className="w-lede w-lede-left">
+                  A festival, a birthday, a thank-you — say it to one person,
+                  properly. They open an envelope and the card unfolds like a
+                  little book, with your words inside.
+                </p>
+                <ul className="w-glist">
+                  <li><Check size={15} strokeWidth={2.6} /> An envelope that opens into a folded card</li>
+                  <li><Check size={15} strokeWidth={2.6} /> Your own message, verse, photo and music</li>
+                  <li><Check size={15} strokeWidth={2.6} /> Sent as one link — WhatsApp, anywhere</li>
+                </ul>
+                <div className="w-gcta">
+                  <Link href="/greetings" className="btn btn-primary">
+                    <span>Send a Greeting Card</span>
+                    <span className="btn-arrow"><ArrowRight size={16} /></span>
+                  </Link>
+                  <span className="w-gprice">₹100 a card</span>
+                </div>
+              </div>
+            </Reveal>
+
+            <ul className="w-gtiles" aria-label="Greeting card occasions">
+              {GREETINGS.map((o) => (
+                <li key={o.slug}>
+                  <Link href={`/greetings/create?occasion=${o.slug}`} className="w-gtile">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo(o.photo)} alt={photoAlt(o.photo)} loading="lazy" />
+                    <span className="w-gtile-veil" aria-hidden="true" />
+                    <span className="w-gtile-name">{o.name}</span>
+                    <span className="w-gtile-go" aria-hidden="true"><ArrowRight size={14} /></span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </section>

@@ -457,3 +457,28 @@
 }
 
 .w-page .w-cta-note a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Hero phone: Invitations | Greeting cards (components/HeroPhone.js) ── */
+.w-herotabs {
+  position: relative; z-index: 3;
+  display: flex; width: max-content; margin: 0 auto 14px;
+  padding: 4px; gap: 2px; border-radius: 999px;
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(140,90,70,.14);
+  box-shadow: 0 8px 22px -12px rgba(60,20,30,.35);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.w-herotabs button {
+  border: 0; background: none; cursor: pointer; font: inherit;
+  font-size: 13px; font-weight: 700; color: #7a6168;
+  padding: 8px 16px; border-radius: 999px;
+  transition: background .25s ease, color .25s ease;
+}
+.w-herotabs button.on {
+  color: #fff;
+  background: linear-gradient(135deg, #DE6B5A, #E8912D);
+  box-shadow: 0 4px 12px -4px rgba(222,107,90,.7);
+}
+.w-herotabs button:focus-visible { outline: 2px solid #DE6B5A; outline-offset: 2px; }
+/* tabs sit above the phone, not beside it */
+.w-page .w-phonewrap { flex-direction: column; align-items: center; }

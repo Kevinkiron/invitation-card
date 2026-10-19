@@ -1,153 +1,187 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DEMOS } from "@/lib/demo/fixtures";
-import "@/app/demo.css"; // reuses .dp-poster for the loading state — see below
+import { CARD_DEMOS, cardDemo } from "@/lib/demo/cards";
+import "@/app/demo.css"; // .dp-poster for the very first load
 
 /* ══════════════════════════════════════════════════════════════════════
-   The hero phone.
+   The hero phone — real Welcvm pages, not pictures of them.
 
-   This used to draw five invented, generic designs straight into a
-   shadow root via lib/design/renderer.js (see the old ShowcasePhone.js,
-   still in the repo but no longer imported anywhere) — a fair way to
-   prove "no templates" in the abstract, but it meant the very first
-   thing a visitor saw was not actually one of Welcvm's four real
-   templates. This cycles through the same four fixtures the "See it
-   built" section below uses (lib/demo/fixtures.js), rendered by the
-   exact same components a customer's invitation is rendered by.
+   Two tabs above the phone: "Invitations" cycles the four demo
+   invitations (/demo/<slug>?embed=1, lib/demo/fixtures.js) and "Greeting
+   cards" cycles demo cards (/demo/card/<occasion>, lib/demo/cards.js),
+   each rendered by the same components a customer's page uses, in a
+   sandboxed iframe (they are built on position: fixed / 100dvh layers,
+   which only behave inside their own document).
 
-   It reuses the `/demo/<slug>?embed=1` route in a sandboxed iframe for
-   the same reason DemoPhone.js does (see that file's note): the cinema
-   and celebration templates are built on `position: fixed` layers and
-   `100dvh`, which only behave correctly inside their own document. That
-   route already renders "already opened" rather than gated behind
-   "Tap to open" — nobody can tap a phone mockup embedded in another
-   page, so the gate that exists for the real guest experience's audio
-   permission has no reason to appear here.
+   WHY IT IS DOUBLE-BUFFERED: it used to swap one iframe's src every
+   4.6s and hide it behind a coloured "poster" until the new page
+   reported loaded. A whole invitation (photos, fonts, scripts) takes
+   longer than that on a phone connection, so the poster came back
+   before the page ever showed — visitors saw only "HOUSEWARMING / 11
+   Champa Road" on a blank screen, never a template. Now the next page
+   loads in a hidden iframe BEHIND the current one, and the phone only
+   cross-fades once it has painted; the clock for the next change starts
+   when a page becomes visible. The poster only covers the very first
+   load. At most two iframes exist at a time.
+   ══════════════════════════════════════════════════════════════════════ */
 
-   Only ONE iframe is ever mounted, not four — cycling swaps its `src`
-   rather than loading all four demo pages on every landing-page visit.
-   The phone frame itself (.w-phone/.w-notch/.w-screen/.w-cycler) is
-   app/landing.css's existing hero markup, unchanged, so no CSS moved for
-   this — only what fills the screen did. */
-
-const INTERVAL_MS = 4600;
-/* Rendered wide, then scaled down to whatever width the phone frame is
-   actually laid out at — same reasoning as DemoPhone.js: a real
-   invitation laying out at ~390px reads correctly; laying it out at a
-   true ~260px sliver does not. */
 const FRAME_WIDTH = 390;
-const FRAME_ASPECT = 620 / 302; // matches .w-phone's own aspect-ratio: 302 / 620
+const FRAME_ASPECT = 620 / 302; // .w-phone's aspect-ratio: 302 / 620
 const FRAME_HEIGHT = Math.round(FRAME_WIDTH * FRAME_ASPECT);
+const SETTLE_MS = 700;   // after `load`, let the page paint its first scene
+const FADE_MS = 650;
+
+const MODES = {
+  invites: {
+    tab: "Invitations",
+    dwell: 7000,
+    items: DEMOS.map((d) => ({ key: `i-${d.slug}`, src: `/demo/${d.slug}?embed=1`, label: d.label, names: d.names, accent: d.accent })),
+  },
+  cards: {
+    tab: "Greeting cards",
+    dwell: 8200, // long enough for the card to turn all three pages
+    items: CARD_DEMOS.map((c) => {
+      const d = cardDemo(c.occasion);
+      return { key: `c-${c.occasion}`, src: `/demo/card/${c.occasion}`, label: `${d.name} card`, names: `For ${d.to}`, accent: d.accent };
+    }),
+  },
+};
 
 export default function HeroPhone() {
   const wrapRef = useRef(null);
   const screenRef = useRef(null);
   const [active, setActive] = useState(false);
-  const [idx, setIdx] = useState(0);
-  const [loaded, setLoaded] = useState(false);
   const [scale, setScale] = useState(0.72);
+  const [frameH, setFrameH] = useState(FRAME_HEIGHT);
+  const [mode, setMode] = useState("invites");
+  const [idx, setIdx] = useState(0);              // the page on show
+  const [layers, setLayers] = useState([]);       // [{ i, ready, shown }]
+  const timers = useRef([]);
 
-  /* Nothing loads until the hero is actually about to be on screen. It
-     normally is immediately — this is the hero — but the same guard as
-     everywhere else on the page costs nothing and covers the case of a
-     deep link straight to a lower section. */
+  const items = MODES[mode].items;
+  const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+  const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+
+  /* Start loading only when the hero is near the screen. */
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setActive(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setActive(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "200px 0px" }
-    );
+    if (typeof IntersectionObserver === "undefined") { setActive(true); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setActive(true); io.disconnect(); } }, { rootMargin: "200px 0px" });
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  /* .w-phone's width is a fluid `clamp()`, not a fixed pixel value, so
-     the scale that fits the 390px iframe into it has to be recomputed on
-     resize rather than calculated once. */
+  /* .w-phone is a fluid width; refit the 390px page into it. */
   useEffect(() => {
     const el = screenRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect?.width;
-      if (w) setScale(w / FRAME_WIDTH);
+      const { width: w, height: h } = entries[0]?.contentRect || {};
+      if (w) {
+        setScale(w / FRAME_WIDTH);
+        /* the screen can be a touch taller than the 302:620 ratio; make
+           the page fill it so no strip shows under it */
+        if (h) setFrameH(Math.max(FRAME_HEIGHT, Math.ceil(h / (w / FRAME_WIDTH))));
+      }
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
+  /* (Re)start a mode on its first page. */
   useEffect(() => {
-    if (!active || DEMOS.length < 2) return;
-    const timer = setInterval(() => {
-      setLoaded(false);
-      setIdx((i) => (i + 1) % DEMOS.length);
-    }, INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [active]);
+    if (!active) return;
+    clearTimers();
+    setIdx(0);
+    setLayers([{ i: 0, ready: false, shown: false }]);
+    return clearTimers;
+  }, [active, mode]);
 
-  const demo = DEMOS[idx];
+  const onLoaded = useCallback((i) => {
+    later(() => {
+      setLayers((ls) => {
+        const target = ls.find((l) => l.i === i);
+        if (!target || target.ready) return ls;
+        return ls.map((l) => (l.i === i ? { ...l, ready: true, shown: true } : l));
+      });
+      setIdx(i);
+      /* the page underneath goes once the fade has finished */
+      later(() => setLayers((ls) => ls.filter((l) => l.i === i)), FADE_MS + 50);
+      /* and the next one starts loading after this one has been seen */
+      if (items.length > 1) {
+        later(() => {
+          const next = (i + 1) % items.length;
+          setLayers((ls) => (ls.some((l) => l.i === next) ? ls : [...ls, { i: next, ready: false, shown: false }]));
+        }, MODES[mode].dwell);
+      }
+    }, SETTLE_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, mode]);
+
+  const current = items[idx] || items[0];
+  const firstLoad = !layers.some((l) => l.shown);
 
   return (
     <div className="w-phonewrap" ref={wrapRef}>
+      <div className="w-herotabs" role="tablist" aria-label="What to preview">
+        {Object.entries(MODES).map(([k, m]) => (
+          <button
+            key={k} type="button" role="tab" aria-selected={mode === k}
+            className={mode === k ? "on" : undefined}
+            onClick={() => setMode(k)}
+          >
+            {m.tab}
+          </button>
+        ))}
+      </div>
+
       <div className="w-phone">
         <div className="w-notch" />
         <div className="w-screen" ref={screenRef}>
-          {active && (
-            <iframe
-              key={demo.slug}
-              src={`/demo/${demo.slug}?embed=1`}
-              title={`${demo.label} — a Welcvm invitation`}
-              loading="eager"
-              tabIndex={-1}
-              aria-hidden="true"
-              /* No `allow-same-origin` — this preview has no business
-                 touching the landing page's storage or cookies. */
-              sandbox="allow-scripts"
-              scrolling="no"
-              onLoad={() => setLoaded(true)}
-              style={{
-                width: `${FRAME_WIDTH}px`,
-                height: `${FRAME_HEIGHT}px`,
-                border: 0,
-                display: "block",
-                pointerEvents: "none",
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
-              }}
-            />
-          )}
+          {active && layers.map((l) => {
+            const it = items[l.i];
+            if (!it) return null;
+            return (
+              <iframe
+                key={`${mode}-${it.key}`}
+                src={it.src}
+                title={`${it.label} — a Welcvm demo`}
+                loading="eager"
+                tabIndex={-1}
+                aria-hidden="true"
+                sandbox="allow-scripts"
+                scrolling="no"
+                onLoad={() => onLoaded(l.i)}
+                style={{
+                  position: "absolute", top: 0, left: 0,
+                  width: `${FRAME_WIDTH}px`, height: `${frameH}px`,
+                  border: 0, display: "block", pointerEvents: "none",
+                  transform: `scale(${scale})`, transformOrigin: "top left",
+                  opacity: l.shown ? 1 : 0,
+                  zIndex: l.shown ? 1 : 0,
+                  transition: `opacity ${FADE_MS}ms ease`,
+                }}
+              />
+            );
+          })}
 
-          {/* Same loading treatment as the "See it built" phones below —
-              a soft wash of that template's own colour and its name,
-              rather than a blank rectangle, until the iframe reports
-              itself painted (or, on a cycle, every time it swaps). */}
-          <div
-            className={`dp-poster ${loaded ? "dp-gone" : ""}`}
-            style={{ "--dp-accent": demo.accent }}
-          >
-            <span className="dp-poster-label">{demo.label}</span>
-            <span className="dp-poster-names">{demo.names}</span>
+          <div className={`dp-poster ${firstLoad ? "" : "dp-gone"}`} style={{ "--dp-accent": current.accent, zIndex: 2 }}>
+            <span className="dp-poster-label">{current.label}</span>
+            <span className="dp-poster-names">{current.names}</span>
           </div>
         </div>
       </div>
 
       <div className="w-cycler" aria-hidden="true">
-        {DEMOS.map((d, i) => (
-          <span key={d.slug} className={i === idx ? "on" : undefined} />
+        {items.map((d, i) => (
+          <span key={d.key} className={i === idx ? "on" : undefined} />
         ))}
       </div>
       <div className="w-cyclabel" aria-live="polite">
-        {demo.label}
+        {current.label}
       </div>
     </div>
   );

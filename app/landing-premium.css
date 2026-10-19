@@ -482,3 +482,49 @@
 .w-herotabs button:focus-visible { outline: 2px solid #DE6B5A; outline-offset: 2px; }
 /* tabs sit above the phone, not beside it */
 .w-page .w-phonewrap { flex-direction: column; align-items: center; }
+
+
+/* ── Hero: two live phones, invitation + greeting card ───────────────
+   Replaces the Invitations | Greeting cards toggle. The card phone sits
+   a little lower and behind, so the pair reads as one picture. */
+.w-page .w-duo { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: center; gap: clamp(14px, 2vw, 26px); }
+.w-page .w-duo .w-phonewrap { padding-bottom: 64px; }
+.w-page .w-duo .w-phone { width: clamp(176px, 16.5vw, 238px); border-radius: 34px; padding: 7px; }
+.w-page .w-duo .w-screen { border-radius: 28px; }
+.w-page .w-duo .w-notch { width: 64px; height: 17px; top: 7px; }
+.w-page .w-duo-b { margin-top: 56px; animation-delay: .35s, 3.2s; }
+.w-page .w-duo .w-phonewrap::before { width: min(360px, 150%); }
+.w-page .w-duo .w-cycler { bottom: 32px; }
+.w-page .w-duo .w-cyclabel { font-size: 10px; letter-spacing: .12em; }
+.w-phonetag {
+  position: relative; z-index: 3; margin: 0 auto 12px;
+  font: 700 11px/1 'DM Sans', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  color: #fff; padding: 7px 13px; border-radius: 999px;
+  background: linear-gradient(135deg, #DE6B5A, #E8912D);
+  box-shadow: 0 6px 16px -8px rgba(222,107,90,.8);
+}
+.w-duo-b .w-phonetag { background: linear-gradient(135deg, #8E4A8F, #C4788A); box-shadow: 0 6px 16px -8px rgba(142,74,143,.8); }
+/* With two phones there is room for two chips, at the outer edges only:
+   one per product, never over a page. */
+.w-page .w-chip-2, .w-page .w-chip-4 { display: none; }
+.w-page .w-chip-1 { left: -12%; right: auto; top: auto; bottom: 14%; }
+.w-page .w-chip-3 { right: -6%; left: auto; top: -2%; bottom: auto; }
+@media (max-width: 1240px) {
+  .w-page .w-chip-1 { left: -5%; }
+  .w-page .w-chip-3 { right: -1%; }
+}
+@media (max-width: 960px) {
+  .w-page .w-duo .w-phone { width: clamp(150px, 34vw, 230px); }
+  .w-page .w-chip-1 { left: 0; } .w-page .w-chip-3 { right: 0; }
+}
+@media (max-width: 560px) {
+  .w-page .w-duo { gap: 10px; width: 100%; }
+  .w-page .w-duo .w-phone { width: calc((100vw - 32px - 10px) / 2 - 4px); max-width: 190px; border-radius: 26px; padding: 5px; }
+  .w-page .w-duo .w-screen { border-radius: 22px; }
+  .w-page .w-duo .w-notch { width: 46px; height: 13px; top: 5px; }
+  .w-page .w-duo-b { margin-top: 36px; }
+  .w-page .w-duo .w-phonewrap { padding-bottom: 54px; }
+  .w-page .w-duo .w-cyclabel { font-size: 9px; letter-spacing: .08em; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
+  /* the pair fills the width — the floating chips would cover the pages */
+  .w-page .w-chip { display: none; }
+}

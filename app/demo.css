@@ -238,3 +238,106 @@
 }
 
 .demo-embed::-webkit-scrollbar { display: none; }
+
+/* ── OpeningPoster: the cover drawn as Welcvm's own opening ─────────── */
+.dp-poster.dp-open {
+  --dp-gold: #E6C27A;
+  --dp-deep: color-mix(in srgb, var(--dp-accent) 38%, #12060b);
+  padding: 0; gap: 0; overflow: hidden;
+  background: radial-gradient(120% 80% at 50% 40%, color-mix(in srgb, var(--dp-accent) 55%, #1b0a12) 0%, var(--dp-deep) 75%);
+  perspective: 900px;
+  transition: opacity .6s ease .9s;
+}
+.dp-open .dp-door {
+  position: absolute; top: 0; bottom: 0; width: 50%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%),
+    linear-gradient(90deg, color-mix(in srgb, var(--dp-accent) 70%, #2a0d18), color-mix(in srgb, var(--dp-accent) 48%, #160710));
+  box-shadow: inset 0 0 0 1px rgba(230,194,122,.35);
+  transition: transform 1.3s cubic-bezier(.6,.05,.3,1);
+}
+.dp-open .dp-door::before { /* the arch on each panel */
+  content: ""; position: absolute; left: 16%; right: 16%; top: 14%; bottom: 10%;
+  border: 1.5px solid rgba(230,194,122,.55);
+  border-radius: 999px 999px 6px 6px;
+}
+.dp-open .dp-door::after { /* inner fine line */
+  content: ""; position: absolute; left: 24%; right: 24%; top: 21%; bottom: 16%;
+  border: 1px solid rgba(230,194,122,.25);
+  border-radius: 999px 999px 4px 4px;
+}
+.dp-door-l { left: 0; transform-origin: left center; border-right: 1px solid rgba(230,194,122,.5); }
+.dp-door-r { right: 0; transform-origin: right center; border-left: 1px solid rgba(230,194,122,.5); }
+.dp-open-text {
+  position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 0 14px; text-align: center; transition: opacity .4s ease;
+}
+.dp-open-kick {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--dp-gold); opacity: .9;
+}
+.dp-open-names {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif; font-style: italic;
+  font-size: 25px; font-weight: 600; line-height: 1.1; color: #fff4dc;
+  text-shadow: 0 2px 14px rgba(0,0,0,.45);
+}
+.dp-open-seal {
+  margin-top: 10px; width: 48px; height: 48px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, #f4dc9e, #c9973f 60%, #8f6522);
+  box-shadow: 0 0 0 4px rgba(230,194,122,.18), 0 8px 22px rgba(0,0,0,.45);
+  animation: dp-seal-pulse 2.4s ease-in-out infinite;
+}
+.dp-open-seal i { font-style: normal; color: #5a3a10; font-size: 18px; }
+.dp-open-cue { margin-top: 6px; font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,244,220,.7); }
+@keyframes dp-seal-pulse { 0%,100% { box-shadow: 0 0 0 4px rgba(230,194,122,.18), 0 8px 22px rgba(0,0,0,.45); } 50% { box-shadow: 0 0 0 10px rgba(230,194,122,.08), 0 8px 22px rgba(0,0,0,.45); } }
+
+/* loaded: the doors swing in, the words go, then the cover fades */
+.dp-open.dp-gone .dp-door-l { transform: rotateY(88deg); }
+.dp-open.dp-gone .dp-door-r { transform: rotateY(-88deg); }
+.dp-open.dp-gone .dp-open-text { opacity: 0; }
+
+/* greeting cards: the envelope */
+.dp-open-envelope { gap: 12px; background: radial-gradient(120% 80% at 50% 40%, color-mix(in srgb, var(--dp-accent) 35%, #fbf3e6) 0%, color-mix(in srgb, var(--dp-accent) 70%, #2a0d18) 85%); }
+.dp-open-envelope .dp-open-kick { color: #fff4dc; }
+.dp-env { position: relative; width: 72%; aspect-ratio: 1.45; perspective: 600px; transition: transform .8s ease .3s, opacity .5s ease .5s; }
+.dp-env-back {
+  position: absolute; inset: 0; border-radius: 6px;
+  background: linear-gradient(160deg, #fff8ea, #f1e2c6);
+  box-shadow: 0 16px 34px rgba(0,0,0,.35), inset 0 0 0 1px rgba(150,110,60,.25);
+  overflow: hidden;
+}
+.dp-env-back::before, .dp-env-back::after { /* the two side folds */
+  content: ""; position: absolute; bottom: 0; width: 60%; height: 100%;
+  background: linear-gradient(160deg, #f6e9d0, #ead6b2);
+}
+.dp-env-back::before { left: 0; clip-path: polygon(0 0, 100% 62%, 0 100%); }
+.dp-env-back::after { right: 0; clip-path: polygon(100% 0, 0 62%, 100% 100%); }
+.dp-env-flap {
+  position: absolute; left: 0; right: 0; top: 0; height: 64%; z-index: 2;
+  background: linear-gradient(180deg, #f3e3c3, #e5cfa6);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center; transition: transform .8s cubic-bezier(.6,.05,.3,1);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.15));
+}
+.dp-env-seal {
+  position: absolute; z-index: 3; left: 50%; top: 64%; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; font-size: 14px;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dp-accent) 60%, #fff), var(--dp-accent) 60%, color-mix(in srgb, var(--dp-accent) 60%, #000));
+  box-shadow: 0 4px 10px rgba(0,0,0,.3);
+  transition: opacity .3s ease;
+}
+.dp-open-envelope .dp-open-names { font-size: 22px; }
+.dp-open-envelope.dp-gone .dp-env-flap { transform: rotateX(180deg); }
+.dp-open-envelope.dp-gone .dp-env-seal { opacity: 0; }
+.dp-open-envelope.dp-gone .dp-env { transform: translateY(-14px) scale(.96); opacity: 0; }
+.dp-open-envelope.dp-gone .dp-open-names,
+.dp-open-envelope.dp-gone .dp-open-kick,
+.dp-open-envelope.dp-gone .dp-open-cue { opacity: 0; transition: opacity .4s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-open .dp-door, .dp-env, .dp-env-flap { transition: none; }
+  .dp-poster.dp-open { transition: opacity .3s ease; }
+  .dp-open-seal { animation: none; }
+}

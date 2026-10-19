@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DEMOS } from "@/lib/demo/fixtures";
 import "@/app/demo.css"; // reuses .dp-poster for the loading state — see below
+import OpeningPoster from "@/components/OpeningPoster";
 
 /* ══════════════════════════════════════════════════════════════════════
    The invitation wall.
@@ -76,13 +77,7 @@ function WallCard({ demo, active }) {
             }}
           />
         )}
-        <div
-          className={`dp-poster ${loaded ? "dp-gone" : ""}`}
-          style={{ "--dp-accent": demo.accent, position: "absolute", inset: 0 }}
-        >
-          <span className="dp-poster-label">{demo.label}</span>
-          <span className="dp-poster-names">{demo.names}</span>
-        </div>
+        <OpeningPoster label={demo.label} names={demo.names} accent={demo.accent} gone={loaded} style={{ position: "absolute", inset: 0 }} />
       </div>
       <figcaption className="w-wallcap">{demo.label}</figcaption>
     </figure>

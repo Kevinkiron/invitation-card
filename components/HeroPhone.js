@@ -4,14 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DEMOS } from "@/lib/demo/fixtures";
 import { CARD_DEMOS, cardDemo } from "@/lib/demo/cards";
 import "@/app/demo.css"; // .dp-poster for the very first load
+import OpeningPoster from "@/components/OpeningPoster";
 
 /* ══════════════════════════════════════════════════════════════════════
    The hero phone — real Welcvm pages, not pictures of them.
 
-   Two tabs above the phone: "Invitations" cycles the four demo
-   invitations (/demo/<slug>?embed=1, lib/demo/fixtures.js) and "Greeting
-   cards" cycles demo cards (/demo/card/<occasion>, lib/demo/cards.js),
-   each rendered by the same components a customer's page uses, in a
+   The hero shows two of these side by side: kind="invites" cycles the
+   four demo invitations (/demo/<slug>?embed=1, lib/demo/fixtures.js) and
+   kind="cards" cycles demo greeting cards (/demo/card/<occasion>,
+   lib/demo/cards.js), each rendered by the same components a customer's page uses, in a
    sandboxed iframe (they are built on position: fixed / 100dvh layers,
    which only behave inside their own document).
 
@@ -49,13 +50,13 @@ const MODES = {
   },
 };
 
-export default function HeroPhone() {
+export default function HeroPhone({ kind = "invites", tag, className = "" }) {
   const wrapRef = useRef(null);
   const screenRef = useRef(null);
   const [active, setActive] = useState(false);
   const [scale, setScale] = useState(0.72);
   const [frameH, setFrameH] = useState(FRAME_HEIGHT);
-  const [mode, setMode] = useState("invites");
+  const mode = MODES[kind] ? kind : "invites";
   const [idx, setIdx] = useState(0);              // the page on show
   const [layers, setLayers] = useState([]);       // [{ i, ready, shown }]
   const timers = useRef([]);
@@ -125,18 +126,8 @@ export default function HeroPhone() {
   const firstLoad = !layers.some((l) => l.shown);
 
   return (
-    <div className="w-phonewrap" ref={wrapRef}>
-      <div className="w-herotabs" role="tablist" aria-label="What to preview">
-        {Object.entries(MODES).map(([k, m]) => (
-          <button
-            key={k} type="button" role="tab" aria-selected={mode === k}
-            className={mode === k ? "on" : undefined}
-            onClick={() => setMode(k)}
-          >
-            {m.tab}
-          </button>
-        ))}
-      </div>
+    <div className={`w-phonewrap ${className}`.trim()} ref={wrapRef}>
+      <div className="w-phonetag">{tag || MODES[mode].tab}</div>
 
       <div className="w-phone">
         <div className="w-notch" />
@@ -168,10 +159,14 @@ export default function HeroPhone() {
             );
           })}
 
-          <div className={`dp-poster ${firstLoad ? "" : "dp-gone"}`} style={{ "--dp-accent": current.accent, zIndex: 2 }}>
-            <span className="dp-poster-label">{current.label}</span>
-            <span className="dp-poster-names">{current.names}</span>
-          </div>
+          <OpeningPoster
+            label={mode === "cards" ? current.label : current.label}
+            names={current.names}
+            accent={current.accent}
+            variant={mode === "cards" ? "envelope" : "doors"}
+            gone={!firstLoad}
+            style={{ zIndex: 2 }}
+          />
         </div>
       </div>
 

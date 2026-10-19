@@ -67,22 +67,23 @@ const ACCENT_FALLBACK = { accent: "#C9922F", bg: "#FDF6EA", catBg: "rgba(201,146
    guests reached — send the figures and the date they were measured,
    and swap this array for them. Do not estimate. */
 const TRUTHS = [
-  { icon: <Sparkles size={20} strokeWidth={2} />, title: "Designed, not chosen", desc: "Your invitation is drawn for your event. There is no template underneath it." },
-  { icon: <Star size={20} strokeWidth={2} />,     title: "Built for Indian celebrations", desc: "Weddings, naming ceremonies, griha pravesh, birthdays, concerts." },
+  { icon: <Sparkles size={20} strokeWidth={2} />, title: "Designed, not chosen", desc: "Every invitation and card is drawn for its moment. There is no template underneath it." },
+  { icon: <Star size={20} strokeWidth={2} />,     title: "Invitations and greetings", desc: "Weddings, griha pravesh and birthdays — and wishes for Diwali, Eid, Onam and Christmas." },
   { icon: <Link2 size={20} strokeWidth={2} />,    title: "One link, nothing to install", desc: "Guests tap it and it opens. No app, no sign-up, no account." },
-  { icon: <Clock size={20} strokeWidth={2} />,    title: "Ready the same evening", desc: "A sentence in, a finished invitation out, while the tea is still hot." },
+  { icon: <Clock size={20} strokeWidth={2} />,    title: "Ready the same evening", desc: "A sentence in, a finished invitation or card out, while the tea is still hot." },
 ];
 
 /* The occasion in the hero headline, rolling through (RotatingWord). */
 const HERO_OCCASIONS = [
-  "your wedding.", "a griha pravesh.", "her first birthday.",
-  "the naming day.", "your engagement.", "the big concert.",
+  "your wedding.", "Diwali.", "her first birthday.", "Christmas.",
+  "a griha pravesh.", "Eid.", "the naming day.", "an anniversary.",
 ];
 
 /* The slow ribbon of occasions under the hero. */
 const RIBBON = [
-  "Weddings", "Engagements", "Griha Pravesh", "Naming Ceremonies", "Birthdays",
-  "Baby Showers", "Baptisms", "Anniversaries", "Concerts", "Conferences",
+  "Weddings", "Diwali Wishes", "Engagements", "Christmas Cards", "Griha Pravesh",
+  "Eid Greetings", "Naming Ceremonies", "Birthday Wishes", "Baby Showers",
+  "Onam Greetings", "Anniversaries", "Thank-you Cards", "Concerts", "New Year Wishes",
 ];
 
 const ASSURE = [
@@ -111,7 +112,7 @@ const WHY = [
   { icon: <MessageCircle size={18} strokeWidth={2} />, title: "You describe, it draws", desc: "No editor to learn. Say what you want changed in plain words and watch it change." },
   { icon: <Images size={18} strokeWidth={2} />, title: "Your photos, in place", desc: "They land in the portrait and the gallery, sized and framed — not buried in a folder." },
   { icon: <Pencil size={18} strokeWidth={2} />, title: "Editable after sending", desc: "Times move and venues change. Edit the invitation and everyone already has the new one." },
-  { icon: <QrCode size={18} strokeWidth={2} />, title: "Paper and phone together", desc: "Print a QR on the card you post, and the same invitation opens in the guest's hand." },
+  { icon: <Mail size={18} strokeWidth={2} />, title: "Greeting cards too", desc: "Diwali, Eid, Onam, Christmas, a birthday — a card that opens from its envelope, sent as one link." },
   { icon: <ShieldCheck size={18} strokeWidth={2} />, title: "Your link, yours to keep", desc: "One address to share, and it keeps working long after the day is over." },
 ];
 
@@ -161,19 +162,20 @@ export default function Home() {
           <div className="wrap w-herogrid">
             <div className="w-herotext">
 
-              <p className="w-hero-eyebrow">Invitations &amp; greeting cards · Indian celebrations</p>
+              <p className="w-hero-eyebrow">Digital invitations &amp; greeting cards</p>
 
               <h1 className="w-h1">
-                <span className="w-line"><span>Invitations</span></span>
-                <span className="w-line"><span>made for</span></span>
+                <span className="w-line"><span>Invitations &amp;</span></span>
+                <span className="w-line"><span>greetings for</span></span>
                 <span className="w-line">
                   <span><em><RotatingWord words={HERO_OCCASIONS} /></em></span>
                 </span>
               </h1>
 
               <p className="w-hero-sub">
-                Tell it what you are celebrating. A design made for that one
-                day appears in minutes — and you share it as a single link.
+                Inviting people, or wishing someone well? Tell it in a sentence.
+                An invitation or a greeting card made for that one moment
+                appears in minutes — and you share it as a single link.
               </p>
 
               <div className="w-hero-cta">
@@ -211,8 +213,11 @@ export default function Home() {
             <div className="w-herovis">
               <span className="w-orbit w-orbit-1" data-depth="0.25" aria-hidden="true"><i /></span>
               <span className="w-orbit w-orbit-2" data-depth="0.45" aria-hidden="true"><i /></span>
-              <div data-depth="0.6" style={{ position: "relative", zIndex: 1 }}>
-                <HeroPhone />
+              {/* Two live phones: an invitation and a greeting card,
+                  each cycling its own real demos (components/HeroPhone). */}
+              <div className="w-duo" data-depth="0.6">
+                <HeroPhone kind="invites" tag="Invitations" className="w-duo-a" />
+                <HeroPhone kind="cards" tag="Greeting cards" className="w-duo-b" />
               </div>
               <span className="w-chip w-chip-1" data-depth="1.2" aria-hidden="true">
                 <span><i><Check size={15} strokeWidth={2.6} /></i><span><b>RSVP in one tap</b><small>Guests reply right on it</small></span></span>
@@ -221,7 +226,7 @@ export default function Home() {
                 <span><i><MapPin size={15} /></i><span><b>Directions</b><small>Opens straight in Maps</small></span></span>
               </span>
               <span className="w-chip w-chip-3" data-depth="1.0" aria-hidden="true">
-                <span><i><Images size={15} /></i><span><b>Shared album</b><small>Everyone adds their photos</small></span></span>
+                <span><i><Mail size={15} /></i><span><b>Cards that open</b><small>An envelope, then your words</small></span></span>
               </span>
               <span className="w-chip w-chip-4" data-depth="1.4" aria-hidden="true">
                 <span><i><Music size={15} /></i><span><b>Music on open</b><small>Your song, your choice</small></span></span>
@@ -570,67 +575,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── 8. QR — paper to phone ───────────────────────────────── */}
-        <section className="w-blk w-qrsec" id="qr" aria-labelledby="qr-h">
-          <div className="wrap w-qrgrid">
-            <Reveal>
-              <figure className="w-qrfig">
-                <div className="w-qrcard">
-                  <p className="w-qrcard-kick">Together with their families</p>
-                  <p className="w-qrcard-name">Aarav &amp; Diya</p>
-                  <p className="w-qrcard-date">6 · 02 · 2027</p>
-                  <span className="w-qrrule" aria-hidden="true" />
-                  <span className="w-qrblock" aria-hidden="true">
-                    {/* Decorative stand-in for a QR code. Deliberately not
-                        a scannable code: a printed homepage graphic that
-                        resolved to a real URL would be scanned by visitors
-                        and land them somewhere we did not intend. */}
-                    <QrCode size={64} strokeWidth={1.4} />
-                  </span>
-                  <p className="w-qrcard-scan">Scan for directions, RSVP &amp; photos</p>
-                </div>
-                <figcaption className="w-figcap">Illustration of a printed card.</figcaption>
-              </figure>
-            </Reveal>
-
-            <Reveal delay={120}>
-              <div>
-                <p className="w-badge-row w-badge-left">
-                  <span
-                    className="w-sec-badge"
-                    style={{ color: "#C9922F", borderColor: "rgba(201,146,47,.28)", background: "rgba(201,146,47,.07)" }}
-                  >
-                    <QrCode size={14} strokeWidth={2} />
-                    Paper meets phone
-                  </span>
-                </p>
-                <h2 className="w-h2 w-h2-left" id="qr-h">
-                  The card still goes in the post.
-                  <br />
-                  <span className="highlight">The evening lives on the phone.</span>
-                </h2>
-                <p className="w-lede w-lede-left">
-                  Print the code on the invitation you hand over in person. The
-                  same design opens in their hand — with the route to the venue,
-                  the RSVP and, afterwards, everyone&rsquo;s photographs.
-                </p>
-                <div className="w-checks">
-                  {[
-                    ["Put it on anything printed", "Card, envelope, board at the gate, the back of a sweet box."],
-                    ["Nothing to type", "No long address to read out to an uncle over the phone."],
-                    ["It stays current", "Change the invitation and the printed code still points at the right thing."],
-                  ].map(([t, d]) => (
-                    <div className="w-check" key={t}>
-                      <span className="w-check-ic" aria-hidden="true"><Check size={12} strokeWidth={3} /></span>
-                      <span><b>{t}</b><span>{d}</span></span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
         {/* ── 9. VOICES (placeholder until real quotes exist) ──────── */}
         <section className="w-blk w-voices" id="voices" aria-labelledby="voices-h">
           <div className="wrap">
@@ -778,12 +722,17 @@ export default function Home() {
                 Start with <span className="highlight">one sentence.</span>
               </h2>
               <p className="w-lede">
-                Tell it what you are celebrating. A beautiful invitation appears in minutes.
+                Tell it what you are celebrating, or who you are wishing. A beautiful
+                invitation or greeting card appears in minutes.
               </p>
               <p className="w-final-cta">
                 <Link href="/create" className="btn btn-primary btn-lg">
                   Create your invitation
                   <span className="btn-arrow"><ArrowRight size={18} /></span>
+                </Link>
+                <Link href="/greetings" className="btn btn-ghost btn-lg">
+                  <Mail size={17} />
+                  Send a greeting card
                 </Link>
               </p>
               <p className="w-fine">It takes one sentence to begin</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import OpeningPoster from "@/components/OpeningPoster";
 import "@/app/demo.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -108,10 +109,7 @@ export default function DemoPhone({ demo, height = 560, className = "" }) {
           {/* Until the frame reports itself loaded — and permanently, if
               it never does — the screen carries the event's colour rather
               than a white hole in the layout. */}
-          <div className={`dp-poster ${loaded ? "dp-gone" : ""}`}>
-            <span className="dp-poster-label">{demo.label}</span>
-            <span className="dp-poster-names">{demo.names}</span>
-          </div>
+          <OpeningPoster label={demo.label} names={demo.names} accent={demo.accent} gone={loaded} />
         </div>
       </div>
     </div>

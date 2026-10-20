@@ -1,8 +1,8 @@
 import { publicInvitation } from "@/lib/supabase-server";
-import { shareImage, OG_SIZE } from "@/lib/og";
+import { shareImage, BANNER_SIZE } from "@/lib/og";
 
 export const alt = "A card for you";
-export const size = OG_SIZE;
+export const size = BANNER_SIZE;
 export const contentType = "image/png";
 export const revalidate = 300;
 

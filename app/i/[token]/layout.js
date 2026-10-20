@@ -9,7 +9,7 @@ export async function generateMetadata({ params }) {
   if (!inv) {
     return {
       title: "You're invited | Welcvm",
-      description: "Tap to open your invitation and RSVP.",
+      description: "👉 Click to open your invitation and RSVP.",
     };
   }
   const { title, description } = shareMeta(inv);

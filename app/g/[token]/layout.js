@@ -7,7 +7,7 @@ export async function generateMetadata({ params }) {
   if (!inv) {
     return {
       title: "A card for you 💌 | Welcvm",
-      description: "Someone sent you a card. Tap to open the envelope.",
+      description: "Someone sent you a card. 👉 Click to open the envelope.",
     };
   }
   const { title, description } = shareMeta(inv);

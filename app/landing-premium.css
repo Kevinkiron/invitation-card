@@ -703,7 +703,7 @@
 .w-hero-tagline::before { align-self: center; }
 .w-hero-tagline b { font-weight: 800; }
 .w-tag-inv { color: var(--w-coral, #DE6B5A); }
-.w-tag-card { color: #8E4A8F; }
+.w-tag-card { color: var(--w-coral, #DE6B5A); }
 @media (max-width: 560px) {
   .w-page .w-hero-tagline { font-size: 13.5px; letter-spacing: 0; }
   .w-hero-tagline::before { display: none; }

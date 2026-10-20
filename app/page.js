@@ -161,7 +161,10 @@ export default function Home() {
           <div className="wrap w-herogrid">
             <div className="w-herotext">
 
-              <p className="w-hero-eyebrow">Two ways to celebrate · one link</p>
+              <p className="w-hero-eyebrow w-hero-tagline">
+                <span><b className="w-tag-inv">Invitations</b> that bring them together,</span>{" "}
+                <span><b className="w-tag-card">Greetings</b> that make their day</span>
+              </p>
 
               {/* The hero used to be one big headline. It is now the two
                   products side by side — an invitation and a greeting

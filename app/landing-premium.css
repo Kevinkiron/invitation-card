@@ -693,3 +693,18 @@
   .w-pv-stage .w-pv-nav:last-child { right: -6px; }
   .w-pv-full { display: none; }
 }
+
+/* Hero tagline: the two products in their own colours */
+.w-page .w-hero-tagline {
+  text-transform: none; letter-spacing: .01em;
+  font: 500 15px/1.45 'DM Sans', sans-serif; color: var(--w-muted, #7a6570);
+  flex-wrap: wrap; gap: 0 6px; align-items: baseline;
+}
+.w-hero-tagline::before { align-self: center; }
+.w-hero-tagline b { font-weight: 800; }
+.w-tag-inv { color: var(--w-coral, #DE6B5A); }
+.w-tag-card { color: #8E4A8F; }
+@media (max-width: 560px) {
+  .w-page .w-hero-tagline { font-size: 13.5px; letter-spacing: 0; }
+  .w-hero-tagline::before { display: none; }
+}

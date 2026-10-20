@@ -162,11 +162,13 @@ export default function Home() {
             <div className="w-herotext">
 
               <p className="w-hero-eyebrow w-hero-tagline">
-                {/* One wrapper after the dash, so a second line starts
-                    exactly under "Invitations", not under the dash. */}
-                <span className="w-tag-lines">
-                  <span><b className="w-tag-inv">Invitations</b> that bring them together,</span>
-                  <span><b className="w-tag-card">Greetings</b> that make their day</span>
+                {/* A staircase: "Greetings…" always on its own line, starting
+                    right under "bring" — a two-column grid, so the step
+                    lines up exactly at every size. */}
+                <span className="w-tag-stairs">
+                  <span className="w-tag-a"><b className="w-tag-inv">Invitations</b> that</span>
+                  <span className="w-tag-b">bring them together,</span>
+                  <span className="w-tag-c"><b className="w-tag-card">Greetings</b> that make their day.</span>
                 </span>
               </p>
 

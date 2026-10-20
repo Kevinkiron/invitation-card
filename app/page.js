@@ -162,8 +162,12 @@ export default function Home() {
             <div className="w-herotext">
 
               <p className="w-hero-eyebrow w-hero-tagline">
-                <span><b className="w-tag-inv">Invitations</b> that bring them together,</span>{" "}
-                <span><b className="w-tag-card">Greetings</b> that make their day</span>
+                {/* One wrapper after the dash, so a second line starts
+                    exactly under "Invitations", not under the dash. */}
+                <span className="w-tag-lines">
+                  <span><b className="w-tag-inv">Invitations</b> that bring them together,</span>
+                  <span><b className="w-tag-card">Greetings</b> that make their day</span>
+                </span>
               </p>
 
               {/* The hero used to be one big headline. It is now the two

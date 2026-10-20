@@ -26,12 +26,13 @@ export default function Wordmark({
   heart = BRAND.heart,
   className = "",
   style,
+  tld = "", // e.g. ".com" — set after the m, in the heart's coral
 }) {
   return (
     <span
       className={className}
       role="img"
-      aria-label="Welcvm"
+      aria-label={`Welcvm${tld}`}
       style={{
         display: "inline-flex",
         alignItems: "baseline",
@@ -68,6 +69,7 @@ export default function Wordmark({
         <path fill={ink} opacity=".0" d="M0 0h0v0H0z" />
       </svg>
       <span aria-hidden="true">m</span>
+      {tld ? <span aria-hidden="true" style={{ color: heart, marginLeft: `${size * 0.02}px` }}>{tld}</span> : null}
     </span>
   );
 }

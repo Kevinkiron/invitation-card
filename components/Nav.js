@@ -77,8 +77,7 @@ export default function Nav() {
 
         {/* Logo */}
         <Link href="/" aria-label="Welcvm home" className="w-nav-logo">
-          <Wordmark size={26} />
-          <span className="w-nav-logo-sub">Invites</span>
+          <Wordmark size={30} tld=".com" className="w-logo-mark" />
         </Link>
 
         {/* Portal toggle — the whole landing + creation flow swaps between

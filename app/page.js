@@ -73,11 +73,10 @@ const TRUTHS = [
   { icon: <Clock size={20} strokeWidth={2} />,    title: "Ready the same evening", desc: "A sentence in, a finished invitation or card out, while the tea is still hot." },
 ];
 
-/* The occasion in the hero headline, rolling through (RotatingWord). */
-const HERO_OCCASIONS = [
-  "your wedding.", "Diwali.", "her first birthday.", "Christmas.",
-  "a griha pravesh.", "Eid.", "the naming day.", "an anniversary.",
-];
+/* What rolls through each of the two hero cards (RotatingWord). */
+const INVITE_WORDS = ["your wedding.", "a griha pravesh.", "her first birthday.", "the naming day.", "our engagement."];
+const WISH_WORDS = ["a happy Diwali.", "a merry Christmas.", "Eid Mubarak.", "a happy birthday.", "a happy Onam."];
+
 
 /* The slow ribbon of occasions under the hero. */
 const RIBBON = [
@@ -162,37 +161,53 @@ export default function Home() {
           <div className="wrap w-herogrid">
             <div className="w-herotext">
 
-              <p className="w-hero-eyebrow">Digital invitations &amp; greeting cards</p>
+              <p className="w-hero-eyebrow">Two ways to celebrate · one link</p>
 
-              <h1 className="w-h1">
-                <span className="w-line"><span>Invitations &amp;</span></span>
-                <span className="w-line"><span>greetings for</span></span>
-                <span className="w-line">
-                  <span><em><RotatingWord words={HERO_OCCASIONS} /></em></span>
-                </span>
+              {/* The hero used to be one big headline. It is now the two
+                  products side by side — an invitation and a greeting
+                  card — each a door you can walk through, so a visitor
+                  sees in one glance that this does both. */}
+              <h1 className="w-duohead">
+                Invite them<span className="w-duohead-dot">.</span>{" "}
+                <em>Wish them<span className="w-duohead-dot">.</span></em>
               </h1>
-
-              <p className="w-hero-sub">
-                Inviting people, or wishing someone well? Tell it in a sentence.
-                An invitation or a greeting card made for that one moment
-                appears in minutes — and you share it as a single link.
+              <p className="w-hero-sub w-duosub">
+                Tell it in a sentence. A design made for that one moment appears
+                in minutes — and you share it as a single link.
               </p>
 
-              <div className="w-hero-cta">
-                <Link href="/create" className="btn btn-primary" data-magnetic>
-                  <span>Create Invite</span>
-                  <span className="btn-arrow">
-                    <ArrowRight size={16} />
+              <div className="w-dual">
+                <Link href="/create" className="w-dcard w-dcard-inv" data-magnetic>
+                  <span className="w-dcard-art" aria-hidden="true">
+                    <svg viewBox="0 0 64 64"><path d="M14 58V26a18 18 0 0 1 36 0v32" fill="none" stroke="currentColor" strokeWidth="2.4" /><path d="M32 8v50" stroke="currentColor" strokeWidth="1.6" opacity=".6" /><path d="M20 58V28a12 12 0 0 1 24 0v30" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".55" /><circle cx="32" cy="38" r="4.5" fill="currentColor" /></svg>
                   </span>
+                  <span className="w-dcard-tag">Invitations</span>
+                  <span className="w-dcard-line">
+                    Invite everyone to{" "}
+                    <RotatingWord words={INVITE_WORDS} interval={2600} />
+                  </span>
+                  <span className="w-dcard-meta">Opens on doors · RSVP · Directions · Music</span>
+                  <span className="w-dcard-go">Create an invite <ArrowRight size={15} /></span>
                 </Link>
-                <Link href="/greetings" className="btn btn-ghost">
-                  <Mail size={16} />
-                  <span>Send a Greeting Card</span>
+
+                <span className="w-dual-amp" aria-hidden="true">&amp;</span>
+
+                <Link href="/greetings" className="w-dcard w-dcard-card" data-magnetic>
+                  <span className="w-dcard-art" aria-hidden="true">
+                    <svg viewBox="0 0 64 64"><rect x="8" y="16" width="48" height="34" rx="4" fill="none" stroke="currentColor" strokeWidth="2.4" /><path d="M8 18l24 18 24-18" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M32 30.5c-2.6-3.4-8-2-8 2.2 0 4 6 7.3 8 8.6 2-1.3 8-4.6 8-8.6 0-4.2-5.4-5.6-8-2.2z" fill="currentColor" /></svg>
+                  </span>
+                  <span className="w-dcard-tag">Greeting cards</span>
+                  <span className="w-dcard-line">
+                    Wish someone{" "}
+                    <RotatingWord words={WISH_WORDS} interval={2600} />
+                  </span>
+                  <span className="w-dcard-meta">Opens from an envelope · Your words · Your photo</span>
+                  <span className="w-dcard-go">Send a card <ArrowRight size={15} /></span>
                 </Link>
               </div>
 
               <p className="w-cta-note">
-                Create in minutes · Share anywhere · No app needed ·{" "}
+                Ready in minutes · No app needed ·{" "}
                 <a href="#demos">See live examples</a>
               </p>
 

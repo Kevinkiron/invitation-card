@@ -19,7 +19,7 @@ import { OCCASIONS, getOccasion } from "@/lib/greetings/occasions";
 import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/lib/design/greeting-tokens";
 import { uploadPhoto, describeFile } from "@/lib/photos";
 import { uploadAudio, describeAudioFile } from "@/lib/music/upload";
-import { whatsappHref, SITE_URL } from "@/lib/share";
+import { whatsappHref, SITE_URL, warmPreview } from "@/lib/share";
 import { BACKGROUNDS, backgroundCss, backgroundIsLight } from "@/lib/greetings/backgrounds";
 import { INKS, FONTS } from "@/lib/greetings/card-style";
 import { coverOptions } from "@/lib/greetings/covers";
@@ -356,6 +356,9 @@ export default function GreetingCreatePage() {
       setTimeout(() => setCopied(false), 1800);
     }).catch(() => {});
   }
+
+  /* Draw the WhatsApp preview picture now, before the link is pasted. */
+  useEffect(() => { if (result?.slug) warmPreview(`/g/${result.slug}`); }, [result?.slug]);
 
   if (!ready || !session) return <Loading />;
 

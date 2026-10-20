@@ -23,7 +23,7 @@ import { C, money } from "@/lib/theme";
 import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
 import { priceOf } from "@/lib/pricing";
 import { payAndPublish, confirmPayment, resumePendingPayment } from "@/lib/checkout";
-import { whatsappHref, SITE_URL } from "@/lib/share";
+import { whatsappHref, SITE_URL, warmPreview } from "@/lib/share";
 import { TEMPLATES } from "@/lib/templates/registry";
 import { EVENT_TYPE_LIST, getEventType } from "@/lib/ai/event-types";
 import { emptyDraft, draftToInvitation, draftToConfig } from "@/lib/ai/draft";
@@ -342,6 +342,9 @@ export default function CreatePage() {
     setAskField("text");
     setDone(true);
   }
+
+  /* Draw the WhatsApp preview picture now, before the link is pasted. */
+  useEffect(() => { if (published?.slug) warmPreview(`/i/${published.slug}`); }, [published?.slug]);
 
   async function send(text, tokensOverride) {
     const content = (text ?? input).trim();

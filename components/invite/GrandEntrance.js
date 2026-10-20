@@ -128,6 +128,7 @@ function Wreath() {
 export default function GrandEntrance({
   kind = "wedding", faith = "", kicker = "", title = "", sub = "", mono = "", palette = {}, cue = "Tap to open", onOpen,
   photoSrc = "",
+  autoOpen = 0, // ms: open by itself (the landing-page previews, where nobody can tap)
 }) {
   const door = doorFor(kind, faith);
   const [phase, setPhase] = useState("idle"); // idle → opening → gone
@@ -139,6 +140,12 @@ export default function GrandEntrance({
     setPhase("opening");
     setTimeout(() => setPhase("gone"), quick ? 450 : 2700);
   }, [phase, onOpen]);
+
+  useEffect(() => {
+    if (!autoOpen || phase !== "idle") return;
+    const t = setTimeout(open, autoOpen);
+    return () => clearTimeout(t);
+  }, [autoOpen, phase, open]);
 
   /* the page underneath must not scroll while the doors are closed */
   useEffect(() => {

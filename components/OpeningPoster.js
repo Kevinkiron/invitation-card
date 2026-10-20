@@ -28,16 +28,8 @@ export default function OpeningPoster({ label, names, accent = "#B8405E", gone =
       </div>
     );
   }
-  return (
-    <div className={cls} style={{ "--dp-accent": accent, ...style }} aria-hidden="true">
-      <span className="dp-door dp-door-l" />
-      <span className="dp-door dp-door-r" />
-      <div className="dp-open-text">
-        <span className="dp-open-kick">{label}</span>
-        <span className="dp-open-names">{names}</span>
-        <span className="dp-open-seal"><i>✦</i></span>
-        <span className="dp-open-cue">Tap to open</span>
-      </div>
-    </div>
-  );
+  /* Invitations: only the occasion's colour while the page loads. The
+     page itself opens on the real "Tap to open" doors (GrandEntrance,
+     auto-opening in the preview), so no imitation of them here. */
+  return <div className={`dp-poster dp-open dp-open-plain ${gone ? "dp-gone" : ""}`} style={{ "--dp-accent": accent, ...style }} aria-hidden="true" />;
 }

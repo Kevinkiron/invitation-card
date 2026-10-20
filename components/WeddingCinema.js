@@ -300,7 +300,7 @@ function ScratchPanel({ onDone, accent = "#c69a55", deep = "#3a2230" }) {
 /* ══════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════ */
-export default function WeddingCinema({ tokens: rawTokens, preview = false, guest = null }) {
+export default function WeddingCinema({ tokens: rawTokens, preview = false, guest = null, entrance = 0 }) {
   /* Uploaded photos show only with the "photos" add-on; otherwise, and
      whenever there is no hero, the default photos stand in
      (lib/design/default-photos.js, lib/pricing.js). */
@@ -419,8 +419,11 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
           wedding's tradition (temple, chapel, mosque or palace), with the
           couple's names above a gold seal. Tapping the seal swings the
           doors open into the invitation — see components/invite/GrandEntrance.js. */}
-      {!preview && (
+      {/* `entrance` (ms): the landing-page previews show the real doors
+          too, and open them by themselves after that long. */}
+      {(!preview || entrance > 0) && (
         <GrandEntrance
+          autoOpen={preview ? entrance : 0}
           kind="wedding"
           faith={faithKey(invitation.religion)}
           kicker="The wedding of"
@@ -428,7 +431,7 @@ export default function WeddingCinema({ tokens: rawTokens, preview = false, gues
           sub={invitation.displayDate || ""}
           mono={mono}
           palette={tokens.palette || {}}
-          onOpen={openInvitation}
+          onOpen={preview ? undefined : openInvitation}
         />
       )}
 

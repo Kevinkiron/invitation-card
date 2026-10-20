@@ -341,3 +341,4 @@
   .dp-poster.dp-open { transition: opacity .3s ease; }
   .dp-open-seal { animation: none; }
 }
+.dp-poster.dp-open-plain { transition: opacity .35s ease; }

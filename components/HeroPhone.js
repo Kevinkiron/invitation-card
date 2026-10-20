@@ -37,7 +37,7 @@ const FADE_MS = 650;
 const MODES = {
   invites: {
     tab: "Invitations",
-    dwell: 7000,
+    dwell: 10000, // the doors (1.6s + 2.7s), then a few seconds of the page
     items: DEMOS.map((d) => ({ key: `i-${d.slug}`, src: `/demo/${d.slug}?embed=1`, label: d.label, names: d.names, accent: d.accent })),
   },
   cards: {

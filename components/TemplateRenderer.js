@@ -40,15 +40,15 @@ import { DEFAULT_TEMPLATE } from "@/lib/templates/registry";
    is the same fix for what everyone ELSE sees once it's published: the
    guest link (/i/[token]), the owner's own preview (/manage/[id]), and
    the landing-page demos, which are all v2 configs rendered through here. */
-export default function TemplateRenderer({ cfg, events = [], guestName, compact = false, mode }) {
+export default function TemplateRenderer({ cfg, events = [], guestName, compact = false, mode, entrance = 0 }) {
   if (cfg?.v === 2) {
     const cinema = isCinema(cfg.tokens) || isCinema(cfg);
     if (cinema) {
-      return <WeddingCinema tokens={cfg.tokens || cfg} preview={compact} />;
+      return <WeddingCinema tokens={cfg.tokens || cfg} preview={compact} entrance={entrance} />;
     }
     const celebration = isCelebration(cfg.tokens) || isCelebration(cfg);
     if (celebration) {
-      return <CelebrationCinema tokens={cfg.tokens || cfg} preview={compact} />;
+      return <CelebrationCinema tokens={cfg.tokens || cfg} preview={compact} entrance={entrance} />;
     }
     return <TokenInvite tokens={cfg.tokens} fit={compact ? "scroll" : "flow"} />;
   }

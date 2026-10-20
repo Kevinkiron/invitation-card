@@ -17,7 +17,7 @@ const PIXELS_PER_SECOND = 34;   // slow enough to read a heading in passing
 const PAUSE_AT_TOP_MS = 2600;   // long enough to take in the opening scene
 const PAUSE_AT_END_MS = 2200;
 
-export default function DemoAutoScroll() {
+export default function DemoAutoScroll({ delay = 0 }) {
   useEffect(() => {
     /* Somebody who has asked for less motion is not asking to watch a
        page scroll itself for the rest of their visit. They get the
@@ -78,7 +78,7 @@ export default function DemoAutoScroll() {
       raf = requestAnimationFrame(step);
     };
 
-    after(PAUSE_AT_TOP_MS, () => {
+    after(PAUSE_AT_TOP_MS + delay, () => {
       phase = "running";
       raf = requestAnimationFrame(step);
     });
@@ -104,7 +104,7 @@ export default function DemoAutoScroll() {
       window.removeEventListener("keydown", surrender);
       void phase;
     };
-  }, []);
+  }, [delay]);
 
   return null;
 }

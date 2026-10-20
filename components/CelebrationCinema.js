@@ -397,7 +397,7 @@ function Countdown({ iso, label }) {
 /* ══════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════ */
-export default function CelebrationCinema({ tokens: rawTokens, preview = false }) {
+export default function CelebrationCinema({ tokens: rawTokens, preview = false, entrance = 0 }) {
   /* The kind lives on `_premium`; `eventKind` is the readable copy of it.
      Reading both means a config written by an older turn of the interview
      still routes to the right theme. Falls back to the shared
@@ -764,8 +764,9 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
 
       {!preview && <MusicToggle music={music} className="cc-music" />}
 
-      {!preview && (
+      {(!preview || entrance > 0) && (
         <GrandEntrance
+          autoOpen={preview ? entrance : 0}
           kind={kind}
           photoSrc={tokens.media?.heroImageUrl || ""}
           kicker={voice.kicker || ""}
@@ -773,7 +774,7 @@ export default function CelebrationCinema({ tokens: rawTokens, preview = false }
           sub={invitation.displayDate || ""}
           palette={palette}
           cue={voice.openCue || "Tap to open"}
-          onOpen={openInvitation}
+          onOpen={preview ? undefined : openInvitation}
         />
       )}
 

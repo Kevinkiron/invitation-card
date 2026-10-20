@@ -1,123 +1,66 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { DEMOS } from "@/lib/demo/fixtures";
-import "@/app/demo.css"; // reuses .dp-poster for the loading state — see below
-import OpeningPoster from "@/components/OpeningPoster";
+import Link from "next/link";
 
 /* ══════════════════════════════════════════════════════════════════════
-   The invitation wall.
+   The wall — invitations AND greeting cards, passing by in one endless row.
 
-   This used to draw twelve invented, generic designs live via
-   lib/design/renderer.js into shadow roots — a fair proof of "no
-   templates" in the abstract, but none of it was one of Welcvm's four
-   real templates, and lib/design/showcase.js's WALL has since been
-   trimmed to exactly those four anyway. Now every card is a sandboxed
-   iframe onto `/demo/<slug>?embed=1` — the same real, already-opened
-   invitation HeroPhone and the "See it built" section show, just small
-   and in motion. What passes through this wall is the product, not a
-   diagram of it.
+   It used to mount a live iframe per card (8 small copies of the whole
+   app). On a real connection most of them were still painting their
+   background colour when they scrolled past, so visitors saw a row of
+   plain coloured boxes. Now every card is a picture of the real thing —
+   taken from the actual demo pages (/demo/<slug>, /demo/card/<occasion>):
+   the doors closed, the invitation opened, a card's cover, its message —
+   so the row is always full and always looks its best. Each card still
+   opens the live demo.
 
-   Same reasoning as HeroPhone.js/DemoPhone.js for the iframe: the cinema
-   and celebration templates are built on `position: fixed` and `100dvh`,
-   which only behave correctly inside their own document — a
-   `transform: scale()` has to land on the iframe element, not on content
-   rendered inline.
+   SEAMLESS LOOP: `@keyframes w-marquee` slides the track by -50%, so the
+   track holds the set twice. The set is 18 cards (~4,800px) — wider than
+   any screen — so there is never an empty stretch before it comes round.
 
-   Unlike HeroPhone's `.w-phone` (a fluid `clamp()` width needing a
-   ResizeObserver), `.w-wallcard-inner` is drawn at fixed CARD_W/CARD_H
-   pixel constants (see app/landing.css — no responsive override exists),
-   so the scale from the 390px iframe down to the card is a constant,
-   computed once.
-
-   Two things kept from the old version:
-
-   1. COST. Nothing loads until the wall is close to the viewport, same
-      IntersectionObserver gate as before.
-   2. The CSS's `@keyframes w-marquee` animates `translateX(-50%)`, which
-      only loops seamlessly with exactly two duplicated copies of a row's
-      card set — that structure is unchanged. What DID change: this now
-      renders a single row (one marquee track) instead of two, so a
-      four-demo wall mounts 8 iframes total rather than 16 — a full React
-      app in every card adds up fast, and one row moving is exactly what
-      "passing through" asked for. ══════════════════════════════════════════════════════════════════════ */
+   To refresh a picture: open the demo at 390×547, screenshot, resize to
+   496×696 and save as public/showcase/<name>.webp.
+   ══════════════════════════════════════════════════════════════════════ */
 
 const CARD_W = 248;
 const CARD_H = 348;
-const FRAME_WIDTH = 390;
-const FRAME_HEIGHT = Math.round(FRAME_WIDTH * (CARD_H / CARD_W));
-const SCALE = CARD_W / FRAME_WIDTH;
 
-function WallCard({ demo, active }) {
-  const [loaded, setLoaded] = useState(false);
+const INV = { wedding: "Wedding", birthday: "Birthday", naming: "Naming Ceremony", housewarming: "Housewarming" };
+const CARD = { christmas: "Christmas", diwali: "Diwali", eid: "Eid", "birthday-wish": "Birthday wish", onam: "Onam" };
 
+const inv = (slug, shot) => ({ key: `inv-${slug}-${shot}`, src: `/showcase/inv-${slug}-${shot}.webp`, href: `/demo/${slug}`, label: INV[slug], kind: "Invitation" });
+const card = (occ, shot) => ({ key: `card-${occ}-${shot}`, src: `/showcase/card-${occ}-${shot}.webp`, href: `/demo/card/${occ}`, label: `${CARD[occ]} card`, kind: "Greeting card" });
+
+/* Interleaved, so an invitation is always next to a card. */
+const WALL = [
+  inv("wedding", "door"), card("christmas", "cover"), inv("birthday", "open"), card("diwali", "inside"),
+  inv("housewarming", "door"), card("eid", "cover"), inv("naming", "open"), card("birthday-wish", "inside"),
+  inv("wedding", "open"), card("onam", "cover"), inv("birthday", "door"), card("christmas", "inside"),
+  inv("naming", "door"), card("diwali", "cover"), inv("housewarming", "open"), card("eid", "inside"),
+  card("onam", "inside"), card("birthday-wish", "cover"),
+];
+
+function WallCard({ item, hidden }) {
   return (
-    <figure className="w-wallcard" aria-label={demo.label}>
-      <div className="w-wallcard-inner" style={{ position: "relative" }}>
-        {active && (
-          <iframe
-            src={`/demo/${demo.slug}?embed=1`}
-            title={`${demo.label} — a Welcvm invitation`}
-            loading="lazy"
-            tabIndex={-1}
-            aria-hidden="true"
-            /* No `allow-same-origin` — a decorative card has no business
-               touching the landing page's storage or cookies. */
-            sandbox="allow-scripts"
-            scrolling="no"
-            onLoad={() => setLoaded(true)}
-            style={{
-              width: `${FRAME_WIDTH}px`,
-              height: `${FRAME_HEIGHT}px`,
-              border: 0,
-              display: "block",
-              pointerEvents: "none",
-              transform: `scale(${SCALE})`,
-              transformOrigin: "top left",
-            }}
-          />
-        )}
-        <OpeningPoster label={demo.label} names={demo.names} accent={demo.accent} gone={loaded} style={{ position: "absolute", inset: 0 }} />
-      </div>
-      <figcaption className="w-wallcap">{demo.label}</figcaption>
+    <figure className={`w-wallcard ${item.kind === "Greeting card" ? "is-card" : "is-inv"}`}>
+      <Link href={item.href} className="w-wallcard-inner" tabIndex={hidden ? -1 : undefined} aria-label={`${item.label} — open the live demo`}>
+        <img src={item.src} alt="" width={CARD_W} height={CARD_H} loading="eager" fetchPriority="low" decoding="async" draggable="false" />
+        <span className="w-wallcard-kind">{item.kind}</span>
+      </Link>
+      <figcaption className="w-wallcap">{item.label}</figcaption>
     </figure>
   );
 }
 
 export default function InvitationWall() {
-  const wrapRef = useRef(null);
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setActive(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "320px 0px" } // start loading just before it is needed
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   return (
-    <div
-      className="w-wall"
-      ref={wrapRef}
-      style={{ "--card-w": `${CARD_W}px`, "--card-h": `${CARD_H}px` }}
-    >
+    <div className="w-wall" style={{ "--card-w": `${CARD_W}px`, "--card-h": `${CARD_H}px` }}>
       <div className="w-wallrow">
-        {/* Duplicated once so the marquee can loop without a seam — the
-            copy is hidden from screen readers. */}
-        <div className="w-walltrack">
+        <div className="w-walltrack" style={{ animationDuration: `${WALL.length * 6.5}s` }}>
           {[0, 1].map((copy) => (
             <div className="w-wallset" key={copy} aria-hidden={copy === 1 || undefined}>
-              {DEMOS.map((demo) => (
-                <WallCard key={`${copy}-${demo.slug}`} demo={demo} active={active} />
+              {WALL.map((item) => (
+                <WallCard key={`${copy}-${item.key}`} item={item} hidden={copy === 1} />
               ))}
             </div>
           ))}

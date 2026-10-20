@@ -482,8 +482,8 @@ export default function Home() {
                   <span className="highlight">existed yesterday</span>
                 </h2>
                 <p className="w-lede">
-                  Every one was drawn by the same designer that will draw yours —
-                  from a sentence, in a few minutes.
+                  Invitations and greeting cards, every one drawn by the same
+                  designer that will draw yours — from a sentence, in a few minutes.
                 </p>
               </div>
             </Reveal>

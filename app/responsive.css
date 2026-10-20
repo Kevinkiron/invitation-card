@@ -286,3 +286,33 @@ html, body {
   max-width: 100vw;
   overflow-x: hidden;
 }
+
+/* ── /create: the ₹25 extras under the message box ─────────────────── */
+.ai-extras { margin-top: 10px; }
+.ai-extras-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ai-extra {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  padding: 9px 10px; border-radius: 12px; cursor: pointer; font: inherit;
+  border: 1px solid #eadfd3; background: #fff; color: #3b2c26;
+  font-size: 12.5px; font-weight: 700; text-align: left;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.ai-extra:hover:not(:disabled) { border-color: #DE6B5A; }
+.ai-extra:disabled { opacity: .6; cursor: default; }
+.ai-extra svg { flex-shrink: 0; color: #DE6B5A; }
+.ai-extra-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-extra-s, .ai-extra-p {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 3px 7px;
+}
+.ai-extra-s { color: #2e7d4f; background: #eaf6ee; }
+.ai-extra-p { color: #fff; background: linear-gradient(140deg, #DE6B5A, #E8912D); }
+.ai-extra-p svg { color: #fff; }
+.ai-extra.locked { background: #fdfaf5; border-style: dashed; }
+.ai-extra.on { border-color: #DE6B5A; background: #fff6f3; box-shadow: 0 0 0 3px rgba(222,107,90,.15); }
+.ai-extra-panel { margin-top: 10px; }
+.ai-extra-panel > div:last-child { margin-bottom: 0 !important; }
+@media (max-width: 420px) {
+  .ai-extra { flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 9px; }
+  .ai-extra-l { width: 100%; }
+}

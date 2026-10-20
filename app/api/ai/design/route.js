@@ -357,6 +357,24 @@ export async function POST(req) {
 
       /* An answer we cannot use: ask again, in place, without burning a
          step or a model call. */
+      /* The opening "It's a wedding" is not a wrong answer to the names
+         question — it is how the conversation starts. Welcome it rather
+         than reply "I need both first names". */
+      if (read.retry && askedStep.id === "names" && attempt === 0 &&
+          /\b(wedding|marriage|married|shaadi|shadi|vivah|vivaah|nikah|nikaah|anand karaj|sangeet|mehendi|mehndi|haldi)\b/i.test(said)) {
+        return NextResponse.json({
+          reply: "A wedding — how lovely. Let us build it together, one question at a time.",
+          askNext: askedStep.ask(base),
+          askField: askFieldForWeddingStep(askedStep),
+          done: false,
+          tokens: { ...base, eventKind: "wedding" },
+          eventKind: "wedding",
+          progress: weddingProgress(base),
+          provider: info.provider,
+          elapsedMs: Date.now() - started,
+        });
+      }
+
       if (read.retry) {
         const bumped = { ...base, _tries: { ...(base._tries || {}), [askedStep.id]: attempt + 1 } };
         return NextResponse.json({

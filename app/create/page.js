@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight, Send, Loader2, Sparkles, Check, RefreshCw,
   CreditCard, ShieldCheck, AlertTriangle, Paperclip, Images, X as XIcon,
-  Copy, ExternalLink, MessageCircle, Users,
+  Copy, ExternalLink, MessageCircle, Users, Music2, Palette, Lock,
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
@@ -20,8 +20,8 @@ import { isCelebration } from "@/lib/design/celebration-tokens";
 import { useAuth } from "@/components/AuthProvider";
 import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
-import { LockedFeature, UnlockDialog, PriceSummary } from "@/components/AddonLock";
-import { priceOf } from "@/lib/pricing";
+import { UnlockDialog, PriceSummary } from "@/components/AddonLock";
+import { priceOf, ADDON_PRICE } from "@/lib/pricing";
 import { payAndPublish, confirmPayment, resumePendingPayment } from "@/lib/checkout";
 import { whatsappHref, SITE_URL, warmPreview } from "@/lib/share";
 import { TEMPLATES } from "@/lib/templates/registry";
@@ -185,6 +185,7 @@ export default function CreatePage() {
      in for the preview and when publishing. */
   const [addons, setAddons] = useState([]);
   const [unlocking, setUnlocking] = useState(null);
+  const [extra, setExtra] = useState(null); // the open extras panel under the message box
   const afterUnlock = useRef(null);
   const can = (id) => addons.includes(id);
   /* Run `then` now if the add-on is unlocked, otherwise ask first and run
@@ -681,83 +682,6 @@ export default function CreatePage() {
                   />
                 )}
 
-                {/* Photos and music: available for every occasion, wedding
-                    or otherwise — this used to be a single small line of
-                    text under the input row that easily went unnoticed on
-                    a non-wedding invitation. */}
-                {cinemaMode && (
-                  <>
-                    {!can("photos") ? (
-                      <LockedFeature id="photos" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
-                    ) : (
-                    <div
-                      style={{
-                        border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px",
-                        marginBottom: 10, background: "#fff",
-                        display: "flex", alignItems: "center", gap: 10,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                          background: `linear-gradient(140deg, ${C.heart}, ${C.heartDeep})`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        <Images size={13} color="#fff" />
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 800, color: C.ink }}>
-                          Photos {photoCount ? `(${photoCount}/${MAX_PHOTOS + 1})` : ""}
-                        </div>
-                        <div style={{ fontSize: 11, color: C.muted }}>
-                          {photoCount
-                            ? "Each one goes to the scene I asked it for — add more any time."
-                            : "I will ask for these as we go, or add them yourself whenever you like."}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => requireAddon("photos", () => fileRef.current?.click())}
-                        disabled={busy || uploading}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-                          border: `1.5px solid ${C.line}`, background: "#fff", borderRadius: 999,
-                          padding: "8px 14px", fontSize: 12, fontWeight: 700, color: C.heart,
-                          cursor: "pointer", fontFamily: "inherit",
-                        }}
-                      >
-                        {uploading ? <Loader2 size={14} className="spin" /> : <Paperclip size={14} />}
-                        {uploading ? "Uploading…" : photoCount ? "Add more" : "Add photos"}
-                      </button>
-                    </div>
-                    )}
-
-                    {!can("music") ? (
-                      <LockedFeature id="music" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
-                    ) : (
-                    <MusicPicker
-                      tokens={tokens}
-                      eventKind={tokens?.eventKind || draft.eventType}
-                      userId={session?.user?.id}
-                      onChoose={chooseMusic}
-                      disabled={busy || uploading}
-                    />
-                    )}
-
-                    {!can("colour") ? (
-                      <LockedFeature id="colour" onUnlock={(k) => requireAddon(k)} disabled={busy || uploading} />
-                    ) : (
-                    <BackgroundPicker
-                      tokens={tokens}
-                      onChoose={chooseBackground}
-                      disabled={busy || uploading}
-                      wedding={weddingMode}
-                    />
-                    )}
-                  </>
-                )}
-
                 {editing && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.green}`, background: "#f3fbf6", borderRadius: 14, padding: "10px 12px", marginBottom: 10 }}>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: C.ink, lineHeight: 1.4 }}>
@@ -820,6 +744,109 @@ export default function CreatePage() {
                     invitation (wedding or celebration) — this stays only
                     for the older plain-renderer flow, which has no such
                     card. */}
+                {/* The ₹25 extras — photos, music, background — sit UNDER the
+                    message box as one compact row, so the chat runs straight
+                    into the box you type in. A tap opens that extra's panel
+                    (or offers to unlock it first). */}
+                {cinemaMode && (
+                  <div className="ai-extras">
+                    <div className="ai-extras-row" role="tablist" aria-label="Extras">
+                      {[
+                        ["photos", Images, "Photos", photoCount ? `${photoCount} added` : null],
+                        ["music", Music2, "Music", tokens?.media?.musicUrl || tokens?.media?.musicTrackId ? "Chosen" : null],
+                        ["colour", Palette, "Background", tokens?.background ? "Chosen" : null],
+                      ].map(([id, Icon, label, state]) => {
+                        const unlocked = can(id);
+                        const on = extra === id && unlocked;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            role="tab"
+                            aria-selected={on}
+                            className={`ai-extra ${on ? "on" : ""} ${unlocked ? "" : "locked"}`}
+                            disabled={busy || uploading}
+                            onClick={() => (unlocked ? setExtra(on ? null : id) : requireAddon(id, () => setExtra(id)))}
+                          >
+                            <Icon size={14} />
+                            <span className="ai-extra-l">{label}</span>
+                            {unlocked
+                              ? <span className="ai-extra-s">{state ? <><Check size={11} /> {state}</> : "Add"}</span>
+                              : <span className="ai-extra-p"><Lock size={10} /> {money(ADDON_PRICE)}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {extra === "photos" && can("photos") && (
+                      <div className="ai-extra-panel">
+                    <div
+                      style={{
+                        border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px",
+                        marginBottom: 10, background: "#fff",
+                        display: "flex", alignItems: "center", gap: 10,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                          background: `linear-gradient(140deg, ${C.heart}, ${C.heartDeep})`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Images size={13} color="#fff" />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 800, color: C.ink }}>
+                          Photos {photoCount ? `(${photoCount}/${MAX_PHOTOS + 1})` : ""}
+                        </div>
+                        <div style={{ fontSize: 11, color: C.muted }}>
+                          {photoCount
+                            ? "Each one goes to the scene I asked it for — add more any time."
+                            : "I will ask for these as we go, or add them yourself whenever you like."}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => requireAddon("photos", () => fileRef.current?.click())}
+                        disabled={busy || uploading}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                          border: `1.5px solid ${C.line}`, background: "#fff", borderRadius: 999,
+                          padding: "8px 14px", fontSize: 12, fontWeight: 700, color: C.heart,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >
+                        {uploading ? <Loader2 size={14} className="spin" /> : <Paperclip size={14} />}
+                        {uploading ? "Uploading…" : photoCount ? "Add more" : "Add photos"}
+                      </button>
+                    </div>
+                      </div>
+                    )}
+                    {extra === "music" && can("music") && (
+                      <div className="ai-extra-panel">
+                        <MusicPicker
+                          tokens={tokens}
+                          eventKind={tokens?.eventKind || draft.eventType}
+                          userId={session?.user?.id}
+                          onChoose={chooseMusic}
+                          disabled={busy || uploading}
+                        />
+                      </div>
+                    )}
+                    {extra === "colour" && can("colour") && (
+                      <div className="ai-extra-panel">
+                        <BackgroundPicker
+                          tokens={tokens}
+                          onChoose={chooseBackground}
+                          disabled={busy || uploading}
+                          wedding={weddingMode}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {!cinemaMode && (
                   <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>
                     <Paperclip size={11} />

@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Send, Check, CreditCard, Lock, ShieldCheck, Loader2, Paperclip, Music,
-  X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink, MessageCircle,
+  X as XIcon, Sparkles, RefreshCw, Copy, ExternalLink, MessageCircle, Play, Pause, Upload,
 } from "lucide-react";
+import { GREETING_TRACKS, trackUrl } from "@/lib/music/tracks";
 import Nav from "@/components/Nav";
 import PhoneFrame from "@/components/PhoneFrame";
 import GreetingCard from "@/components/GreetingCard";
@@ -224,7 +225,27 @@ export default function GreetingCreatePage() {
     }
   }
 
+  /* The ready-made tunes (lib/music/tracks.js). Choosing one stores its
+     URL exactly like an upload, so GreetingCard plays it the same way. */
+  const [playing, setPlaying] = useState(null);
+  const previewRef = useRef(null);
+  useEffect(() => () => previewRef.current?.pause(), []);
+  function chooseTrack(t) {
+    setTokens((tk) => ({ ...tk, media: { ...tk.media, musicUrl: trackUrl(t.file), musicTrackId: t.id, musicLabel: t.title } }));
+  }
+  function previewTrack(t) {
+    previewRef.current?.pause();
+    if (playing === t.id) { setPlaying(null); return; }
+    const el = new Audio(trackUrl(t.file));
+    el.volume = 0.7;
+    el.onended = () => setPlaying(null);
+    el.play().catch(() => setPlaying(null));
+    previewRef.current = el;
+    setPlaying(t.id);
+  }
+
   function removeMedia(key) {
+    if (key === "musicUrl") { previewRef.current?.pause(); setPlaying(null); }
     setTokens((t) => ({ ...t, media: { ...t.media, [key]: null, ...(key === "musicUrl" ? { musicTrackId: null, musicLabel: null } : {}) } }));
   }
 
@@ -674,7 +695,7 @@ export default function GreetingCreatePage() {
                   )}
                 </div>
 
-                <div className="g-optional-row">
+                <div className="g-optional-row" style={can("music") ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 } : undefined}>
                   <span style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: `linear-gradient(140deg, ${C.peacock}, ${C.ink})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Music size={13} color="#fff" />
                   </span>
@@ -683,13 +704,36 @@ export default function GreetingCreatePage() {
                   </div>
                   <input ref={audioRef} type="file" accept="audio/*" hidden onChange={(e) => addAudio(e.target.files)} />
                   {tokens.media.musicUrl ? (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeMedia("musicUrl")}><XIcon size={13} /></button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeMedia("musicUrl")} aria-label="No music"><XIcon size={13} /></button>
                   ) : (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => requireAddon("music", () => audioRef.current?.click())} disabled={uploading}>
-                      {uploading ? <Loader2 size={14} className="spin" /> : can("music") ? "Add" : <><Lock size={12} /> {money(ADDON_PRICE)}</>}
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => requireAddon("music", () => chooseTrack(GREETING_TRACKS[0]))} disabled={uploading}>
+                      {can("music") ? "Add" : <><Lock size={12} /> {money(ADDON_PRICE)}</>}
                     </button>
                   )}
                 </div>
+                {can("music") && (
+                  <div className="g-tracks">
+                    {GREETING_TRACKS.map((t) => {
+                      const on = tokens.media.musicTrackId === t.id;
+                      return (
+                        <div key={t.id} className={`g-track ${on ? "on" : ""}`}>
+                          <button type="button" className="g-track-play" onClick={() => previewTrack(t)} aria-label={playing === t.id ? `Pause ${t.title}` : `Play ${t.title}`}>
+                            {playing === t.id ? <Pause size={13} /> : <Play size={13} />}
+                          </button>
+                          <button type="button" className="g-track-pick" onClick={() => chooseTrack(t)}>
+                            <span>{t.title}</span>
+                            <small>0:{String(t.seconds).padStart(2, "0")}</small>
+                            {on && <Check size={14} />}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <button type="button" className="g-track-up" onClick={() => audioRef.current?.click()} disabled={uploading}>
+                      {uploading ? <Loader2 size={13} className="spin" /> : <Upload size={13} />}
+                      {tokens.media.musicUrl && !tokens.media.musicTrackId ? "Your own track ✓ — change" : "Use your own track"}
+                    </button>
+                  </div>
+                )}
 
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={goToReview} disabled={uploading}>
                   Continue <Send size={14} />

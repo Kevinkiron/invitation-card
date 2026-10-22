@@ -28,22 +28,11 @@ export default function Footer() {
           {/* Brand */}
           <div style={{ maxWidth: 300 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
-              <Wordmark size={22} />
-              <span
-                style={{
-                  fontSize: 8,
-                  letterSpacing: ".32em",
-                  textTransform: "uppercase",
-                  color: C.muted,
-                  fontWeight: 600,
-                }}
-              >
-                Invites
-              </span>
+              <Wordmark size={24} tld=".com" />
             </div>
             <p style={{ color: C.muted, fontSize: 13.5, lineHeight: 1.72, margin: 0 }}>
-              Digital invitations that design themselves — weddings, birthdays,
-              naming ceremonies and more. Shared as one beautiful link.
+              Invitations that bring them together, greetings that make their
+              day — designed for the moment and shared as one beautiful link.
             </p>
           </div>
 
@@ -63,6 +52,14 @@ export default function Footer() {
               links={[
                 ["Sign in", "/login"],
                 ["Dashboard", "/dashboard"],
+              ]}
+            />
+            <FootCol
+              title="Legal"
+              links={[
+                ["Terms & Conditions", "/terms"],
+                ["Refunds & cancellations", "/terms#refunds"],
+                ["Privacy", "/terms#privacy"],
               ]}
             />
           </div>
@@ -85,7 +82,7 @@ export default function Footer() {
           }}
         >
           <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
-          <span>Invitations, designed for you</span>
+          <span>Invitations &amp; greeting cards, designed for you</span>
         </div>
       </div>
     </footer>

@@ -495,7 +495,7 @@ export default function GreetingCreatePage() {
                 <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Greeting card" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
-                  <ShieldCheck size={14} color={C.green} /> Secure payment by Razorpay — UPI, cards, netbanking and wallets.
+                  <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets. By paying you agree to our <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>Terms</a>.</span>
                 </div>
 
                 {err && (

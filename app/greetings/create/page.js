@@ -21,6 +21,7 @@ import { emptyGreetingTokens, greetingProgress, greetingPublishable } from "@/li
 import { uploadPhoto, describeFile } from "@/lib/photos";
 import { uploadAudio, describeAudioFile } from "@/lib/music/upload";
 import { whatsappHref, SITE_URL, warmPreview } from "@/lib/share";
+import AgreeTerms from "@/components/AgreeTerms";
 import { BACKGROUNDS, backgroundCss, backgroundIsLight } from "@/lib/greetings/backgrounds";
 import { INKS, FONTS } from "@/lib/greetings/card-style";
 import { coverOptions } from "@/lib/greetings/covers";
@@ -99,6 +100,7 @@ export default function GreetingCreatePage() {
     then?.();
   }
   const [publishing, setPublishing] = useState(false);
+  const [agreed, setAgreed] = useState(false); // the Terms box above Pay
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
   const [result, setResult] = useState(null); // { slug }
@@ -317,6 +319,7 @@ export default function GreetingCreatePage() {
   }
 
   async function publish() {
+    if (!agreed) { setErr("Please tick the box to agree to the Terms & Conditions before paying."); return; }
     if (!session?.user?.id) return;
     setPublishing(true);
     setErr("");
@@ -495,7 +498,7 @@ export default function GreetingCreatePage() {
                 <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Greeting card" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
-                  <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets. By paying you agree to our <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>Terms</a>.</span>
+                  <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets.</span>
                 </div>
 
                 {err && (
@@ -510,7 +513,8 @@ export default function GreetingCreatePage() {
                   </button>
                 )}
 
-                {!paidPending && <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
+                {!paidPending && <AgreeTerms checked={agreed} onChange={setAgreed} />}
+                {!paidPending && <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing || !agreed} title={agreed ? undefined : "Tick the box above to continue"}>
                   {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>}
 

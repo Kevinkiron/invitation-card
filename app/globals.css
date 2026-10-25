@@ -452,6 +452,11 @@ table.dt tr:last-child td { border-bottom: none; }
 .legal section { scroll-margin-top: 90px; margin-bottom: 30px; }
 .legal h2 { margin: 0 0 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 25px; color: #1f1418; }
 .legal p { margin: 0 0 12px; }
-.legal ul { margin: 0 0 12px; padding-left: 22px; }
+.legal ul { margin: 0 0 12px; padding-left: 22px; list-style: disc; }
 .legal li { margin-bottom: 6px; }
 .legal a { color: #DE6B5A; font-weight: 600; }
+
+/* "I agree to the Terms…" (components/AgreeTerms.js) */
+.agree-terms { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: #6b5a52; cursor: pointer; text-align: left; }
+.agree-terms input { flex-shrink: 0; width: 17px; height: 17px; margin: 1px 0 0; accent-color: #DE6B5A; cursor: pointer; }
+.agree-terms a { color: #C4523F; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }

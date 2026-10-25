@@ -21,6 +21,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Loading, Banner } from "@/components/ui";
 import { C, money } from "@/lib/theme";
 import { UnlockDialog, PriceSummary } from "@/components/AddonLock";
+import AgreeTerms from "@/components/AgreeTerms";
 import { priceOf, ADDON_PRICE } from "@/lib/pricing";
 import { payAndPublish, confirmPayment, resumePendingPayment } from "@/lib/checkout";
 import { whatsappHref, SITE_URL, warmPreview } from "@/lib/share";
@@ -185,6 +186,7 @@ export default function CreatePage() {
      in for the preview and when publishing. */
   const [addons, setAddons] = useState([]);
   const [unlocking, setUnlocking] = useState(null);
+  const [agreed, setAgreed] = useState(false); // the Terms box above Pay
   const [extra, setExtra] = useState(null); // the open extras panel under the message box
   const afterUnlock = useRef(null);
   const can = (id) => addons.includes(id);
@@ -419,6 +421,7 @@ export default function CreatePage() {
   }
 
   async function publish() {
+    if (!agreed) { setErr("Please tick the box to agree to the Terms & Conditions before paying."); return; }
     setPublishing(true);
     setErr("");
     try {
@@ -641,7 +644,7 @@ export default function CreatePage() {
                 <PriceSummary addons={addons} onAdd={(k) => requireAddon(k)} kindLabel="Invitation" />
 
                 <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 11.5, color: C.muted, marginBottom: 12 }}>
-                  <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets. By paying you agree to our <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>Terms</a>.</span>
+                  <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets.</span>
                 </div>
 
                 {err && (
@@ -656,8 +659,9 @@ export default function CreatePage() {
                   </button>
                 )}
 
+                {!paidPending && <AgreeTerms checked={agreed} onChange={setAgreed} />}
                 {!paidPending && (
-                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing}>
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing || !agreed} title={agreed ? undefined : "Tick the box above to continue"}>
                   {publishing
                     ? <><Loader2 size={16} className="spin" /> Publishing…</>
                     : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}

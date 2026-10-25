@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { COMPANY } from "@/lib/company";
 import HeroPhone from "@/components/HeroPhone";
 import InvitationWall from "@/components/InvitationWall";
 import DemoPhone from "@/components/DemoPhone";
@@ -135,19 +136,19 @@ const TESTIMONIALS = [];
    all of them are blank the section falls back to the create flow rather
    than printing a placeholder address that does not exist. */
 const CONTACT = {
-  email: "",     // e.g. "hello@welcvm.com"
+  email: COMPANY.email,
   whatsapp: "",  // e.g. "+91 …" — the number guests/customers may message
   phone: "",     // e.g. "+91 …" — with the hours you actually answer
   hours: "",     // e.g. "Mon–Sat, 10am–7pm IST"
-  offices: [],   // e.g. ["Kochi, Kerala"] — only addresses you really have
+  offices: [`${COMPANY.legalName}, ${COMPANY.address}`],
 };
 
 export default function Home() {
   const contactCards = [
-    CONTACT.email && { icon: <MessageCircle size={18} strokeWidth={2} />, label: "Email", value: CONTACT.email, href: `mailto:${CONTACT.email}` },
+    CONTACT.email && { icon: <Mail size={18} strokeWidth={2} />, label: "Email", value: CONTACT.email, href: `mailto:${CONTACT.email}` },
     CONTACT.whatsapp && { icon: <MessageCircle size={18} strokeWidth={2} />, label: "WhatsApp", value: CONTACT.whatsapp, href: `https://wa.me/${CONTACT.whatsapp.replace(/[^\d]/g, "")}` },
     CONTACT.phone && { icon: <MessageCircle size={18} strokeWidth={2} />, label: "Phone", value: CONTACT.phone, note: CONTACT.hours, href: `tel:${CONTACT.phone.replace(/\s/g, "")}` },
-    CONTACT.offices.length > 0 && { icon: <House size={18} strokeWidth={2} />, label: "Where we are", value: CONTACT.offices.join(" · ") },
+    CONTACT.offices.length > 0 && { icon: <House size={18} strokeWidth={2} />, label: "Company", value: CONTACT.offices.join(" · ") },
   ].filter(Boolean);
 
   return (

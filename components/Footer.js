@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Wordmark from "./Wordmark";
 import { C } from "@/lib/theme";
+import { COMPANY } from "@/lib/company";
 
 export default function Footer() {
   return (
@@ -34,6 +35,10 @@ export default function Footer() {
               Invitations that bring them together, greetings that make their
               day — designed for the moment and shared as one beautiful link.
             </p>
+            <p style={{ color: C.muted, fontSize: 12.5, lineHeight: 1.7, margin: "14px 0 0" }}>
+              {COMPANY.legalName} · {COMPANY.address}<br />
+              Support: <a href={`mailto:${COMPANY.email}`} style={{ color: C.ink, fontWeight: 700 }}>{COMPANY.email}</a>
+            </p>
           </div>
 
           {/* Link columns */}
@@ -59,7 +64,7 @@ export default function Footer() {
               links={[
                 ["Terms & Conditions", "/terms"],
                 ["Refunds & cancellations", "/terms#refunds"],
-                ["Privacy", "/terms#privacy"],
+                ["Privacy Policy", "/privacy"],
               ]}
             />
           </div>
@@ -81,7 +86,7 @@ export default function Footer() {
             color: C.muted,
           }}
         >
-          <span>© {new Date().getFullYear()} Welcvm. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} {COMPANY.legalName}. All rights reserved.</span>
           <span>Invitations &amp; greeting cards, designed for you</span>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { Banner, Petals } from "@/components/ui";
 import Nav from "@/components/Nav";
 import { Logo } from "@/components/Nav";
 import { C } from "@/lib/theme";
+import AgreeTerms from "@/components/AgreeTerms";
 
 export default function AuthForm({ mode }) {
   const [name, setName] = useState("");
@@ -17,6 +18,7 @@ export default function AuthForm({ mode }) {
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [redirect, setRedirect] = useState("/dashboard");
   const router = useRouter();
 
@@ -30,13 +32,15 @@ export default function AuthForm({ mode }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (mode === "signup" && !agreed) { setErr("Please agree to the Terms & Conditions and Privacy Policy to create your account."); return; }
     setErr(""); setOk(""); setBusy(true);
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
           password: pw,
-          options: { data: { full_name: name } },
+          /* when they accepted, and which version — kept with the account */
+          options: { data: { full_name: name, terms_accepted_at: new Date().toISOString(), terms_version: "2026-10-25" } },
         });
         if (error) throw error;
         if (data.session) {
@@ -94,7 +98,10 @@ export default function AuthForm({ mode }) {
                 <label>Password</label>
                 <input type="password" required minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="At least 6 characters" />
               </div>
-              <button className="btn btn-primary" style={{ width: "100%", marginTop: 8 }} disabled={busy}>
+              {mode === "signup" && (
+                <AgreeTerms checked={agreed} onChange={setAgreed} style={{ marginTop: 4 }} />
+              )}
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: 8 }} disabled={busy || (mode === "signup" && !agreed)}>
                 {busy ? (
                   <><Loader2 size={16} className="spin" /> Please wait…</>
                 ) : (

@@ -1,7 +1,7 @@
 /* Home-screen install: name, colours and the heart icon. */
 export default function manifest() {
   return {
-    name: "Welcvm Invites",
+    name: "Welcvm",
     short_name: "Welcvm",
     description: "Digital invitations and greeting cards, made with love.",
     start_url: "/",

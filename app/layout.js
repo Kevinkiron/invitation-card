@@ -10,7 +10,7 @@ export const metadata = {
      WhatsApp needs (see lib/share.js). */
   metadataBase: new URL(SITE_URL),
   applicationName: "Welcvm",
-  title: "Welcvm Invites | Digital Wedding Invitations",
+  title: "Welcvm | Digital Invitations & Greeting Cards",
   description:
     "Create beautiful digital wedding invitations for Indian weddings — Haldi, Mehendi, Sangeet, Vivaah and Reception. Personalised guest links, live RSVP tracking and WhatsApp delivery.",
   keywords: [

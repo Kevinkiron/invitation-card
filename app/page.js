@@ -238,11 +238,10 @@ export default function Home() {
             <div className="w-herovis">
               <span className="w-orbit w-orbit-1" data-depth="0.25" aria-hidden="true"><i /></span>
               <span className="w-orbit w-orbit-2" data-depth="0.45" aria-hidden="true"><i /></span>
-              {/* Two live phones: an invitation and a greeting card,
-                  each cycling its own real demos (components/HeroPhone). */}
-              <div className="w-duo" data-depth="0.6">
-                <HeroPhone kind="invites" tag="Invitations" className="w-duo-a" />
-                <HeroPhone kind="cards" tag="Greeting cards" className="w-duo-b" />
+              {/* One live phone: the wedding invitation and the Christmas
+                  card take turns, on repeat (components/HeroPhone). */}
+              <div className="w-solo" data-depth="0.6">
+                <HeroPhone kind="showcase" />
               </div>
               <span className="w-chip w-chip-1" data-depth="1.2" aria-hidden="true">
                 <span><i><Check size={15} strokeWidth={2.6} /></i><span><b>RSVP in one tap</b><small>Guests reply right on it</small></span></span>

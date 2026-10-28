@@ -9,10 +9,11 @@ import OpeningPoster from "@/components/OpeningPoster";
 /* ══════════════════════════════════════════════════════════════════════
    The hero phone — real Welcvm pages, not pictures of them.
 
-   The hero shows two of these side by side: kind="invites" cycles the
+   The hero shows ONE of these, kind="showcase": the wedding invitation
+   and the Christmas card taking turns, forever. (kind="invites" cycles the
    four demo invitations (/demo/<slug>?embed=1, lib/demo/fixtures.js) and
    kind="cards" cycles demo greeting cards (/demo/card/<occasion>,
-   lib/demo/cards.js), each rendered by the same components a customer's page uses, in a
+   lib/demo/cards.js).) Each is rendered by the same components a customer's page uses, in a
    sandboxed iframe (they are built on position: fixed / 100dvh layers,
    which only behave inside their own document).
 
@@ -42,11 +43,29 @@ const MODES = {
   },
   cards: {
     tab: "Greeting cards",
-    dwell: 8200, // long enough for the card to turn all three pages
+    dwell: 11200, // long enough for the card to turn all three pages (CardDemo PAGE_MS)
     items: CARD_DEMOS.map((c) => {
       const d = cardDemo(c.occasion);
       return { key: `c-${c.occasion}`, src: `/demo/card/${c.occasion}`, label: `${d.name} card`, names: `For ${d.to}`, accent: d.accent };
     }),
+  },
+  /* The hero's ONE phone: the best of each product, taking turns and
+     repeating — the wedding invitation (doors, then the whole story
+     scrolling past at hero speed), then the Christmas card turning its
+     pages. Each item carries its own dwell and its own tag. */
+  showcase: {
+    tab: "Invitation",
+    dwell: 9000,
+    items: (() => {
+      const w = DEMOS.find((d) => d.slug === "wedding") || DEMOS[0];
+      const c = cardDemo("christmas");
+      return [
+        { key: "s-wedding", src: `/demo/${w.slug}?embed=1&speed=150`, label: `${w.label} invitation`, names: w.names, accent: w.accent,
+          tag: "Invitation", card: false, dwell: 28000 },
+        { key: "s-christmas", src: "/demo/card/christmas", label: `${c.name} card`, names: `For ${c.to}`, accent: c.accent,
+          tag: "Greeting card", card: true, dwell: 11200 },
+      ];
+    })(),
   },
 };
 
@@ -116,7 +135,7 @@ export default function HeroPhone({ kind = "invites", tag, className = "" }) {
         later(() => {
           const next = (i + 1) % items.length;
           setLayers((ls) => (ls.some((l) => l.i === next) ? ls : [...ls, { i: next, ready: false, shown: false }]));
-        }, MODES[mode].dwell);
+        }, items[i]?.dwell || MODES[mode].dwell);
       }
     }, SETTLE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,7 +146,7 @@ export default function HeroPhone({ kind = "invites", tag, className = "" }) {
 
   return (
     <div className={`w-phonewrap ${className}`.trim()} ref={wrapRef}>
-      <div className="w-phonetag">{tag || MODES[mode].tab}</div>
+      <div className={`w-phonetag ${current.card ? "is-card" : ""}`.trim()}>{tag || current.tag || MODES[mode].tab}</div>
 
       <div className="w-phone">
         <div className="w-notch" />
@@ -160,10 +179,10 @@ export default function HeroPhone({ kind = "invites", tag, className = "" }) {
           })}
 
           <OpeningPoster
-            label={mode === "cards" ? current.label : current.label}
+            label={current.label}
             names={current.names}
             accent={current.accent}
-            variant={mode === "cards" ? "envelope" : "doors"}
+            variant={mode === "cards" || current.card ? "envelope" : "doors"}
             gone={!firstLoad}
             style={{ zIndex: 2 }}
           />

@@ -58,13 +58,17 @@ export default function DemoPage({ params, searchParams }) {
   if (!demo) notFound();
 
   const embed = searchParams?.embed === "1";
+  /* ?speed=<px per second> — the homepage's single hero phone has ~20s
+     per invitation, so it scrolls faster than the default to show the
+     whole story (photos, events, RSVP) before the card comes round. */
+  const speed = Math.min(200, Math.max(10, Number(searchParams?.speed) || 34));
 
   if (embed) {
     return (
       <div className="demo-embed">
         {/* The real "Tap to open" doors first — they open by themselves
             after 1.6s — then the page starts to scroll. */}
-        <DemoAutoScroll delay={4600} />
+        <DemoAutoScroll delay={4600} speed={speed} />
         {/* `compact` is what WeddingCinema/CelebrationCinema read as
             `preview` — it starts the invitation already open and hides
             the chapter chip and music toggle. Real guests need "Tap to

@@ -17,7 +17,7 @@ const PIXELS_PER_SECOND = 34;   // slow enough to read a heading in passing
 const PAUSE_AT_TOP_MS = 2600;   // long enough to take in the opening scene
 const PAUSE_AT_END_MS = 2200;
 
-export default function DemoAutoScroll({ delay = 0 }) {
+export default function DemoAutoScroll({ delay = 0, speed = PIXELS_PER_SECOND }) {
   useEffect(() => {
     /* Somebody who has asked for less motion is not asking to watch a
        page scroll itself for the rest of their visit. They get the
@@ -57,8 +57,8 @@ export default function DemoAutoScroll({ delay = 0 }) {
         return;
       }
 
-      offset = Math.min(limit, offset + dt * PIXELS_PER_SECOND);
-      window.scrollTo(0, offset);
+      offset = Math.min(limit, offset + dt * speed);
+      window.scrollTo({ top: offset, behavior: "instant" });
 
       if (offset >= limit - 0.5) {
         phase = "resetting";
@@ -66,7 +66,7 @@ export default function DemoAutoScroll({ delay = 0 }) {
           /* Jump, do not animate. A smooth scroll back up re-fires every
              reveal in reverse and looks like a fault. */
           offset = 0;
-          window.scrollTo(0, 0);
+          window.scrollTo({ top: 0, behavior: "instant" });
           last = 0;
           after(PAUSE_AT_TOP_MS, () => {
             phase = "running";
@@ -104,7 +104,7 @@ export default function DemoAutoScroll({ delay = 0 }) {
       window.removeEventListener("keydown", surrender);
       void phase;
     };
-  }, [delay]);
+  }, [delay, speed]);
 
   return null;
 }

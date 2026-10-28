@@ -18,11 +18,11 @@ import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-r
    opens the live demo.
 
    SEAMLESS LOOP: `@keyframes w-marquee` slides the track by -50%, so the
-   track holds the set twice. The set is 18 cards (~4,800px) — wider than
+   track holds the set twice. The set is 20 cards (~5,300px) — wider than
    any screen — so there is never an empty stretch before it comes round.
 
-   To refresh a picture: open the demo at 390×547, screenshot, resize to
-   496×696 and save as public/showcase/<name>.webp.
+   To refresh a picture: open the demo at 390×547 (2x), screenshot the
+   moment, resize to 496×696 and save as public/showcase/<name>.webp.
    ══════════════════════════════════════════════════════════════════════ */
 
 const CARD_W = 248;
@@ -40,13 +40,16 @@ const card = (occ, shot) => ({
   live: `/demo/card/${occ}`, full: `/demo/card/${occ}`, make: `/greetings/create?occasion=${occ}`, makeLabel: "Send a card like this",
 });
 
-/* Interleaved, so an invitation is always next to a card. */
+/* The best of both, interleaved so an invitation is always next to a
+   card: the invitations at their most photographic moments (the doors,
+   the bride, the couple, the gallery, the baby), the cards on their
+   garlanded verse pages and on the wish page with the sender's photo. */
 const WALL = [
-  inv("wedding", "door"), card("christmas", "cover"), inv("birthday", "open"), card("diwali", "inside"),
-  inv("housewarming", "door"), card("eid", "cover"), inv("naming", "open"), card("birthday-wish", "inside"),
-  inv("wedding", "open"), card("onam", "cover"), inv("birthday", "door"), card("christmas", "inside"),
-  inv("naming", "door"), card("diwali", "cover"), inv("housewarming", "open"), card("eid", "inside"),
-  card("onam", "inside"), card("birthday-wish", "cover"),
+  inv("wedding", "doors"), card("christmas", "photo"), inv("birthday", "cake"), card("diwali", "verse"),
+  inv("wedding", "bride"), card("birthday-wish", "photo"), inv("naming", "baby"), card("christmas", "verse"),
+  inv("wedding", "couple"), card("diwali", "photo"), inv("housewarming", "doors"), card("eid", "verse"),
+  inv("wedding", "gallery"), card("onam", "verse"), inv("naming", "grandma"), card("eid", "wish"),
+  inv("wedding", "mandap"), card("onam", "wish"), inv("birthday", "photos"), inv("wedding", "finale"),
 ];
 
 /* Tapping a card used to navigate to the demo page itself — a page built

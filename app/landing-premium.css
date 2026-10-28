@@ -529,25 +529,6 @@
   .w-page .w-chip { display: none; }
 }
 
-/* ── Hero: ONE live phone — the wedding invitation and the Christmas card
-   take turns (HeroPhone kind="showcase"). Replaces the pair above; the
-   .w-duo rules stay for reference but nothing renders them. */
-.w-page .w-solo { position: relative; z-index: 1; display: flex; justify-content: center; }
-.w-page .w-solo .w-phone { width: clamp(240px, 24vw, 292px); }
-.w-page .w-solo .w-phonewrap { padding-bottom: 66px; }
-.w-page .w-solo .w-phonewrap::before { width: min(500px, 170%); }
-.w-page .w-phonetag { transition: background .5s ease, box-shadow .5s ease; }
-.w-page .w-phonetag.is-card { background: linear-gradient(135deg, #8E4A8F, #C4788A); box-shadow: 0 6px 16px -8px rgba(142,74,143,.8); }
-/* both chips beside the one phone, one per product */
-/* anchored to the phone's edges (half its width ≈ 146px), each tucked
-   just over the frame so they read as floating off it */
-.w-page .w-herovis:has(.w-solo) .w-chip-1 { left: auto; right: calc(50% + 118px); top: auto; bottom: 24%; }
-.w-page .w-herovis:has(.w-solo) .w-chip-3 { right: auto; left: calc(50% + 118px); top: 14%; bottom: auto; }
-@media (max-width: 560px) {
-  .w-page .w-solo .w-phone { width: min(70vw, 272px); }
-  .w-page .w-solo .w-phonewrap { padding-bottom: 58px; }
-}
-
 /* ══════════════════════════════════════════════════════════════════════
    HERO — "Invite them. Wish them." and the two product cards
    ══════════════════════════════════════════════════════════════════════ */

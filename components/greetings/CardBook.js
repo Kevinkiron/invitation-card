@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import GreetingLottie from "@/components/greetings/GreetingLottie";
 import FrameBorder from "@/components/greetings/FrameBorder";
 import { cardTheme } from "@/lib/greetings/card-themes";
 import { cardWords } from "@/lib/greetings/verses";
-import { getLottie } from "@/lib/greetings/lottie";
 import { getOccasion } from "@/lib/greetings/occasions";
 import { coverPhoto, photoAlt } from "@/lib/greetings/photos";
 import { cardStyleVars, customVerse } from "@/lib/greetings/card-style";
-import { coverChoice } from "@/lib/greetings/covers";
+import { coverChoice, coverOptions } from "@/lib/greetings/covers";
 import "@/app/greeting-book.css";
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -20,10 +18,12 @@ import "@/app/greeting-book.css";
    Three pages:
      1. the cover — a full-bleed photograph of the occasion with its
         title in gold ("Merry Christmas · & a happy new year")
-     2. a verse — a short printed verse under an animated character,
-        inside a decorated border (lib/greetings/verses.js)
-     3. the letter — "Dear Anna,", the sender's photo with their
-        message written over it, and "From David & Family"
+     2. a verse — a short printed verse under an arched window holding
+        a second photograph of the occasion, inside a decorated border
+        (lib/greetings/verses.js). This used to be a cartoon Lottie
+        character; photographs look like the card, cartoons did not.
+     3. the letter — "Dear Anna,", their message, the sender's photo as
+        a framed print beneath it, and "From David & Family"
 
    Wide screens see a real card: the cover swings open on its spine and
    the verse and the letter lie side by side as a two-page spread. On a
@@ -115,19 +115,39 @@ function Cover({ words, photo, alt, onOpen, label, own = false }) {
   );
 }
 
+/* A gold-rimmed arch with a photograph of the occasion in it, drifting
+   slowly, a few sparks round it. */
+function ArchPhoto({ photo }) {
+  return (
+    <div className="cb-arch" aria-hidden="true">
+      <span className="cb-arch-rim">
+        <span className="cb-arch-win">
+          <img src={photo.url} alt="" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        </span>
+      </span>
+      {[[-8, 18, 0], [104, 34, 1.2], [-4, 78, 2.1], [100, 86, .6]].map(([x, y, d], i) => (
+        <i key={i} className="cb-spark" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${d}s` }} />
+      ))}
+    </div>
+  );
+}
+
 /* `own` is the sender's own title and lines (lib/greetings/card-style.js
    customVerse), which replace the printed verse and its closing couplet;
    a blank title keeps the occasion's. */
-function VersePage({ theme, words, art, own }) {
+function VersePage({ theme, words, arch, own }) {
   const lines = own?.lines?.length ? own.lines : words.verse;
   const close = own?.lines?.length ? [] : words.close;
+  const title = own?.title || words.title;
+  /* a title that breaks onto two lines leaves less room for the arch */
+  const tight = lines.length <= 5 && title.length > 20;
   return (
-    <div className={`cb-page cb-verse ${lines.length > 5 ? "is-long" : ""}`}>
+    <div className={`cb-page cb-verse ${lines.length > 5 ? "is-long" : ""} ${tight ? "is-tight" : ""}`}>
       <FrameBorder theme={theme} />
       <div className="cb-inner">
         <p className="cb-kicker">{words.kicker}</p>
-        <h3 className="cb-title">{own?.title || words.title}</h3>
-        {art && <div className="cb-art" aria-hidden="true"><GreetingLottie src={art.src} /></div>}
+        <h3 className="cb-title">{title}</h3>
+        {arch && <ArchPhoto photo={arch} />}
         <div className="cb-lines">
           {lines.map((l, i) => <span key={i} style={{ "--i": i }}>{l}</span>)}
         </div>
@@ -142,12 +162,12 @@ function VersePage({ theme, words, art, own }) {
   );
 }
 
-/* The sender's photo is the background of the message box, as it has
-   always been, but CONTAINED rather than cropped: the whole photo shows,
-   centred, over a soft blurred copy of itself that fills the rest of the
-   box — so nobody's face is ever cut off. The message is written over
-   it with a light veil at the top for legibility. */
-function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
+/* The letter: their message on the paper, and — if they added one — their
+   photo beneath it as a framed print, whole (never cropped) and sharp.
+   It used to sit behind the writing under a blur and a veil, which
+   washed the photo out and made the writing hard to read. With no photo,
+   a small gold ornament closes the note (it was a cartoon Lottie). */
+function WishPage({ theme, words, to, from, message, photoUrl }) {
   const text = message || "Wishing you all the good things.";
   return (
     <div className="cb-page cb-wish" style={{ "--cb-msg": messageSize(text.length, !!photoUrl) }}>
@@ -157,19 +177,22 @@ function WishPage({ theme, words, to, from, message, photoUrl, emblem }) {
         <h3 className="cb-dear">Dear {to},</h3>
         <span className="cb-orn" aria-hidden="true">✦</span>
         <div className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
-          {photoUrl && (
-            /* the photo layers in one wrapper, so their outer edges can
-               melt into the card paper without fading the writing */
-            <span className="cb-note-bg">
-              <img className="cb-note-fill" src={photoUrl} alt="" aria-hidden="true" />
-              <span className="cb-note-photo-wrap">
-                <img className="cb-note-photo" src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
-              </span>
-            </span>
-          )}
           <span className="cb-note-label">Your wish</span>
           <p className="cb-msg">{text}</p>
-          {!photoUrl && emblem && <div className="cb-note-art" aria-hidden="true"><GreetingLottie src={emblem.src} /></div>}
+          {photoUrl ? (
+            <div className="cb-print">
+              <span className="cb-print-in">
+                <img src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
+              </span>
+            </div>
+          ) : (
+            <svg className="cb-note-orn" viewBox="0 0 160 24" aria-hidden="true" focusable="false">
+              <path d="M6 12 H62 M98 12 H154" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity=".7" />
+              <path d="M80 3 C84 8 86 10 92 12 C86 14 84 16 80 21 C76 16 74 14 68 12 C74 10 76 8 80 3 Z" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <circle cx="80" cy="12" r="1.8" fill="currentColor" />
+              <circle cx="64" cy="12" r="1.3" fill="currentColor" /><circle cx="96" cy="12" r="1.3" fill="currentColor" />
+            </svg>
+          )}
         </div>
         <p className="cb-from">From {from || "me"}</p>
       </div>
@@ -184,9 +207,11 @@ export default function CardBook({
   const o = getOccasion(occasion);
   const theme = cardTheme(occasion, { palette, name: occasionName, lottie: o?.lottie });
   const words = cardWords(occasion, occasionName);
-  const art = getLottie(theme.cast?.hero) || getLottie(theme.emblem);
-  const emblem = getLottie(theme.emblem) || art;
   const chosen = coverChoice(occasion, cover);
+  /* the arch on the verse page: another of the occasion's photographs,
+     never the one already on the cover */
+  const options = coverOptions(occasion);
+  const arch = options.find((p, i) => p.url !== chosen?.url && (chosen || i > 0)) || options[0] || null;
   const coverSrc = chosen?.url || coverPhoto(o?.photo);
   const coverAlt = chosen?.alt ?? photoAlt(o?.photo);
   const own = customVerse({ verse });
@@ -241,8 +266,8 @@ export default function CardBook({
       label={`Open your ${(occasionName || "").replace(/ (Wishes|Mubarak)$/, "") || "card"} wish`}
     />
   );
-  const verseEl = <VersePage theme={theme} words={words} art={art} own={own} />;
-  const wishEl = <WishPage theme={theme} words={words} to={to} from={from} message={message} photoUrl={photoUrl} emblem={emblem} />;
+  const verseEl = <VersePage theme={theme} words={words} arch={arch} own={own} />;
+  const wishEl = <WishPage theme={theme} words={words} to={to} from={from} message={message} photoUrl={photoUrl} />;
 
   const labels = wide
     ? [["", "Open card →"], ["← Close", ""]]

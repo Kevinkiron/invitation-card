@@ -461,3 +461,75 @@
     0 0 .5cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 95%, transparent),
     0 0 1.4cqw color-mix(in srgb, var(--cb-wash, var(--cb-paper)) 80%, transparent);
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   PHOTOGRAPHS, NOT CARTOONS (Oct 2026)
+   The verse page's cartoon Lottie became an arched photograph, and the
+   sender's photo stopped hiding behind the writing under a blur and a
+   veil — it is now a framed print under the message. These rules come
+   last on purpose: they replace the older .has-photo layers above.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Verse page: the arch ── */
+.cb-arch { position: relative; flex: none; width: 40cqw; height: 49cqw; margin: 3.4cqw 0 1.6cqw; }
+.cb-verse.is-tight .cb-arch { width: 34cqw; height: 41cqw; margin-top: 2.6cqw; }
+.cb-verse.is-tight .cb-arch-rim { border-radius: 17cqw 17cqw 1.6cqw 1.6cqw; }
+.cb-verse.is-tight .cb-arch-win { border-radius: 16.1cqw 16.1cqw 1cqw 1cqw; }
+.cb-verse.is-long .cb-arch { width: 25cqw; height: 31cqw; margin-top: 2.4cqw; }
+.cb-arch-rim {
+  position: absolute; inset: 0; display: block; padding: .9cqw;
+  border-radius: 20cqw 20cqw 1.6cqw 1.6cqw;
+  background: linear-gradient(135deg, #a8752a, #f6e2a0 22%, #c08b34 40%, #fff2c8 58%, #b27d2b 78%, #ecd08a);
+  box-shadow: 0 1.8cqw 3.6cqw -1.4cqw rgba(70, 40, 10, .55),
+              0 0 5cqw -1cqw color-mix(in srgb, var(--cb-ink) 40%, transparent);
+}
+.cb-verse.is-long .cb-arch-rim { border-radius: 12.5cqw 12.5cqw 1.4cqw 1.4cqw; }
+.cb-arch-win {
+  position: relative; display: block; width: 100%; height: 100%; overflow: hidden;
+  border-radius: 19.1cqw 19.1cqw 1cqw 1cqw; background: var(--cb-panel, #2b1a1f);
+}
+.cb-verse.is-long .cb-arch-win { border-radius: 11.6cqw 11.6cqw .9cqw .9cqw; }
+.cb-arch-win img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  animation: cb-arch-drift 18s ease-in-out infinite alternate;
+}
+.cb-arch-win::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 228, 170, .14), transparent 38%),
+              radial-gradient(120% 90% at 50% 100%, transparent 58%, rgba(0, 0, 0, .3));
+  box-shadow: inset 0 0 0 .35cqw rgba(255, 244, 214, .7);
+}
+.cb-arch .cb-spark { width: 2.6cqw; height: 2.6cqw; }
+@keyframes cb-arch-drift { from { transform: scale(1.04); } to { transform: scale(1.16) translateY(-2%); } }
+.is-shown .cb-arch { animation: cb-pop .9s cubic-bezier(.2, .9, .3, 1.25) .7s both; }
+
+/* ── Wish page: the sender's photo as a framed print ── */
+.cb-note.has-photo {
+  background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible;
+  padding: 2.4cqw 1cqw 0; text-align: center;
+}
+.cb-note.has-photo::before { content: none; }
+.cb-note.has-photo .cb-msg { text-shadow: none; }
+.cb-dark .cb-note.has-photo .cb-msg { text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.cb-print { position: relative; flex: 1; min-height: 16cqw; margin: 3cqw 0 1.2cqw; }
+.cb-print-in { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.cb-print img {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: 100%;
+  box-sizing: border-box; border: 1.5cqw solid #fffdf7; border-radius: .5cqw; background: #fffdf7;
+  box-shadow: 0 1.8cqw 3.2cqw -1.4cqw rgba(50, 30, 10, .55), 0 0 0 1px rgba(80, 50, 20, .08);
+  transform: rotate(-2deg);
+}
+.is-shown .cb-print img { animation: cb-print-in 1s cubic-bezier(.2, .9, .3, 1.1) 1.1s both; }
+@keyframes cb-print-in {
+  from { opacity: 0; transform: translateY(3cqw) rotate(-7deg) scale(.94); }
+  to   { opacity: 1; transform: rotate(-2deg); }
+}
+
+/* ── Wish page without a photo: a small gold ornament ── */
+.cb-note-orn { margin-top: auto; align-self: center; width: 38cqw; height: auto; color: var(--cb-ink); opacity: .8; }
+.is-shown .cb-note-orn { animation: cb-up .8s ease-out 2s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-arch-win img { animation: none; }
+}

@@ -162,11 +162,11 @@ function VersePage({ theme, words, arch, own }) {
   );
 }
 
-/* The letter: their message on the paper, and — if they added one — their
-   photo beneath it as a framed print, whole (never cropped) and sharp.
-   It used to sit behind the writing under a blur and a veil, which
-   washed the photo out and made the writing hard to read. With no photo,
-   a small gold ornament closes the note (it was a cartoon Lottie). */
+/* The letter: "Dear Anna,", and the message written over the sender's
+   photo. The photo is the background of the message box — the WHOLE
+   photo (never cropped, so nobody's face is cut off) over a soft blurred
+   copy of itself, melting into the paper, with the writing on top.
+   With no photo, a small gold ornament closes the note. */
 function WishPage({ theme, words, to, from, message, photoUrl }) {
   const text = message || "Wishing you all the good things.";
   return (
@@ -177,15 +177,19 @@ function WishPage({ theme, words, to, from, message, photoUrl }) {
         <h3 className="cb-dear">Dear {to},</h3>
         <span className="cb-orn" aria-hidden="true">✦</span>
         <div className={`cb-note ${photoUrl ? "has-photo" : ""}`}>
+          {photoUrl && (
+            /* the photo layers in one wrapper, so their outer edges can
+               melt into the card paper without fading the writing */
+            <span className="cb-note-bg">
+              <img className="cb-note-fill" src={photoUrl} alt="" aria-hidden="true" />
+              <span className="cb-note-photo-wrap">
+                <img className="cb-note-photo" src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
+              </span>
+            </span>
+          )}
           <span className="cb-note-label">Your wish</span>
           <p className="cb-msg">{text}</p>
-          {photoUrl ? (
-            <div className="cb-print">
-              <span className="cb-print-in">
-                <img src={photoUrl} alt={`A photo from ${from || "the sender"}`} />
-              </span>
-            </div>
-          ) : (
+          {!photoUrl && (
             <svg className="cb-note-orn" viewBox="0 0 160 24" aria-hidden="true" focusable="false">
               <path d="M6 12 H62 M98 12 H154" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity=".7" />
               <path d="M80 3 C84 8 86 10 92 12 C86 14 84 16 80 21 C76 16 74 14 68 12 C74 10 76 8 80 3 Z" fill="none" stroke="currentColor" strokeWidth="1.2" />

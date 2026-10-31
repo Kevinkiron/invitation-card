@@ -1,6 +1,7 @@
 "use client";
 
-import { whatsappHref } from "@/lib/share";
+import { whatsappHref, SITE_URL } from "@/lib/share";
+import GreetingCard from "@/components/GreetingCard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -39,9 +40,7 @@ export default function ManagePage() {
   const [responses, setResponses] = useState([]);
   const [tab, setTab] = useState("share");
   const [copied, setCopied] = useState(false);
-  const [origin, setOrigin] = useState("");
 
-  useEffect(() => { setOrigin(window.location.origin); }, []);
   useEffect(() => { if (ready && !session) router.replace("/login"); }, [ready, session, router]);
 
   const load = useCallback(async () => {
@@ -98,8 +97,15 @@ export default function ManagePage() {
 
   if (!ready || !session || !inv) return <Loading />;
 
-  /* One address, the same for everybody. */
-  const link = `${origin}/i/${inv.slug}`;
+  /* One address, the same for everybody. A greeting card lives at
+     /g/<slug> (app/g/[token]) — the same link the card maker gave out
+     when it was paid for. This page used to build /i/<slug> for cards
+     too, which opened the wrong page. Both use the site's own address
+     (www), never the browser's, so a copied link always works and gets
+     the WhatsApp preview. */
+  const card = inv.design_config?.kind === "greeting"; // { v: 3, kind: "greeting", tokens }
+  const cardTokens = card ? inv.design_config.tokens || {} : null;
+  const link = `${SITE_URL}/${card ? "g" : "i"}/${inv.slug}`;
   const waHref = whatsappHref(inv, link);
   const published = inv.status === "published";
 
@@ -125,7 +131,7 @@ export default function ManagePage() {
             </div>
 
             <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${C.line}`, marginBottom: 30, overflowX: "auto" }}>
-              {[["share", "Share link", Link2], ["rsvps", "Who's coming", BarChart3], ["preview", "Preview", Heart]].map(([k, l, Ic]) => (
+              {[["share", "Share link", Link2], ...(card ? [] : [["rsvps", "Who's coming", BarChart3]]), ["preview", "Preview", Heart]].map(([k, l, Ic]) => (
                 <button
                   key={k}
                   onClick={() => setTab(k)}
@@ -148,13 +154,20 @@ export default function ManagePage() {
                 <>
                   <div className="card" style={{ padding: "26px 28px", marginBottom: 18 }}>
                     <h2 className="display" style={{ fontSize: 22, margin: "0 0 8px" }}>
-                      One link for everyone
+                      {card ? "Your card's link" : "One link for everyone"}
                     </h2>
-                    <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", maxWidth: 560 }}>
-                      Send this to the whole family. Everyone who opens it sees the same
-                      invitation and replies on the page — their name and number come back
-                      to you under <b>Who&rsquo;s coming</b>, so there is nothing to type in here.
-                    </p>
+                    {card ? (
+                      <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", maxWidth: 560 }}>
+                        Send this to {cardTokens?.to || "them"}. It opens your card in its
+                        envelope, exactly as you made it.
+                      </p>
+                    ) : (
+                      <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", maxWidth: 560 }}>
+                        Send this to the whole family. Everyone who opens it sees the same
+                        invitation and replies on the page — their name and number come back
+                        to you under <b>Who&rsquo;s coming</b>, so there is nothing to type in here.
+                      </p>
+                    )}
 
                     <div style={{ display: "flex", gap: 10, alignItems: "center", background: "rgba(140,123,112,.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
                       <Link2 size={14} color={C.muted} style={{ flexShrink: 0 }} />
@@ -174,19 +187,21 @@ export default function ManagePage() {
                       <a className="btn btn-ghost" href={link} target="_blank" rel="noreferrer">
                         <Eye size={14} /> Open it yourself
                       </a>
-                      <a
-                        className="btn btn-ghost"
-                        href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(link)}`}
-                        target="_blank" rel="noreferrer"
-                      >
-                        <QrCode size={14} /> QR code for the venue
-                      </a>
+                      {!card && (
+                        <a
+                          className="btn btn-ghost"
+                          href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(link)}`}
+                          target="_blank" rel="noreferrer"
+                        >
+                          <QrCode size={14} /> QR code for the venue
+                        </a>
+                      )}
                     </div>
 
                     {!published && (
                       <p style={{ marginTop: 18, fontSize: 13, color: C.red, lineHeight: 1.6 }}>
-                        This invitation is still a draft, so the link will not open for
-                        guests yet. Publish it first.
+                        This {card ? "card" : "invitation"} is still a draft, so the link will not open for
+                        {card ? " them" : " guests"} yet. Publish it first.
                       </p>
                     )}
                   </div>
@@ -305,7 +320,13 @@ export default function ManagePage() {
                         opening overlay, which belongs on a guest's phone
                         and not inside a 430px panel on the owner's
                         dashboard. */}
-                    <TemplateRenderer cfg={inv.design_config} events={events} compact />
+                    {card ? (
+                      <div style={{ minHeight: 640, padding: "18px 0", display: "flex", alignItems: "center", background: cardTokens?.palette?.bg || "#1c1420", overflow: "hidden" }}>
+                        <div style={{ width: "100%" }}><GreetingCard tokens={cardTokens} preview /></div>
+                      </div>
+                    ) : (
+                      <TemplateRenderer cfg={inv.design_config} events={events} compact />
+                    )}
                   </div>
                 </div>
               )}

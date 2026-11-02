@@ -37,10 +37,22 @@ import "@/app/greeting-book.css";
 
 const CAVEAT = "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap";
 
-function messageSize(len, photo) {
-  const base = photo ? 0.92 : 1;
-  const s = len > 300 ? 4.2 : len > 200 ? 4.9 : len > 120 ? 5.6 : 6.4;
+function messageSize(len, photo, lineCount = 1) {
+  const base = photo ? 0.94 : 1;
+  const eff = Math.max(len, lineCount * 28);
+  const s =
+    eff > 450 ? 2.85 :
+    eff > 350 ? 3.2 :
+    eff > 250 ? 3.7 :
+    eff > 180 ? 4.3 :
+    eff > 110 ? 5.0 :
+    eff > 60  ? 5.6 : 6.3;
   return `${(s * base).toFixed(2)}cqw`;
+}
+
+function dearSize(name) {
+  const len = (name || "").length;
+  return len > 24 ? "8.4cqw" : len > 16 ? "9.8cqw" : "11.5cqw";
 }
 
 /* The cover title: as big as it can be while its longest word still
@@ -169,8 +181,26 @@ function VersePage({ theme, words, arch, own }) {
    With no photo, a small gold ornament closes the note. */
 function WishPage({ theme, words, to, from, message, photoUrl }) {
   const text = message || "Wishing you all the good things.";
+  const lines = text.split("\n");
+  const lineCount = lines.length;
+  const eff = Math.max(text.length, lineCount * 28);
+  const isLong = eff > 180;
+  const isExtraLong = eff > 320;
+  const isShort = eff <= 90 && lineCount <= 2;
+
+  const msgFontSize = messageSize(text.length, !!photoUrl, lineCount);
+  const dearFontSize = dearSize(to);
+  const msgLineHeight = isExtraLong ? 1.22 : isLong ? 1.26 : 1.32;
+
   return (
-    <div className="cb-page cb-wish" style={{ "--cb-msg": messageSize(text.length, !!photoUrl) }}>
+    <div
+      className={`cb-page cb-wish ${isLong ? "is-long" : ""} ${isExtraLong ? "is-extra-long" : ""} ${isShort ? "is-short" : ""}`}
+      style={{
+        "--cb-msg": msgFontSize,
+        "--cb-msg-lh": msgLineHeight,
+        "--cb-dear-fs": dearFontSize,
+      }}
+    >
       <FrameBorder theme={theme} />
       <div className="cb-inner">
         <p className="cb-kicker">{words.wish}</p>
@@ -187,9 +217,11 @@ function WishPage({ theme, words, to, from, message, photoUrl }) {
               </span>
             </span>
           )}
-          <span className="cb-note-label">Your wish</span>
-          <p className="cb-msg">{text}</p>
-          {!photoUrl && (
+          {!isLong && <span className="cb-note-label">Your wish</span>}
+          <div className="cb-msg-wrap">
+            <p className="cb-msg">{text}</p>
+          </div>
+          {!photoUrl && !isLong && (
             <svg className="cb-note-orn" viewBox="0 0 160 24" aria-hidden="true" focusable="false">
               <path d="M6 12 H62 M98 12 H154" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity=".7" />
               <path d="M80 3 C84 8 86 10 92 12 C86 14 84 16 80 21 C76 16 74 14 68 12 C74 10 76 8 80 3 Z" fill="none" stroke="currentColor" strokeWidth="1.2" />

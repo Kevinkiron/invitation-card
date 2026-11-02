@@ -66,16 +66,17 @@ export function UnlockDialog({ id, onConfirm, onClose }) {
 }
 
 export function PriceSummary({ addons = [], onAdd, kindLabel = "Invitation" }) {
+  const isDev = typeof process !== "undefined" && (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_BYPASS_PAYMENT === "true");
   const locked = Object.keys(ADDONS).filter((k) => !addons.includes(k));
   const total = BASE_PRICE + ADDON_PRICE * addons.length;
   const row = { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, padding: "7px 0" };
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ ...row, fontWeight: 700 }}><span>{kindLabel}</span><span>{money(BASE_PRICE)}</span></div>
+      <div style={{ ...row, fontWeight: 700 }}><span>{kindLabel}</span><span>{isDev ? "Free (Dev)" : money(BASE_PRICE)}</span></div>
       {addons.map((k) => (
         <div key={k} style={{ ...row, color: C.ink }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Check size={13} color={C.green} /> {ADDONS[k].label}</span>
-          <span>{money(ADDON_PRICE)}</span>
+          <span>{isDev ? "Free" : money(ADDON_PRICE)}</span>
         </div>
       ))}
       {locked.length > 0 && onAdd && (
@@ -83,13 +84,13 @@ export function PriceSummary({ addons = [], onAdd, kindLabel = "Invitation" }) {
           {locked.map((k) => (
             <button key={k} type="button" onClick={() => onAdd(k)}
               style={{ display: "flex", alignItems: "center", gap: 5, border: `1px dashed ${C.line}`, background: "#fff", borderRadius: 999, padding: "6px 11px", fontSize: 11.5, fontWeight: 700, color: C.muted, cursor: "pointer", fontFamily: "inherit" }}>
-              <Lock size={11} /> {ADDONS[k].label} +{money(ADDON_PRICE)}
+              <Lock size={11} /> {ADDONS[k].label} {isDev ? "+Free" : `+${money(ADDON_PRICE)}`}
             </button>
           ))}
         </div>
       )}
       <div style={{ ...row, borderTop: `1px solid ${C.line}`, marginTop: 6, paddingTop: 10, fontWeight: 800, fontSize: 15 }}>
-        <span>Total</span><span className="display" style={{ color: C.heart, fontSize: 20 }}>{money(total)}</span>
+        <span>Total</span><span className="display" style={{ color: C.heart, fontSize: 20 }}>{isDev ? "₹0 (Dev)" : money(total)}</span>
       </div>
     </div>
   );

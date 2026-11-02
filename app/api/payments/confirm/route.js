@@ -20,8 +20,12 @@ export const dynamic = "force-dynamic";
      3. the page goes to "published" and the payment is recorded
    Safe to call more than once: an already-published page is returned
    as it is. */
+const isDevBypass = () =>
+  process.env.BYPASS_PAYMENT === "true" ||
+  process.env.NEXT_PUBLIC_BYPASS_PAYMENT === "true" ||
+  (process.env.NODE_ENV === "development" && process.env.BYPASS_PAYMENT !== "false");
+
 export async function POST(req) {
-  if (!razorpayConfigured()) return NextResponse.json({ error: "Payments are not set up yet." }, { status: 503 });
   const { user, db } = await userFromRequest(req);
   if (!user) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
 
@@ -38,6 +42,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "That page could not be found on your account." }, { status: 404 });
     }
     if (inv.status === "published") return NextResponse.json({ id: inv.id, slug: inv.slug, status: inv.status });
+
+    // ── DEV BYPASS: Directly publish without Razorpay check ──
+    if (isDevBypass() && (orderId.startsWith("dev_") || paymentId.startsWith("dev_") || !razorpayConfigured())) {
+      const { data: pub, error: e1 } = await db
+        .from("invitations").update({ status: "published" }).eq("id", inv.id).select("id, slug, status").single();
+      if (e1) throw new Error(`publishing the page: ${e1.message}`);
+      return NextResponse.json(pub);
+    }
+
+    if (!razorpayConfigured()) return NextResponse.json({ error: "Payments are not set up yet." }, { status: 503 });
 
     if (!signatureValid(orderId, paymentId, body.razorpay_signature)) {
       return NextResponse.json({ error: "The payment could not be verified (signature mismatch)." }, { status: 400 });

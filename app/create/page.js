@@ -186,7 +186,8 @@ export default function CreatePage() {
      in for the preview and when publishing. */
   const [addons, setAddons] = useState([]);
   const [unlocking, setUnlocking] = useState(null);
-  const [agreed, setAgreed] = useState(false); // the Terms box above Pay
+  const isDev = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_BYPASS_PAYMENT === "true";
+  const [agreed, setAgreed] = useState(() => isDev); // the Terms box above Pay
   const [extra, setExtra] = useState(null); // the open extras panel under the message box
   const afterUnlock = useRef(null);
   const can = (id) => addons.includes(id);
@@ -194,6 +195,11 @@ export default function CreatePage() {
      it straight after (in the same tap, so a file picker may still open). */
   function requireAddon(id, then) {
     if (can(id)) { then?.(); return; }
+    if (isDev) {
+      setAddons((a) => (a.includes(id) ? a : [...a, id]));
+      then?.();
+      return;
+    }
     afterUnlock.current = then || null;
     setUnlocking(id);
   }
@@ -647,6 +653,12 @@ export default function CreatePage() {
                   <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets.</span>
                 </div>
 
+                {isDev && (
+                  <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 12, color: "#1b5e20", background: "#e8f5e9", border: "1px solid #c8e6c9", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>
+                    <Sparkles size={14} color="#2e7d32" /> <span><strong>Dev Mode:</strong> Payment is bypassed — publishing is free.</span>
+                  </div>
+                )}
+
                 {err && (
                   <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#9b2c1f", background: "#fdecea", border: "1px solid #f5c2bb", borderRadius: 10, padding: "9px 11px", marginBottom: 10 }}>
                     {err}
@@ -664,6 +676,8 @@ export default function CreatePage() {
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing || !agreed} title={agreed ? undefined : "Tick the box above to continue"}>
                   {publishing
                     ? <><Loader2 size={16} className="spin" /> Publishing…</>
+                    : isDev
+                    ? <><Sparkles size={16} /> Publish invitation (Free in dev)</>
                     : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>
                 )}

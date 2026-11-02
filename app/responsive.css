@@ -175,15 +175,19 @@
 .ai-input-row {
   display: flex; gap: 9px; align-items: center;
 }
-.ai-input-row input {
+.ai-input-row input, .ai-input-row textarea {
   flex: 1; min-width: 0;
   padding: 13px 16px;
   border-radius: 13px; font-size: 14.5px;
   outline: none; font-family: inherit;
+  border: 1px solid var(--line, #e2dcd5);
+}
+.ai-input-row textarea {
+  resize: vertical; min-height: 52px; line-height: 1.4;
 }
 @media (max-width: 480px) {
   .ai-input-row { gap: 6px; }
-  .ai-input-row input { font-size: 14px !important; padding: 11px 13px !important; }
+  .ai-input-row input, .ai-input-row textarea { font-size: 14px !important; padding: 11px 13px !important; }
   .ai-input-row .btn { padding: 11px 14px !important; }
 }
 

@@ -80,6 +80,7 @@ export default function GreetingCreatePage() {
   ]);
   const autoStarted = useRef(false);
   const [input, setInput] = useState("");
+  const isDev = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_BYPASS_PAYMENT === "true";
   /* ₹25 add-ons unlocked for this card (lib/pricing.js): photos, music
      and the sender's own colours. Merged into the tokens for the preview
      and when publishing. */
@@ -89,6 +90,10 @@ export default function GreetingCreatePage() {
   const can = (id) => addons.includes(id);
   function requireAddon(id, then) {
     if (can(id)) { then?.(); return; }
+    if (isDev) {
+      confirmUnlock(id);
+      return;
+    }
     afterUnlock.current = then || null;
     setUnlocking(id);
   }
@@ -100,7 +105,7 @@ export default function GreetingCreatePage() {
     then?.();
   }
   const [publishing, setPublishing] = useState(false);
-  const [agreed, setAgreed] = useState(false); // the Terms box above Pay
+  const [agreed, setAgreed] = useState(() => isDev); // the Terms box above Pay
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
   const [result, setResult] = useState(null); // { slug }
@@ -501,6 +506,12 @@ export default function GreetingCreatePage() {
                   <ShieldCheck size={14} color={C.green} /> <span>Secure payment by Razorpay — UPI, cards, netbanking and wallets.</span>
                 </div>
 
+                {isDev && (
+                  <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 12, color: "#1b5e20", background: "#e8f5e9", border: "1px solid #c8e6c9", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>
+                    <Sparkles size={14} color="#2e7d32" /> <span><strong>Dev Mode:</strong> Payment is bypassed — publishing is free.</span>
+                  </div>
+                )}
+
                 {err && (
                   <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#9b2c1f", background: "#fdecea", border: "1px solid #f5c2bb", borderRadius: 10, padding: "9px 11px", marginBottom: 10 }}>
                     {err}
@@ -515,7 +526,7 @@ export default function GreetingCreatePage() {
 
                 {!paidPending && <AgreeTerms checked={agreed} onChange={setAgreed} />}
                 {!paidPending && <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center" }} onClick={publish} disabled={publishing || !agreed} title={agreed ? undefined : "Tick the box above to continue"}>
-                  {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
+                  {publishing ? <><Loader2 size={16} className="spin" /> Publishing…</> : isDev ? <><Sparkles size={16} /> Publish card (Free in dev)</> : <><CreditCard size={16} /> Pay {money(priceOf({ addons }))} &amp; publish</>}
                 </button>}
 
                 <button
@@ -744,30 +755,52 @@ export default function GreetingCreatePage() {
                 </button>
               </div>
             ) : stepIdx >= 0 ? (
-              <div className="ai-input-row">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") advance(); }}
-                  placeholder={
-                    step === "to" ? "Their name…" :
-                    step === "from" ? "Your name…" :
-                    "Write your message, or use the suggestion below…"
-                  }
-                  autoFocus
-                />
-                <button type="button" className="btn btn-primary" onClick={advance} disabled={!input.trim()}>
-                  <Send size={15} />
-                </button>
+              <div>
+                <div className="ai-input-row">
+                  {step === "message" ? (
+                    <textarea
+                      rows={3}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value.slice(0, 600))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          advance();
+                        }
+                      }}
+                      placeholder="Write your personal letter or wish (Enter to send, Shift+Enter for new line)…"
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") advance(); }}
+                      placeholder={
+                        step === "to" ? "Their name…" :
+                        "Your name…"
+                      }
+                      autoFocus
+                    />
+                  )}
+                  <button type="button" className="btn btn-primary" onClick={advance} disabled={!input.trim()}>
+                    <Send size={15} />
+                  </button>
+                </div>
+                {step === "message" && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={useSuggestedMessage}>
+                      <Sparkles size={13} /> Use suggested message
+                    </button>
+                    <span style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>
+                      {input.length} / 600
+                    </span>
+                  </div>
+                )}
               </div>
             ) : null}
 
-            {step === "message" && (
-              <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={useSuggestedMessage}>
-                <Sparkles size={13} /> Use the suggested message
-              </button>
-            )}
           </section>
 
           {/* ── Live preview ── */}
@@ -777,7 +810,15 @@ export default function GreetingCreatePage() {
               statusBg="transparent"
               label="Card preview"
             >
-              <GreetingCard tokens={{ ...tokens, addons }} preview focusPage={step === "cover" ? 0 : step === "verse" ? 1 : 2} />
+              <GreetingCard
+                tokens={{
+                  ...tokens,
+                  message: step === "message" && input.trim() ? input.trim() : tokens.message,
+                  addons,
+                }}
+                preview
+                focusPage={step === "cover" ? 0 : step === "verse" ? 1 : 2}
+              />
             </PhoneFrame>
           </section>
         </div>

@@ -22,10 +22,12 @@ export const dynamic = "force-dynamic";
 
    The price is worked out here from the add-ons (lib/pricing.js), never
    taken from the browser, and the add-ons saved on the page are these. */
+const isDevBypass = () =>
+  process.env.BYPASS_PAYMENT === "true" ||
+  process.env.NEXT_PUBLIC_BYPASS_PAYMENT === "true" ||
+  (process.env.NODE_ENV === "development" && process.env.BYPASS_PAYMENT !== "false");
+
 export async function POST(req) {
-  if (!razorpayConfigured()) {
-    return NextResponse.json({ error: "Payments are not set up yet (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET)." }, { status: 503 });
-  }
   const { user, db } = await userFromRequest(req);
   if (!user) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
 
@@ -43,6 +45,69 @@ export async function POST(req) {
       title: String(body.invitation?.title || "Invitation").slice(0, 200),
       design_config,
     };
+
+    // ── DEV BYPASS: Skip Razorpay and publish directly ──
+    if (isDevBypass()) {
+      let inv = null;
+      const reuse = String(body.invitationId || "");
+      if (reuse) {
+        const { data: prev } = await db
+          .from("invitations").select("id, slug, status, owner_id").eq("id", reuse).maybeSingle();
+        if (prev && prev.owner_id === user.id) {
+          const { data, error } = await db
+            .from("invitations").update({ ...fields, status: "published" }).eq("id", prev.id).select("id, slug").single();
+          if (error) throw new Error(`saving the page: ${error.message}`);
+          inv = data;
+          await db.from("invitation_events").delete().eq("invitation_id", prev.id);
+        }
+      }
+      if (!inv) {
+        const { data, error } = await db
+          .from("invitations")
+          .insert({ owner_id: user.id, ...fields, status: "published", plan: "BASIC" })
+          .select("id, slug")
+          .single();
+        if (error) throw new Error(`saving the page: ${error.message}`);
+        inv = data;
+      }
+
+      const events = Array.isArray(body.events) ? body.events.slice(0, 20) : [];
+      if (events.length) {
+        const rows = events.map((e, i) => ({
+          invitation_id: inv.id,
+          name: String(e?.name || "Celebration").slice(0, 80),
+          event_date: e?.event_date || null,
+          event_time: e?.event_time || null,
+          venue: String(e?.venue || "").slice(0, 160),
+          address: String(e?.address || "").slice(0, 160),
+          sort_order: i,
+        }));
+        const { error: e2 } = await db.from("invitation_events").insert(rows);
+        if (e2) throw new Error(`saving the events: ${e2.message}`);
+      }
+
+      await db.from("payments").insert({
+        invitation_id: inv.id,
+        amount: 0,
+        currency: "INR",
+        plan: "DEV_BYPASS",
+        status: "completed",
+        provider: "dev",
+        provider_ref: `dev_${Date.now()}`,
+      }).catch((err) => console.warn("[payments/order] dev bypass payment row warning:", err));
+
+      return NextResponse.json({
+        bypassed: true,
+        invitationId: inv.id,
+        id: inv.id,
+        slug: inv.slug,
+        status: "published",
+      });
+    }
+
+    if (!razorpayConfigured()) {
+      return NextResponse.json({ error: "Payments are not set up yet (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET)." }, { status: 503 });
+    }
 
     /* Paying again after closing the payment sheet reuses the same
        unpaid draft instead of leaving one behind per attempt. */

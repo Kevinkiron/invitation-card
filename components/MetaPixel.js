@@ -41,15 +41,14 @@ export default function MetaPixel() {
   if (!allowed || choice === "pending" || choice === "yes" || choice === "no") return null;
 
   return (
-    <div className="ck" role="dialog" aria-live="polite" aria-label="Advertising cookies">
+    <div className="ck" role="dialog" aria-live="polite" aria-label="Ad measurement">
       <p>
-        We use a Meta (Facebook) pixel to see which of our ads bring people to Welcvm. It runs only if you
-        say yes, and never on the invitations and cards you open from a link.{" "}
-        <Link href="/privacy#ads">Details</Link>
+        Can we see which ad brought you here? It helps us reach more people like you.{" "}
+        <Link href="/privacy#ads">Learn more</Link>
       </p>
       <div className="ck-btns">
-        <button type="button" className="ck-no" onClick={() => setConsent("no")}>No thanks</button>
-        <button type="button" className="ck-yes" onClick={() => setConsent("yes")}>Accept</button>
+        <button type="button" className="ck-no" onClick={() => setConsent("no")}>Not now</button>
+        <button type="button" className="ck-yes" onClick={() => setConsent("yes")}>Sure</button>
       </div>
     </div>
   );

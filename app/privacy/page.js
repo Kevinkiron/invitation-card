@@ -71,7 +71,7 @@ const SECTIONS = [
   )],
   ["ads", "6. Advertising and cookies", (
     <>
-      <p>We advertise on Facebook and Instagram. To see whether an ad led to someone using Welcvm, we use the <b>Meta Pixel</b>. It is switched off until you press <b>Accept</b> on the banner that appears when you first visit. If you press <b>No thanks</b>, or ignore it, nothing is loaded.</p>
+      <p>We advertise on Facebook and Instagram. To see whether an ad led to someone using Welcvm, we use the <b>Meta Pixel</b>. It is switched off until you press <b>Sure</b> on the small box that appears when you first visit. If you press <b>Not now</b>, or ignore it, nothing is loaded.</p>
       <p>If you accept, Meta receives your visit to our pages, the time, your device and browser details, and the events &ldquo;created an account&rdquo;, &ldquo;opened payment&rdquo; and &ldquo;paid&rdquo; (with the amount, never your card or bank details), together with an identifier it uses to match you to your Meta account. Meta handles that data under its own privacy policy.</p>
       <p>We never run the pixel on the invitations and cards you open from a link, or on their demos. You can change your mind at any time with the <b>Ad choices</b> link at the bottom of any page, or by writing to {mail}.</p>
     </>

@@ -1,0 +1,21 @@
+/* The ad-measurement banner (components/MetaPixel.js). */
+.ck {
+  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 9000;
+  max-width: 640px; margin: 0 auto;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between;
+  padding: 14px 18px; border-radius: 16px;
+  background: #fff; color: #3a2f2a; border: 1px solid rgba(140, 123, 112, .25);
+  box-shadow: 0 18px 50px -14px rgba(40, 20, 10, .35);
+  font: 400 13px/1.55 'DM Sans', system-ui, sans-serif;
+  animation: ck-in .5s cubic-bezier(.2, .8, .2, 1) .6s both;
+}
+.ck p { margin: 0; flex: 1 1 280px; }
+.ck a { color: #c4574a; font-weight: 700; text-decoration: underline; }
+.ck-btns { display: flex; gap: 8px; flex: none; }
+.ck-btns button {
+  font: 700 13px/1 'DM Sans', system-ui, sans-serif; padding: 11px 18px; border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+}
+.ck-no { background: transparent; color: #6b5d55; border-color: rgba(140, 123, 112, .4) !important; }
+.ck-yes { background: linear-gradient(135deg, #DE6B5A, #E8912D); color: #fff; box-shadow: 0 6px 16px -8px rgba(222, 107, 90, .8); }
+@keyframes ck-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ck { animation: none; } }

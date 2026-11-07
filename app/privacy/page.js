@@ -11,7 +11,7 @@ import { COMPANY } from "@/lib/company";
    Company details: lib/company.js.
    ══════════════════════════════════════════════════════════════════════ */
 
-const UPDATED = "25 October 2026";
+const UPDATED = "7 November 2026";
 
 export const metadata = {
   title: "Privacy Policy — Welcvm",
@@ -32,6 +32,7 @@ const SECTIONS = [
         <li><b>Guests:</b> the replies guests give when they RSVP (name, number of people, phone number if asked) and anything they add to the invitation, such as blessings or photos.</li>
         <li><b>Payments:</b> the amount, status and payment ID from Razorpay. We never see or store your card, UPI or bank details.</li>
         <li><b>Technical data:</b> basic logs such as browser type and IP address, kept by our hosting provider for security and to fix faults.</li>
+        <li><b>Advertising measurement (only if you accept):</b> if you press Accept on our banner, a Meta (Facebook) pixel notes which pages you visit on welcvm.com and when you sign up or pay, so we can tell which of our ads work. See section 6 below.</li>
       </ul>
     </>
   )],
@@ -62,27 +63,35 @@ const SECTIONS = [
         <li><b>Supabase</b> — database, login and photo/music storage;</li>
         <li><b>Vercel</b> — website hosting;</li>
         <li><b>Razorpay</b> — payments;</li>
+        <li><b>Meta Platforms</b> — ad measurement, only if you accept the banner;</li>
         <li><b>our AI provider</b> (such as Google) — to turn your chat into a design.</li>
       </ul>
       <p>Some of these services may store data outside India. We may also disclose information if the law requires it.</p>
     </>
   )],
-  ["keep", "6. How long we keep it", (
+  ["ads", "6. Advertising and cookies", (
+    <>
+      <p>We advertise on Facebook and Instagram. To see whether an ad led to someone using Welcvm, we use the <b>Meta Pixel</b>. It is switched off until you press <b>Accept</b> on the banner that appears when you first visit. If you press <b>No thanks</b>, or ignore it, nothing is loaded.</p>
+      <p>If you accept, Meta receives your visit to our pages, the time, your device and browser details, and the events &ldquo;created an account&rdquo;, &ldquo;opened payment&rdquo; and &ldquo;paid&rdquo; (with the amount, never your card or bank details), together with an identifier it uses to match you to your Meta account. Meta handles that data under its own privacy policy.</p>
+      <p>We never run the pixel on the invitations and cards you open from a link, or on their demos. You can change your mind at any time with the <b>Ad choices</b> link at the bottom of any page, or by writing to {mail}.</p>
+    </>
+  )],
+  ["keep", "7. How long we keep it", (
     <p>We keep your account and your invitations and cards for as long as your account is open, so your links keep working. Payment records are kept as long as tax and accounting law requires. When you ask us to delete your account, we delete your invitations, cards, photos and music within 30 days, apart from records we must keep by law.</p>
   )],
-  ["rights", "7. Your rights", (
+  ["rights", "8. Your rights", (
     <p>Under India&rsquo;s Digital Personal Data Protection Act, 2023 you can ask us to show you, correct, or delete the personal information we hold about you, and withdraw consent you have given. Write to {mail} from your registered email address. If you are not satisfied with our reply, you may complain to the Data Protection Board of India.</p>
   )],
-  ["security", "8. Security", (
+  ["security", "9. Security", (
     <p>Data is sent over encrypted connections (HTTPS), and access to our systems is limited. No service can promise perfect security, but if we learn of a breach that affects you, we will tell you and the authorities as the law requires.</p>
   )],
-  ["children", "9. Children", (
+  ["children", "10. Children", (
     <p>Welcvm is for adults. Children&rsquo;s photos — at a naming ceremony or a birthday, say — may appear in invitations only when a parent or guardian adds them or agrees.</p>
   )],
-  ["changes", "10. Changes", (
+  ["changes", "11. Changes", (
     <p>We may update this policy; the date at the top shows the latest version. Significant changes will be shown on the site.</p>
   )],
-  ["contact", "11. Contact and grievances", (
+  ["contact", "12. Contact and grievances", (
     <>
       <p>For privacy questions, data requests or complaints, contact our grievance officer:</p>
       <p><b>{COMPANY.legalName}</b><br />{COMPANY.address}<br />Email: {mail}</p>

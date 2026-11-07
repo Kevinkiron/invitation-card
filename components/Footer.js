@@ -4,6 +4,7 @@ import Link from "next/link";
 import Wordmark from "./Wordmark";
 import { C } from "@/lib/theme";
 import { COMPANY } from "@/lib/company";
+import { AdChoices } from "@/components/MetaPixel";
 
 export default function Footer() {
   return (
@@ -87,7 +88,7 @@ export default function Footer() {
           }}
         >
           <span>© {new Date().getFullYear()} {COMPANY.legalName}. All rights reserved.</span>
-          <span>Invitations &amp; greeting cards, designed for you</span>
+          <span>Invitations &amp; greeting cards, designed for you · <AdChoices /></span>
         </div>
       </div>
     </footer>

@@ -3,6 +3,7 @@ import "./responsive.css";
 import "./invitation.css";
 import "./wedding-cinema.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import MetaPixel from "@/components/MetaPixel";
 import { SITE_URL } from "@/lib/share";
 
 export const metadata = {
@@ -53,6 +54,8 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        {/* ad-measurement banner + Meta pixel, only after consent (lib/pixel.js) */}
+        <MetaPixel />
       </body>
     </html>
   );

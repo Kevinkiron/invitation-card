@@ -9,6 +9,7 @@ import { Banner, Petals } from "@/components/ui";
 import Nav from "@/components/Nav";
 import { Logo } from "@/components/Nav";
 import { C } from "@/lib/theme";
+import { track } from "@/lib/pixel";
 import AgreeTerms from "@/components/AgreeTerms";
 
 export default function AuthForm({ mode }) {
@@ -43,6 +44,7 @@ export default function AuthForm({ mode }) {
           options: { data: { full_name: name, terms_accepted_at: new Date().toISOString(), terms_version: "2026-10-25" } },
         });
         if (error) throw error;
+        track("CompleteRegistration", { status: true });
         if (data.session) {
           if (name) await supabase.from("profiles").update({ full_name: name }).eq("id", data.user.id);
           router.push(redirect);
